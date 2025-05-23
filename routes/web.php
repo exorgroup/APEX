@@ -32,4 +32,7 @@ Route::get('/vue-test', function () {
     return Inertia::render('SimpleTest');
 })->name('vue.test');
 
+
+
+
 require __DIR__ . '/auth.php';

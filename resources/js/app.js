@@ -16,6 +16,9 @@ import InputText from 'primevue/inputtext';
 // Import icons
 import 'primeicons/primeicons.css';
 
+// Import APEX Event Bus
+import './apex/apex-events.js';
+
 createInertiaApp({
     title: (title) => `${title}`,
     resolve: (name) => resolvePageComponent(`./Pages/${name}.vue`, import.meta.glob('./Pages/**/*.vue')),
