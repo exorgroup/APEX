@@ -36,7 +36,7 @@
         </div>
 
         <div class="mb-6">
-            <h2 class="text-2xl font-semibold mb-4">Test 1: Direct Template String JSON @apexWidget</h2>
+            <h2 class="text-2xl font-semibold mb-4">Test 1: Direct Template String JSON apexWidget</h2>
             <div class="bg-white p-6 rounded shadow-md">
                 <p class="mb-4">This is a test of the APEX template processing system.</p>
                 @php

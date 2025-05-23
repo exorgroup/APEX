@@ -48,22 +48,12 @@ class TestWidget extends BaseWidget
      */
     protected function renderWidget(array $params): string
     {
-        // Debug information (if enabled)
-        $debugInfo = '';
+        // Add debug information to params if enabled
         if ($params['showDebug']) {
-            $debugInfo = '<!-- APEX Test Widget Debug: ID=' . $params['id'] . ', Title=' . $params['title'] . ' -->';
+            $params['debugInfo'] = "<!-- APEX Test Widget Debug: ID={$params['id']}, Title={$params['title']} -->";
         }
 
-        // Build the widget HTML
-        $html = $debugInfo . PHP_EOL;
-        $html .= '<div class="apex-test-widget ' . $params['cssClass'] . '" id="' . htmlspecialchars($params['id']) . '">' . PHP_EOL;
-        $html .= '    <h3 class="text-xl font-bold mb-2">' . htmlspecialchars($params['title']) . '</h3>' . PHP_EOL;
-        $html .= '    <div class="content">' . PHP_EOL;
-        //  $html .= '        ' . htmlspecialchars($params['content']) . PHP_EOL;
-        $html .= '        ' . $params['content'] . PHP_EOL; // No htmlspecialchars if you want raw HTML
-        $html .= '    </div>' . PHP_EOL;
-        $html .= '</div>';
-
-        return $html;
+        // Render using the dedicated view template
+        return $this->view('test-widget', $params);
     }
 }

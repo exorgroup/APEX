@@ -61,6 +61,7 @@ class ApexServiceProvider extends ServiceProvider
         $this->registerCoreWidgets();
 
         /*
+        //No JSON
         Blade::directive('apexWidget', function ($expression) {
             // $expression will be something like "'testWidget', ['id' => '...', 'title' => '...']"
             // We need to parse this into widgetType and params
@@ -78,7 +79,7 @@ class ApexServiceProvider extends ServiceProvider
         });
         */
 
-        // In ApexServiceProvider's boot method
+
         Blade::directive('apexWidget', function ($expression) {
             // $expression will now be something like: 'testWidget', '{"id":"...", "title":"..."}'
             // The second argument is already a string containing JSON.
