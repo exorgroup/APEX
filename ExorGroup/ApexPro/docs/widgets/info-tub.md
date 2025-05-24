@@ -238,11 +238,11 @@ Excellent for uptime percentages, response times, error rates, and system health
 Issue: Image not displaying
 Solution: Verify the image URL is accessible and returns a valid image format (PNG, JPG, SVG)
 
-Issue: Alignment not working as expected
+Issue: Alignment not working as expected <br/>
 Solution: Ensure alignment values are exactly "left", "center", or "right" (case-sensitive)
 
-Issue: Widget appears too wide on mobile
+Issue: Widget appears too wide on mobile <<br/>
 Solution: The widget is responsive by default, but you may need to adjust the container's CSS grid or flexbox settings
 
-Issue: Custom classes not applying
+Issue: Custom classes not applying<br/>
 Solution: Verify that your custom CSS classes are loaded and have sufficient specificity to override default styles
