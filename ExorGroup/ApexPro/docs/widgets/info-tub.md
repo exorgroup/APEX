@@ -7,7 +7,9 @@ The InfoTub widget is a responsive card component designed to display statistics
 The InfoTub widget creates clean, professional-looking cards that automatically adapt to different screen sizes. Each widget can display a main value, descriptive caption, and an optional image with full control over positioning and alignment.
 
 ## Basic Syntax
+```
 !!apex-infoTub:{"parameter":"value"}!!
+```
 
 ## Required Parameters
 
@@ -36,15 +38,16 @@ The InfoTub widget creates clean, professional-looking cards that automatically 
 ## Usage Examples
 
 ### Simple Statistics Card
-
 Display basic statistics without an image:
 
-```blade
+```
 !!apex-infoTub:{"text":"1,247", "caption":"Total Users"}!!
+```
 
 ###Social Media Statistics
 Create LinkedIn-style statistics with icons:
 
+```
 !!apex-infoTub:{
     "text":"9.3k", 
     "caption":"Amazing mates",
@@ -55,10 +58,12 @@ Create LinkedIn-style statistics with icons:
     "textAlign":"center",
     "captionAlign":"center"
 }!!
+```
 
 ###Revenue Dashboard Card
 Display financial metrics with custom styling:
 
+```
 !!apex-infoTub:{
     "text":"$45,230",
     "caption":"Monthly Revenue",
@@ -68,10 +73,12 @@ Display financial metrics with custom styling:
     "borderColor":"#10b981",
     "borderWidth":"2px"
 }!!
+```
 
 ###Performance Indicators
 Show completion rates or scores:
 
+```
 !!apex-infoTub:{
     "text":"94%",
     "caption":"Completion Rate",
@@ -82,10 +89,12 @@ Show completion rates or scores:
     "textClass":"text-blue-600",
     "boxClass":"shadow-lg"
 }!!
+```
 
 ###Image Position Variations
 Image at Bottom
 
+```
 !!apex-infoTub:{
     "text":"342",
     "caption":"Posts Shared",
@@ -94,8 +103,10 @@ Image at Bottom
     "textAlign":"center",
     "captionAlign":"center"
 }!!
+```
 
 ###Custom Image Alignment
+```
 !!apex-infoTub:{
     "text":"1.2M",
     "caption":"Followers",
@@ -104,10 +115,12 @@ Image at Bottom
     "textAlign":"right",
     "captionAlign":"center"
 }!!
+```
 
 ###Dashboard Grid Layout
 Create a responsive dashboard with multiple InfoTub widgets:
 
+```
 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
     !!apex-infoTub:{
         "text":"2,847",
@@ -140,37 +153,44 @@ Create a responsive dashboard with multiple InfoTub widgets:
         "textClass":"text-red-600"
     }!!
 </div>
+```
 
 ##Styling and Customization
 
 ###Border Customization
 Control the widget's border appearance:
 
+```
 !!apex-infoTub:{
     "text":"500",
     "caption":"Downloads",
     "borderWidth":"3px",
     "borderColor":"#8b5cf6"
 }!!
+```
 
 ###Text Styling
 Apply custom CSS classes for advanced styling:
 
+```
 !!apex-infoTub:{
     "text":"99.9%",
     "caption":"Reliability Score",
     "textClass":"text-4xl font-extrabold text-purple-600",
     "captionClass":"text-sm text-gray-400 uppercase letter-spacing-wide"
 }!!
+```
 
 ###Container Styling
 Add shadow, hover effects, and other container styles:
 
+```
 !!apex-infoTub:{
     "text":"1,847",
     "caption":"Satisfied Customers",
     "boxClass":"shadow-2xl hover:shadow-3xl transition-all duration-300 bg-gradient-to-br from-blue-50 to-indigo-100"
 }!!
+```
 
 ##Responsive Behavior
 The InfoTub widget automatically adapts to different screen sizes:
