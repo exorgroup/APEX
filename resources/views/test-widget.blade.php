@@ -7,5 +7,5 @@
         {!! $content !!}
     </div>
 
-    <br> <strong>resources/views/apex/widgets</strong>
+    <br> <strong>resources/views</strong>
 </div>

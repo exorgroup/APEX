@@ -6,6 +6,7 @@
     <div class="content">
         {!! $content !!}
     </div>
+    
 
-    <br> <strong>resources/views/apex/widgets</strong>
+    <br> <strong>exorgroup/resources/views</strong>
 </div>

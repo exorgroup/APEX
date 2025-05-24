@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Http\Middleware;
+namespace ExorGroup\Apex\Middleware;
 
-use App\Apex\TemplateProcessor;
+use ExorGroup\Apex\TemplateProcessor;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;

@@ -31,7 +31,7 @@
             <h2 class="text-2xl font-semibold mb-4">Test 1: Direct Template String !!</h2>
             <div class="bg-white p-6 rounded shadow-md">
                 <p class="mb-4">This is a test of the APEX template processing system.</p>
-                !!apex-testWidget:{"id":"test-widget-1", "title":"Test Widget 1", "content":"This is a direct template test.", "showDebug":true}!!
+                !!apex-testWidget:{"id":"test-widget-1", "title":"Test Widget 1", "content":"This is a direct template test. ss", "showDebug":true}!!
             </div>
         </div>
 
