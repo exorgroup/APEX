@@ -252,7 +252,7 @@ abstract class BaseWidget implements WidgetInterface
         return $this->params;
     }
 
-    protected function view(string $viewName, array $data = []): string
+    protected function view2(string $viewName, array $data = []): string
     {
         try {
             // Convert backslashes to dots for view name
@@ -269,6 +269,94 @@ abstract class BaseWidget implements WidgetInterface
             } else {
                 // Log warning
                 \Illuminate\Support\Facades\Log::warning("APEX: Widget view not found", [
+                    'qualified_view' => $qualifiedViewName,
+                    'unqualified_view' => $viewName
+                ]);
+
+                // Fallback to inline rendering
+                return $this->fallbackRendering($data);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("APEX: Error rendering widget view", [
+                'view' => $viewName,
+                'error' => $e->getMessage()
+            ]);
+
+            return $this->renderError('Widget view rendering failed', [$e->getMessage()]);
+        }
+    }
+
+    protected function view3(string $viewName, array $data = []): string
+    {
+        try {
+            // Convert backslashes to dots for view name
+            $viewName = str_replace('\\', '.', $viewName);
+
+            // Try apex-pro prefix first (for pro widgets)
+            $proQualifiedViewName = 'apex-pro::' . $viewName;
+
+            // Try apex prefix second (for regular widgets)
+            $qualifiedViewName = 'apex::' . $viewName;
+
+            // Try the pro-qualified view first
+            if (view()->exists($proQualifiedViewName)) {
+                return view($proQualifiedViewName, array_merge($this->params, $data))->render();
+            }
+            // Then try the regular qualified view
+            elseif (view()->exists($qualifiedViewName)) {
+                return view($qualifiedViewName, array_merge($this->params, $data))->render();
+            }
+            // Then try unqualified view
+            elseif (view()->exists($viewName)) {
+                return view($viewName, array_merge($this->params, $data))->render();
+            } else {
+                // Log warning
+                \Illuminate\Support\Facades\Log::warning("APEX: Widget view not found", [
+                    'pro_qualified_view' => $proQualifiedViewName,
+                    'qualified_view' => $qualifiedViewName,
+                    'unqualified_view' => $viewName
+                ]);
+
+                // Fallback to inline rendering
+                return $this->fallbackRendering($data);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("APEX: Error rendering widget view", [
+                'view' => $viewName,
+                'error' => $e->getMessage()
+            ]);
+
+            return $this->renderError('Widget view rendering failed', [$e->getMessage()]);
+        }
+    }
+
+    protected function view(string $viewName, array $data = []): string
+    {
+        try {
+            // Convert backslashes to dots for view name
+            $viewName = str_replace('\\', '.', $viewName);
+
+            // Try apexpro prefix first (for pro widgets)
+            $proQualifiedViewName = 'apexpro::' . $viewName;
+
+            // Try apex prefix second (for regular widgets)
+            $qualifiedViewName = 'apex::' . $viewName;
+
+            // Try the pro-qualified view first
+            if (view()->exists($proQualifiedViewName)) {
+                return view($proQualifiedViewName, array_merge($this->params, $data))->render();
+            }
+            // Then try the regular qualified view
+            elseif (view()->exists($qualifiedViewName)) {
+                return view($qualifiedViewName, array_merge($this->params, $data))->render();
+            }
+            // Then try unqualified view
+            elseif (view()->exists($viewName)) {
+                return view($viewName, array_merge($this->params, $data))->render();
+            } else {
+                // Log warning
+                \Illuminate\Support\Facades\Log::warning("APEX: Widget view not found", [
+                    'pro_qualified_view' => $proQualifiedViewName,
                     'qualified_view' => $qualifiedViewName,
                     'unqualified_view' => $viewName
                 ]);
