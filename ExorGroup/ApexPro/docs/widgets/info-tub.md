@@ -41,6 +41,7 @@ Display basic statistics without an image:
 
 ```blade
 !!apex-infoTub:{"text":"1,247", "caption":"Total Users"}!!
+```
 
 ###Social Media Statistics
 Create LinkedIn-style statistics with icons:
