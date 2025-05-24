@@ -44,7 +44,7 @@ Display basic statistics without an image:
 !!apex-infoTub:{"text":"1,247", "caption":"Total Users"}!!
 ```
 
-###Social Media Statistics
+### Social Media Statistics
 Create LinkedIn-style statistics with icons:
 
 ```
@@ -60,7 +60,7 @@ Create LinkedIn-style statistics with icons:
 }!!
 ```
 
-###Revenue Dashboard Card
+### Revenue Dashboard Card
 Display financial metrics with custom styling:
 
 ```
@@ -75,7 +75,7 @@ Display financial metrics with custom styling:
 }!!
 ```
 
-###Performance Indicators
+### Performance Indicators
 Show completion rates or scores:
 
 ```
@@ -91,7 +91,7 @@ Show completion rates or scores:
 }!!
 ```
 
-###Image Position Variations
+### Image Position Variations
 Image at Bottom
 
 ```
@@ -105,7 +105,7 @@ Image at Bottom
 }!!
 ```
 
-###Custom Image Alignment
+### Custom Image Alignment
 ```
 !!apex-infoTub:{
     "text":"1.2M",
@@ -117,7 +117,7 @@ Image at Bottom
 }!!
 ```
 
-###Dashboard Grid Layout
+### Dashboard Grid Layout
 Create a responsive dashboard with multiple InfoTub widgets:
 
 ```
@@ -155,9 +155,9 @@ Create a responsive dashboard with multiple InfoTub widgets:
 </div>
 ```
 
-##Styling and Customization
+## Styling and Customization
 
-###Border Customization
+### Border Customization
 Control the widget's border appearance:
 
 ```
@@ -169,7 +169,7 @@ Control the widget's border appearance:
 }!!
 ```
 
-###Text Styling
+### Text Styling
 Apply custom CSS classes for advanced styling:
 
 ```
@@ -181,7 +181,7 @@ Apply custom CSS classes for advanced styling:
 }!!
 ```
 
-###Container Styling
+### Container Styling
 Add shadow, hover effects, and other container styles:
 
 ```
@@ -192,49 +192,49 @@ Add shadow, hover effects, and other container styles:
 }!!
 ```
 
-##Responsive Behavior
+## Responsive Behavior
 The InfoTub widget automatically adapts to different screen sizes:
 
-Desktop (>640px): Full size display with maximum 200px width
-Tablet (≤640px): Reduced to 150px maximum width with smaller fonts
-Mobile (≤480px): Further reduced to 120px width for optimal mobile viewing
+- Desktop (>640px): Full size display with maximum 200px width
+- Tablet (≤640px): Reduced to 150px maximum width with smaller fonts
+- Mobile (≤480px): Further reduced to 120px width for optimal mobile viewing
 
-##Best Practices
-###Image Guidelines
+## Best Practices
+### Image Guidelines
 
-Use square images for best results (the widget will crop to square automatically)
-Recommended image size: 256x256px or larger
-Use PNG format with transparent backgrounds for icons
-Ensure images are web-optimized for fast loading
+- Use square images for best results (the widget will crop to square automatically)
+- Recommended image size: 256x256px or larger
+- Use PNG format with transparent backgrounds for icons
+- Ensure images are web-optimized for fast loading
 
-###Content Guidelines
+### Content Guidelines
 
-Keep text values concise (ideally under 8 characters)
-Use clear, descriptive captions
-Maintain consistent styling across related widgets
-Consider color psychology when choosing border colors
+- Keep text values concise (ideally under 8 characters)
+- Use clear, descriptive captions
+- Maintain consistent styling across related widgets
+- Consider color psychology when choosing border colors
 
-###Layout Recommendations
+### Layout Recommendations
 
-Use CSS Grid or Flexbox for responsive layouts
-Maintain consistent spacing between widgets
-Group related statistics together
-Ensure adequate whitespace around widgets
+- Use CSS Grid or Flexbox for responsive layouts
+- Maintain consistent spacing between widgets
+- Group related statistics together
+- Ensure adequate whitespace around widgets
 
-##Common Use Cases
-###Business Dashboards
+## Common Use Cases
+### Business Dashboards
 Perfect for displaying KPIs, revenue metrics, user statistics, and performance indicators.
 
-####Social Media Analytics
+#### Social Media Analytics
 Ideal for showing follower counts, engagement rates, post statistics, and reach metrics.
 
-###E-commerce Metrics
+### E-commerce Metrics
 Great for displaying sales figures, inventory levels, customer counts, and conversion rates.
 
-###System Monitoring
+### System Monitoring
 Excellent for uptime percentages, response times, error rates, and system health indicators.
 
-##Troubleshooting
+## Troubleshooting
 Issue: Image not displaying
 Solution: Verify the image URL is accessible and returns a valid image format (PNG, JPG, SVG)
 
