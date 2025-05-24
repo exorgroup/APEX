@@ -2,6 +2,8 @@
 
 The InfoTub widget is a responsive card component designed to display statistics, metrics, and key information with optional icons or images. Perfect for dashboards, KPI displays, and social media statistics.
 
+![alt text](info-tub.png)
+
 ## Overview
 
 The InfoTub widget creates clean, professional-looking cards that automatically adapt to different screen sizes. Each widget can display a main value, descriptive caption, and an optional image with full control over positioning and alignment.
