@@ -2,9 +2,7 @@
 
 namespace ExorGroup\ApexPro\Widgets;
 
-use ExorGroup\Apex\Widgets\BaseWidget;
-
-class InfoTubWidget extends BaseWidget
+class InfoTubWidget extends BaseProWidget
 {
     protected function renderWidget(array $params): string
     {
@@ -26,7 +24,7 @@ class InfoTubWidget extends BaseWidget
             'boxClass' => '',
             'textAlign' => 'left',
             'captionAlign' => 'left',
-            'imageAlign' => 'center',  // Add this
+            'imageAlign' => 'center',
         ];
     }
 }

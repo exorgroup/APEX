@@ -59,22 +59,47 @@ class TemplateProcessor
      */
     protected function collectWidgetDependencies(string $content): void
     {
-        // Pattern to match !!apex-widgetName:{"param":"value"}!! format
-        //preg_match_all('/!!apex-([a-zA-Z0-9-]+)(?::(\{.*?\}))?!!/', $content, $matches, PREG_SET_ORDER);
+        // Enhanced pattern to match both single-line and multiline JSON
+        // Using PCRE_DOTALL flag (/s) to make . match newlines
+        preg_match_all('/!!apex-([a-zA-Z0-9-]+)(?::(\{(?:[^{}]|(?2))*\}))?!!/s', $content, $matches, PREG_SET_ORDER);
 
-        preg_match_all('/!!apex-([a-zA-Z0-9-]+)(?::(\{.*?\}))?!!/', $content, $matches, PREG_SET_ORDER);
+        Log::info('APEX tags found in template', [
+            'total_matches' => count($matches),
+            'widget_types' => array_map(function ($match) {
+                return $match[1];
+            }, $matches)
+        ]);
 
         foreach ($matches as $match) {
             $widgetType = $match[1];
-            $params = isset($match[2]) ? json_decode($match[2], true) : [];
+            $rawJson = $match[2] ?? '{}';
+
+            // Clean up the JSON string - remove extra whitespace and newlines
+            $cleanJson = $this->cleanJsonString($rawJson);
+
+            Log::info('Processing APEX tag', [
+                'widget_type' => $widgetType,
+                'raw_json_length' => strlen($rawJson),
+                'clean_json_length' => strlen($cleanJson),
+                'json_preview' => substr($cleanJson, 0, 100) . (strlen($cleanJson) > 100 ? '...' : '')
+            ]);
+
+            $params = json_decode($cleanJson, true);
 
             // Skip if JSON decode failed
-            if (isset($match[2]) && $params === null) {
+            if ($params === null && $cleanJson !== 'null') {
                 Log::warning("APEX: Invalid JSON in widget tag", [
                     'widget' => $widgetType,
-                    'raw_params' => $match[2]
+                    'raw_params' => $rawJson,
+                    'clean_params' => $cleanJson,
+                    'json_error' => json_last_error_msg()
                 ]);
                 continue;
+            }
+
+            // Ensure we have an array
+            if (!is_array($params)) {
+                $params = [];
             }
 
             // Ensure widget has an ID
@@ -85,6 +110,64 @@ class TemplateProcessor
             // Register widget dependencies
             $this->registerWidgetDependency($params['id'], $widgetType, $params);
         }
+    }
+
+    /**
+     * Clean JSON string to handle multiline formatting
+     */
+    protected function cleanJsonString(string $json): string
+    {
+        // Remove extra whitespace while preserving string content
+        $json = trim($json);
+
+        // If it's a simple {} return it as is
+        if ($json === '{}') {
+            return $json;
+        }
+
+        // For more complex JSON, we need to be careful about whitespace in strings
+        // This regex-based approach handles most common formatting issues
+        $json = preg_replace('/\s*:\s*/', ':', $json);  // Remove spaces around colons
+        $json = preg_replace('/\s*,\s*/', ',', $json);  // Remove spaces around commas
+        $json = preg_replace('/\{\s*/', '{', $json);    // Remove spaces after opening braces
+        $json = preg_replace('/\s*\}/', '}', $json);    // Remove spaces before closing braces
+        $json = preg_replace('/\[\s*/', '[', $json);    // Remove spaces after opening brackets
+        $json = preg_replace('/\s*\]/', ']', $json);    // Remove spaces before closing brackets
+
+        // Handle newlines that might be inside the JSON but outside of strings
+        $json = preg_replace('/\s*\n\s*/', '', $json);
+
+        return $json;
+    }
+
+    /**
+     * Replace widget tags with rendered content
+     */
+    protected function replaceWidgetTags(string $content): string
+    {
+        // Enhanced pattern to match both single-line and multiline JSON
+        return preg_replace_callback('/!!apex-([a-zA-Z0-9-]+)(?::(\{(?:[^{}]|(?2))*\}))?!!/s', function ($matches) {
+            $widgetType = $matches[1];
+            $rawJson = $matches[2] ?? '{}';
+            $cleanJson = $this->cleanJsonString($rawJson);
+            $params = json_decode($cleanJson, true);
+
+            // Skip if JSON decode failed
+            if ($params === null && $cleanJson !== 'null') {
+                Log::warning("APEX: Invalid JSON in widget replacement", [
+                    'widget' => $widgetType,
+                    'json_error' => json_last_error_msg()
+                ]);
+                return "<!-- APEX: Invalid JSON in {$widgetType} widget -->";
+            }
+
+            // Ensure we have an array
+            if (!is_array($params)) {
+                $params = [];
+            }
+
+            return $this->renderWidget($widgetType, $params);
+        }, $content);
     }
 
     /**
@@ -117,6 +200,12 @@ class TemplateProcessor
             'type' => $widgetType,
             'params' => $params
         ];
+
+        Log::debug("APEX: Registered widget dependency", [
+            'id' => $widgetId,
+            'type' => $widgetType,
+            'targets' => $targets
+        ]);
     }
 
     /**
@@ -134,24 +223,6 @@ class TemplateProcessor
     }
 
     /**
-     * Replace widget tags with rendered content
-     */
-    protected function replaceWidgetTags(string $content): string
-    {
-        return preg_replace_callback('/!!apex-([a-zA-Z0-9-]+)(?::(\{.*?\}))?!!/', function ($matches) {
-            $widgetType = $matches[1];
-            $params = isset($matches[2]) ? json_decode($matches[2], true) : [];
-
-            // Skip if JSON decode failed
-            if (isset($matches[2]) && $params === null) {
-                return "<!-- APEX: Invalid JSON in {$widgetType} widget -->";
-            }
-
-            return $this->renderWidget($widgetType, $params);
-        }, $content);
-    }
-
-    /**
      * Render a specific widget
      */
     protected function renderWidget(string $widgetType, array $params): string
@@ -159,7 +230,9 @@ class TemplateProcessor
         $widgetClass = $this->widgetRegistry->resolve($widgetType);
 
         if (!$widgetClass) {
-            Log::warning("APEX: Widget type '{$widgetType}' not found");
+            Log::warning("APEX: Widget type '{$widgetType}' not found", [
+                'available_widgets' => array_keys($this->widgetRegistry->getRegistered())
+            ]);
             return "<!-- APEX: Widget {$widgetType} not found -->";
         }
 
@@ -176,10 +249,11 @@ class TemplateProcessor
         } catch (\Exception $e) {
             Log::error("APEX: Error rendering widget '{$widgetType}'", [
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
                 'params' => $params
             ]);
 
-            return "<!-- APEX: Error rendering {$widgetType} widget -->";
+            return "<!-- APEX: Error rendering {$widgetType} widget: {$e->getMessage()} -->";
         }
     }
 

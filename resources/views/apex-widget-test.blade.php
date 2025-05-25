@@ -26,6 +26,63 @@
     <div class="container mx-auto px-4">
         <h1 class="text-4xl font-bold text-center mb-8 text-gray-800">{{ $pageTitle ?? 'APEX Widget Test Page' }}</h1>
 
+        Basic vertical layout
+        !!apex-imageTub:{"image": "https://media.istockphoto.com/id/155439315/photo/passenger-airplane-flying-above-clouds-during-sunset.jpg?s=612x612&w=0&k=20&c=LJWadbs3B-jSGJBVy9s0f8gZMHi2NvWFXa3VJ2lFcL0=", "title": "Sunset Flight", "titleUrl": "/flights/premium", "line1": "3 hours to destination", "line2": "$299.99", "line3": "Premium class available"}!!
+
+        Larger vertical card
+        !!apex-imageTub:{"image": "https://media.istockphoto.com/id/155439315/photo/passenger-airplane-flying-above-clouds-during-sunset.jpg?s=612x612&w=0&k=20&c=LJWadbs3B-jSGJBVy9s0f8gZMHi2NvWFXa3VJ2lFcL0=", "title": "Evening Adventure", "titleUrl": "/travel/packages", "line1": "Departure: 6:30 PM", "line2": "$450.00", "line3": "Window seat included", "width": "350px", "imageSize": "250px", "borderRadius": "16px"}!!
+
+        Custom styling
+        !!apex-imageTub:{"image": "https://media.istockphoto.com/id/155439315/photo/passenger-airplane-flying-above-clouds-during-sunset.jpg?s=612x612&w=0&k=20&c=LJWadbs3B-jSGJBVy9s0f8gZMHi2NvWFXa3VJ2lFcL0=", "title": "Cloud Nine Experience", "titleUrl": "#", "line1": "Next departure in 2 hours", "line2": "$599.99", "line1Class": "flight-info", "line2Class": "flight-price premium", "backgroundColor": "#f0f8ff", "shadow": true}!!
+
+        Horizontal Layout Examples
+        Basic horizontal layout
+        !!apex-imageTub:{"image": "https://media.istockphoto.com/id/155439315/photo/passenger-airplane-flying-above-clouds-during-sunset.jpg?s=612x612&w=0&k=20&c=LJWadbs3B-jSGJBVy9s0f8gZMHi2NvWFXa3VJ2lFcL0=", "title": "Sky High Journey", "titleUrl": "/book-flight", "line1": "Duration: 4h 30m", "line2": "$199.50", "line3": "Direct flight", "layout": "horizontal", "width": "450px", "height": "160px"}!!
+
+        Horizontal with custom image size
+        !!apex-imageTub:{"image": "https://media.istockphoto.com/id/155439315/photo/passenger-airplane-flying-above-clouds-during-sunset.jpg?s=612x612&w=0&k=20&c=LJWadbs3B-jSGJBVy9s0f8gZMHi2NvWFXa3VJ2lFcL0=", "title": "First Class Flight", "titleUrl": "/flights/first-class", "line1": "Luxury seating", "line2": "$1,299.00", "line3": "Gourmet meals included", "layout": "horizontal", "width": "500px", "imageWidth": "180px", "imageHeight": "140px", "backgroundColor": "#fff8dc"}!!
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+            !!apex-imageTub:{"image": "https://media.istockphoto.com/id/155439315/photo/passenger-airplane-flying-above-clouds-during-sunset.jpg?s=612x612&w=0&k=20&c=LJWadbs3B-jSGJBVy9s0f8gZMHi2NvWFXa3VJ2lFcL0=", "title": "Economy Class", "titleUrl": "/flights/economy", "line1": "Standard seating", "line2": "$189.99", "line3": "Meals available", "width": "280px"}!!
+            
+            !!apex-imageTub:{"image": "https://media.istockphoto.com/id/155439315/photo/passenger-airplane-flying-above-clouds-during-sunset.jpg?s=612x612&w=0&k=20&c=LJWadbs3B-jSGJBVy9s0f8gZMHi2NvWFXa3VJ2lFcL0=", "title": "Business Class", "titleUrl": "/flights/business", "line1": "Extra legroom", "line2": "$599.99", "line3": "Priority boarding", "width": "280px", "line2Class": "text-blue-600 font-bold"}!!
+            
+            !!apex-imageTub:{"image": "https://media.istockphoto.com/id/155439315/photo/passenger-airplane-flying-above-clouds-during-sunset.jpg?s=612x612&w=0&k=20&c=LJWadbs3B-jSGJBVy9s0f8gZMHi2NvWFXa3VJ2lFcL0=", "title": "First Class", "titleUrl": "/flights/first", "line1": "Luxury experience", "line2": "$1,499.99", "line3": "5-star service", "width": "280px", "backgroundColor": "#f9f9f9", "line2Class": "text-green-600 font-bold text-lg"}!!
+        </div>
+
+        Multiline
+        !!apex-imageTub:{
+            "image": "https://media.istockphoto.com/id/155439315/photo/passenger-airplane-flying-above-clouds-during-sunset.jpg?s=612x612&w=0&k=20&c=LJWadbs3B-jSGJBVy9s0f8gZMHi2NvWFXa3VJ2lFcL0=",
+            "title": "Beautiful Sunset Flight",
+            "titleUrl": "/flights/premium",
+            "line1": "3 hours to destination",
+            "line2": "$299.99",
+            "line3": "Premium class available",
+            "width": "350px",
+            "imageSize": "250px"
+        }!!
+
+        <div class="skill-indicators">
+            <div class="skill-item">
+                <span>PHP:</span>
+                !!apex-rating:{"total":5, "filled":4.5, "type":"square", "filledColor":"#8b5cf6"}!!
+            </div>
+            <div class="skill-item">
+                <span>JavaScript:</span>
+                !!apex-rating:{"total":5, "filled":3.8, "type":"square", "filledColor":"#f59e0b"}!!
+            </div>
+        </div>
+
+        <div class="quality-score">
+            <h4>Code Quality</h4>
+            !!apex-rating:{"id":"hello","total":5, "filled":4.6, "type":"pill", "height":11, "filledColor":"#06b6d4", "orientation":"vertical"}!!
+        </div>
+
+        <div class="quality-score2">
+            <h4>Code Quality</h4>
+            !!apex-rating:{"id":"hello2","total":5, "filled":4.6, "type":"pill", "height":48, "filledColor":"#06b6d4"}!!
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div>
                 !!apex-infoTub:{"id":"image-left", "image":"https://cdn-icons-png.flaticon.com/512/174/174857.png", "text":"9.3k", "caption":"Image Left", "imageAlign":"left", "textAlign":"left", "captionAlign":"left", "borderColor":"#0066cc", "borderWidth":"2px"}!!

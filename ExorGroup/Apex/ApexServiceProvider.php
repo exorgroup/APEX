@@ -48,7 +48,7 @@ class ApexServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
+    public function boot1(): void
     {
         // Register core widgets
         $this->registerCoreWidgets();
@@ -130,6 +130,84 @@ class ApexServiceProvider extends ServiceProvider
         ], 'apex-views');
     }
 
+    public function boot(): void
+    {
+        // Register core widgets
+        $this->registerCoreWidgets();
+
+        // Register Blade directive
+        Blade::directive('apexWidget', function ($expression) {
+            // Use a more robust regex to extract the two parts
+            preg_match('/^\s*[\'"]([a-zA-Z0-9-]+)[\'"]\s*,\s*([\'"].*[\'"]|\{.*\})\s*$/', $expression, $matches);
+
+            $widgetType = $matches[1] ?? 'unknown';
+            $paramsContent = $matches[2] ?? '{}';
+
+            // Try to handle both quoted JSON strings and direct object literals
+            if (preg_match('/^\s*[\'"]\{/', $paramsContent) && preg_match('/\}[\'"]\s*$/', $paramsContent)) {
+                // Strip quotes from quoted JSON strings
+                $paramsContent = preg_replace('/^\s*[\'"](.*)[\'"]\s*$/', '$1', $paramsContent);
+            }
+
+            return "!!apex-{$widgetType}:{$paramsContent}!!";
+        });
+
+        // Register middleware for template processing
+        $this->app['router']->pushMiddlewareToGroup('web', \ExorGroup\Apex\Middleware\ApexTemplateMiddleware::class);
+
+        // Load config
+        $this->mergeConfigFrom(
+            __DIR__ . '/../config/apex.php',
+            'apex'
+        );
+
+        // Publish config
+        $this->publishes([
+            __DIR__ . '/../config/apex.php' => config_path('apex.php'),
+        ], 'apex-config');
+
+        // Load views - FIXED VERSION
+        $this->loadViewsFromExistingPaths();
+
+        // Publish views
+        $this->publishes([
+            __DIR__ . '/../resources/views' => resource_path('views/vendor/apex'),
+        ], 'apex-views');
+
+        // Publish assets
+        $this->publishes([
+            __DIR__ . '/../resources/js' => resource_path('js/vendor/apex'),
+        ], 'apex-assets');
+    }
+
+    /**
+     * Load views from existing paths only
+     */
+    protected function loadViewsFromExistingPaths(): void
+    {
+        $viewPaths = [
+            resource_path('views/vendor/apex'), // Laravel published views (highest priority)
+            resource_path('views/apex'),        // Laravel standard location
+            __DIR__ . '/../resources/views',    // Package views (fallback)
+        ];
+
+        // Filter to only existing paths
+        $existingPaths = array_filter($viewPaths, function ($path) {
+            return is_dir($path);
+        });
+
+        if (!empty($existingPaths)) {
+            $this->loadViewsFrom($existingPaths, 'apex');
+        } else {
+            // If no paths exist, create a minimal fallback
+            $fallbackPath = __DIR__ . '/../resources/views';
+            if (!is_dir($fallbackPath)) {
+                @mkdir($fallbackPath, 0755, true);
+            }
+            $this->loadViewsFrom($fallbackPath, 'apex');
+        }
+    }
+
     /**
      * Register core APEX widgets
      */
@@ -140,6 +218,7 @@ class ApexServiceProvider extends ServiceProvider
         // Register core widgets
         $registry->register('logo', \ExorGroup\Apex\Widgets\LogoWidget::class);
         $registry->register('testWidget', \ExorGroup\Apex\Widgets\TestWidget::class);
+        $registry->register('rating', \ExorGroup\Apex\Widgets\RatingWidget::class);
 
         // You can add more widgets here
     }
