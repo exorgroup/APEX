@@ -25,6 +25,173 @@
 <body class="bg-gray-100 min-h-screen py-8">
     <div class="container mx-auto px-4">
         <h1 class="text-4xl font-bold text-center mb-8 text-gray-800">{{ $pageTitle ?? 'APEX Widget Test Page' }}</h1>
+Status BAr
+        !!apex-statusBar:{
+            "title": "Using Storage 6854.45 MB of 8 GB",
+            "height": "8px",
+            "gap": "2px",
+            "unit": "MB",
+            "values": [
+                {
+                    "label": "Regular",
+                    "value": 915,
+                    "color": "#f59e0b"
+                },
+                {
+                    "label": "System", 
+                    "value": 415,
+                    "color": "#3b82f6"
+                },
+                {
+                    "label": "Shared",
+                    "value": 201,
+                    "color": "#10b981"
+                },
+                {
+                    "label": "Free",
+                    "value": 612,
+                    "color": "#e5e7eb"
+                }
+            ]
+        }!!
+
+        Advanced Example with Custom Styling:
+
+        !!apex-statusBar:{
+            "title": "Project Progress Overview",
+            "titleClass": "text-lg font-semibold text-gray-800",
+            "height": "12px",
+            "gap": "1px",
+            "borderRadius": "6px",
+            "showLegend": true,
+            "legendPosition": "bottom",
+            "unit": "%",
+            "values": [
+                {
+                    "label": "Completed",
+                    "value": 65,
+                    "color": "#059669",
+                    "textClass": "font-medium text-green-700"
+                },
+                {
+                    "label": "In Progress",
+                    "value": 25,
+                    "color": "#dc2626",
+                    "textClass": "font-medium text-red-700"
+                },
+                {
+                    "label": "Remaining",
+                    "value": 10,
+                    "color": "#e5e7eb",
+                    "textClass": "text-gray-500"
+                }
+            ]
+        }!!
+
+        Memory Usage Example:
+
+        !!apex-statusBar:{
+            "title": "Memory Usage",
+            "height": "6px",
+            "gap": "0px",
+            "unit": "GB",
+            "legendPosition": "right",
+            "values": [
+                {
+                    "label": "Used",
+                    "value": 5.2,
+                    "color": "#ef4444"
+                },
+                {
+                    "label": "Cached",
+                    "value": 1.8,
+                    "color": "#f97316"
+                },
+                {
+                    "label": "Available",
+                    "value": 9.0,
+                    "color": "#22c55e"
+                }
+            ]
+        }!!
+
+
+
+
+
+
+        !!apex-progressTub:{"text":"78%", "caption":"ACTIVE USERS", "gaugeValue":78}!!
+
+        !!apex-progressTub:{
+            "text":"25,782",
+            "caption":"ACTIVE USERS",
+            "gaugeValue":78,
+            "gaugeType":"radial",
+            "gaugeColor":"#f59e0b",
+            "gaugePosition":"bottom",
+            "showPercentage":true,
+            "badges":[
+                {
+                    "value":"-1%",
+                    "class":"badge-negative"
+                },
+                {
+                    "image":"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIHZpZXdCb3g9IjAgMCAxMiAxMiIgZmlsbD0ibm9uZSI+PHBhdGggZD0iTTYgMkw5IDhIM1oiIGZpbGw9IiNkYzI2MjYiLz48L3N2Zz4=",
+                    "alt":"Down arrow"
+                }
+            ],
+            "gaugeLabel":"Performance",
+            "gaugeLabelPosition":"below"
+        }!!
+
+        !!apex-progressTub:{
+            "text":"25,782",
+            "caption":"top ACTIVE USERS",
+            "gaugeValue":78,
+            "gaugeType":"radial",
+            "gaugeColor":"#f59e0b",
+            "gaugePosition":"top",
+            "showPercentage":true,
+            "badges":[
+                {
+                    "value":"-1%",
+                    "class":"badge-negative"
+                },
+                {
+                    "image":"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIHZpZXdCb3g9IjAgMCAxMiAxMiIgZmlsbD0ibm9uZSI+PHBhdGggZD0iTTYgMkw5IDhIM1oiIGZpbGw9IiNkYzI2MjYiLz48L3N2Zz4=",
+                    "alt":"Down arrow"
+                }
+            ],
+            "gaugeLabel":"Performance",
+            "gaugeLabelPosition":"below"
+        }!!
+
+        Radial Gauge 
+!!apex-progressTub:{"gaugeType":"radial", "gaugeValue":75}!!
+
+Full Circle Gauge 
+!!apex-progressTub:{"gaugeType":"round", "gaugeValue":80}!!
+
+Linear Progress Bar 
+!!apex-progressTub:{"textAlign":"left","text":"25,782","gaugeType":"linear", "gaugeValue":65}!!
+
+<!-- Large radial gauge -->
+!!apex-progressTub:{
+    "text":"25,782",
+    "caption":"ACTIVE USERS", 
+    "gaugeValue":78,
+    "gaugeWidth":"180px",
+    "gaugeType":"radial"
+}!!
+
+<!-- Linear gauge with custom width -->
+!!apex-progressTub:{
+    "text":"Progress",
+    "gaugeType":"linear",
+    "gaugeWidth":"250px",
+    "gaugeHeight":"12px",
+    "gaugeValue":65
+}!!
 
         Basic vertical layout
         !!apex-imageTub:{"image": "https://media.istockphoto.com/id/155439315/photo/passenger-airplane-flying-above-clouds-during-sunset.jpg?s=612x612&w=0&k=20&c=LJWadbs3B-jSGJBVy9s0f8gZMHi2NvWFXa3VJ2lFcL0=", "title": "Sunset Flight", "titleUrl": "/flights/premium", "line1": "3 hours to destination", "line2": "$299.99", "line3": "Premium class available"}!!

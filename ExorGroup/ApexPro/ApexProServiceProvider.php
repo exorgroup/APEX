@@ -39,6 +39,8 @@ class ApexProServiceProvider extends ServiceProvider
         //   $registry->register('chart', \ExorGroup\ApexPro\Widgets\ChartWidget::class);
         $registry->register('infoTub', \ExorGroup\ApexPro\Widgets\InfoTubWidget::class);
         $registry->register('imageTub', \ExorGroup\ApexPro\Widgets\ImageTubWidget::class);
+        $registry->register('progressTub', \ExorGroup\ApexPro\Widgets\ProgressTubWidget::class);
+        $registry->register('statusBar', \ExorGroup\ApexPro\Widgets\StatusBarWidget::class);
     }
 
     protected function loadProViews1(): void
