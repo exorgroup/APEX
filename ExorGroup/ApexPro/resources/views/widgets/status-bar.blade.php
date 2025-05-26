@@ -1,16 +1,37 @@
 <div id="{{ $id }}" 
      class="apex-pro-status-bar {{ $containerClass }}"
-     style="@if($legendPosition === 'left' || $legendPosition === 'right') display: flex; align-items: center; @endif">
+     style="background: white;
+            border-radius: {{ $borderRadius }};
+            border: {{ $borderWidth }} solid {{ $borderColor }};
+            padding: {{ $padding }};
+            @if($shadow) box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); @endif
+            @if($legendPosition === 'left' || $legendPosition === 'right') display: flex; align-items: flex-start; @endif">
     
     @if($showLegend && $legendPosition === 'top')
         <div class="status-bar-legend legend-top {{ $legendClass }}">
-            @include('apexpro::partials.status-bar-legend')
+            @foreach($processedValues as $valueData)
+                @if($valueData['percentage'] > 0)
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: {{ $valueData['color'] }};"></div>
+                        <span class="legend-label {{ $valueData['textClass'] }}">{{ $valueData['label'] }}</span>
+                        <span class="legend-value">{{ number_format($valueData['value'], 2) }}{{ $unit ? ' ' . $unit : '' }}</span>
+                    </div>
+                @endif
+            @endforeach
         </div>
     @endif
 
     @if($legendPosition === 'left' && $showLegend)
-        <div class="status-bar-legend legend-left {{ $legendClass }}" style="margin-right: 1rem;">
-            @include('apexpro::partials.status-bar-legend')
+        <div class="status-bar-legend legend-left {{ $legendClass }}" style="margin-right: 1.5rem;">
+            @foreach($processedValues as $valueData)
+                @if($valueData['percentage'] > 0)
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: {{ $valueData['color'] }};"></div>
+                        <span class="legend-label {{ $valueData['textClass'] }}">{{ $valueData['label'] }}</span>
+                        <span class="legend-value">{{ number_format($valueData['value'], 2) }}{{ $unit ? ' ' . $unit : '' }}</span>
+                    </div>
+                @endif
+            @endforeach
         </div>
     @endif
 
@@ -21,7 +42,7 @@
 
         <div class="status-bar-wrapper" 
              style="background-color: {{ $backgroundColor }}; 
-                    border-radius: {{ $borderRadius }}; 
+                    border-radius: 4px; 
                     height: {{ $height }}; 
                     overflow: hidden;
                     display: flex;
@@ -44,20 +65,32 @@
             @endforeach
         </div>
 
-        <div class="status-bar-summary">
-            <span class="total-usage">Using {{ $title ? strtolower(str_replace(['Status', 'Overview'], '', $title)) : 'Storage' }} {{ $formattedTotal }}</span>
-        </div>
+        @if($showLegend && $legendPosition === 'bottom')
+            <div class="status-bar-legend legend-bottom {{ $legendClass }}">
+                @foreach($processedValues as $valueData)
+                    @if($valueData['percentage'] > 0)
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: {{ $valueData['color'] }};"></div>
+                            <span class="legend-label {{ $valueData['textClass'] }}">{{ $valueData['label'] }}</span>
+                            <span class="legend-value">{{ number_format($valueData['value'], 2) }}{{ $unit ? ' ' . $unit : '' }}</span>
+                        </div>
+                    @endif
+                @endforeach
+            </div>
+        @endif
     </div>
 
     @if($legendPosition === 'right' && $showLegend)
-        <div class="status-bar-legend legend-right {{ $legendClass }}" style="margin-left: 1rem;">
-            @include('apexpro::partials.status-bar-legend')
-        </div>
-    @endif
-
-    @if($showLegend && $legendPosition === 'bottom')
-        <div class="status-bar-legend legend-bottom {{ $legendClass }}">
-            @include('apexpro::partials.status-bar-legend')
+        <div class="status-bar-legend legend-right {{ $legendClass }}" style="margin-left: 1.5rem;">
+            @foreach($processedValues as $valueData)
+                @if($valueData['percentage'] > 0)
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: {{ $valueData['color'] }};"></div>
+                        <span class="legend-label {{ $valueData['textClass'] }}">{{ $valueData['label'] }}</span>
+                        <span class="legend-value">{{ number_format($valueData['value'], 2) }}{{ $unit ? ' ' . $unit : '' }}</span>
+                    </div>
+                @endif
+            @endforeach
         </div>
     @endif
 </div>
@@ -66,13 +99,22 @@
 .apex-pro-status-bar {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     max-width: 100%;
+    background: white;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: visible;
+}
+
+.apex-pro-status-bar:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
 }
 
 .status-bar-title {
     font-size: 0.875rem;
     font-weight: 500;
     color: #374151;
-    margin: 0 0 0.5rem 0;
+    margin: 0 0 0.75rem 0;
     line-height: 1.4;
 }
 
@@ -91,17 +133,6 @@
     cursor: pointer;
 }
 
-.status-bar-summary {
-    font-size: 0.75rem;
-    color: #6b7280;
-    font-weight: 400;
-    margin-top: 0.25rem;
-}
-
-.total-usage {
-    text-transform: capitalize;
-}
-
 /* Legend Styles */
 .status-bar-legend {
     display: flex;
@@ -111,18 +142,18 @@
 }
 
 .legend-top {
-    margin-bottom: 0.75rem;
+    margin-bottom: 1rem;
 }
 
 .legend-bottom {
-    margin-top: 0.75rem;
+    margin-top: 1rem;
 }
 
 .legend-left,
 .legend-right {
     flex-direction: column;
-    gap: 0.5rem;
-    min-width: 120px;
+    gap: 0.75rem;
+    min-width: 140px;
 }
 
 .legend-item {
@@ -142,12 +173,14 @@
 .legend-label {
     color: #374151;
     font-weight: 500;
+    flex: 1;
 }
 
 .legend-value {
     color: #6b7280;
     font-weight: 400;
     margin-left: auto;
+    font-size: 0.7rem;
 }
 
 /* Responsive Design */
@@ -158,9 +191,10 @@
     
     .legend-left,
     .legend-right {
-        margin: 0.75rem 0 0 0 !important;
+        margin: 1rem 0 0 0 !important;
         flex-direction: row !important;
         min-width: auto !important;
+        flex-wrap: wrap;
     }
     
     .status-bar-legend {
@@ -168,19 +202,14 @@
     }
     
     .legend-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.25rem;
-    }
-    
-    .legend-value {
-        margin-left: 0;
+        min-width: auto;
+        flex: 0 0 auto;
     }
 }
 
 /* Hover tooltip effect */
 .status-bar-segment::after {
-    content: attr(data-label) ': ' attr(data-formatted-value) ' (' attr(data-percentage) '%)';
+    content: attr(data-label) ': ' attr(data-value) ' (' attr(data-percentage) '%)';
     position: absolute;
     bottom: 120%;
     left: 50%;

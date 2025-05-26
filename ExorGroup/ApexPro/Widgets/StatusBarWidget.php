@@ -8,40 +8,13 @@ class StatusBarWidget extends BaseProWidget
     {
         // Calculate percentages and prepare data
         $total = $this->calculateTotal($params['values']);
-        $processedValues = $this->processValues($params['values'], $total, $params['unit']);
+        $processedValues = $this->processValues($params['values'], $total);
 
         return $this->view('widgets.status-bar', array_merge($params, [
             'processedValues' => $processedValues,
             'total' => $total,
             'formattedTotal' => $this->formatValue($total, $params['unit'])
         ]));
-    }
-
-    /**
-     * Process values to include percentages, validation, and formatted values
-     */
-    private function processValues(array $values, float $total, string $unit = ''): array
-    {
-        $processed = [];
-
-        foreach ($values as $value) {
-            if (!isset($value['value']) || !isset($value['label'])) {
-                continue; // Skip invalid entries
-            }
-
-            $percentage = $total > 0 ? ($value['value'] / $total) * 100 : 0;
-
-            $processed[] = [
-                'label' => $value['label'],
-                'value' => $value['value'],
-                'formattedValue' => $this->formatValue($value['value'], $unit), // Add formatted value
-                'percentage' => round($percentage, 2),
-                'color' => $value['color'] ?? '#e5e7eb',
-                'textClass' => $value['textClass'] ?? ''
-            ];
-        }
-
-        return $processed;
     }
 
     public function getDefaults(): array
@@ -54,10 +27,14 @@ class StatusBarWidget extends BaseProWidget
             'unit' => '',
             'showLegend' => true,
             'legendPosition' => 'bottom', // 'top', 'bottom', 'left', 'right'
-            'borderRadius' => '4px',
+            'borderRadius' => '12px',
             'backgroundColor' => '#f3f4f6',
             'containerClass' => '',
             'legendClass' => '',
+            'shadow' => true,
+            'borderWidth' => '1px',
+            'borderColor' => '#e5e7eb',
+            'padding' => '1.5rem',
             'values' => [
                 [
                     'label' => 'Used',
@@ -83,10 +60,34 @@ class StatusBarWidget extends BaseProWidget
         return array_sum(array_column($values, 'value'));
     }
 
+    /**
+     * Process values to include percentages and validation
+     */
+    private function processValues(array $values, float $total): array
+    {
+        $processed = [];
 
+        foreach ($values as $value) {
+            if (!isset($value['value']) || !isset($value['label'])) {
+                continue; // Skip invalid entries
+            }
+
+            $percentage = $total > 0 ? ($value['value'] / $total) * 100 : 0;
+
+            $processed[] = [
+                'label' => $value['label'],
+                'value' => $value['value'],
+                'percentage' => round($percentage, 2),
+                'color' => $value['color'] ?? '#e5e7eb',
+                'textClass' => $value['textClass'] ?? ''
+            ];
+        }
+
+        return $processed;
+    }
 
     /**
-     * Format value with unit
+     * Format value with unit - simplified version
      */
     private function formatValue(float $value, string $unit): string
     {
@@ -94,31 +95,7 @@ class StatusBarWidget extends BaseProWidget
             return number_format($value, 2);
         }
 
-        // Handle common units with automatic scaling
-        switch (strtoupper($unit)) {
-            case 'B':
-            case 'BYTES':
-                return $this->formatBytes($value);
-            case 'MB':
-                return number_format($value, 2) . ' MB';
-            case 'GB':
-                return number_format($value, 2) . ' GB';
-            case '%':
-                return number_format($value, 1) . '%';
-            default:
-                return number_format($value, 2) . ' ' . $unit;
-        }
-    }
-
-    /**
-     * Format bytes with appropriate unit
-     */
-    private function formatBytes(float $bytes): string
-    {
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        $factor = floor((strlen($bytes) - 1) / 3);
-
-        return sprintf("%.2f %s", $bytes / pow(1024, $factor), $units[$factor] ?? 'B');
+        return number_format($value, 2) . ' ' . $unit;
     }
 
     /**

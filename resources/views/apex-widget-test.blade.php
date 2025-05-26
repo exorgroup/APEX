@@ -25,35 +25,239 @@
 <body class="bg-gray-100 min-h-screen py-8">
     <div class="container mx-auto px-4">
         <h1 class="text-4xl font-bold text-center mb-8 text-gray-800">{{ $pageTitle ?? 'APEX Widget Test Page' }}</h1>
-Status BAr
-        !!apex-statusBar:{
-            "title": "Using Storage 6854.45 MB of 8 GB",
-            "height": "8px",
-            "gap": "2px",
-            "unit": "MB",
-            "values": [
-                {
-                    "label": "Regular",
-                    "value": 915,
-                    "color": "#f59e0b"
-                },
-                {
-                    "label": "System", 
-                    "value": 415,
-                    "color": "#3b82f6"
-                },
-                {
-                    "label": "Shared",
-                    "value": 201,
-                    "color": "#10b981"
-                },
-                {
-                    "label": "Free",
-                    "value": 612,
-                    "color": "#e5e7eb"
-                }
-            ]
+
+        Basic Breadcrumb
+        !!apex-breadcrumb:{
+            "items":[
+                {"label":"Home", "url":"/"},
+                {"label":"Products", "url":"/products"},
+                {"label":"Electronics", "url":"/products/electronics"},
+                {"label":"Smartphones"}
+            ],
+            "delimiter": " > ",
+            "style": 1
         }!!
+
+        No Shadow and No Border 
+        !!apex-breadcrumb:{
+            "items":[
+                {"label":"Dashboard", "url":"/dashboard"},
+                {"label":"Users", "url":"/users"},
+                {"label":"Profile Settings"}
+            ],
+            "style": 2,
+            "showBorder": false,
+            "showShadow": false,
+            "backgroundColor": "transparent",
+            "gap": "12px"
+        }!!
+
+        Arrow Style Navigation
+        !!apex-breadcrumb:{
+            "items":[
+                {"label":"Cart", "url":"/cart"},
+                {"label":"Billing", "url":"/checkout/billing"},
+                {"label":"Shipping", "url":"/checkout/shipping"},
+                {"label":"Payment"}
+            ],
+            "style": 3,
+            "showShadow": true,
+            "borderRadius": "8px"
+        }!!
+
+        Fully Customized Design
+        !!apex-breadcrumb:{
+            "items":[
+                {"label":"MONSTER HUNTER", "url":"/games/monster-hunter"},
+                {"label":"FINAL FANTASY", "url":"/games/final-fantasy"},
+                {"label":"DOOM", "url":"/games/doom"},
+                {"label":"ZOMBIE HUNTER", "url":"/games/zombie-hunter"},
+                {"label":"WARCRAFT"}
+            ],
+            "style": 5,
+            "showBorder": true,
+            "showShadow": true,
+            "borderWidth": "2px",
+            "borderColor": "#6366f1",
+            "backgroundColor": "#f8fafc",
+            "textColor": "#1e293b",
+            "linkColor": "#3730a3",
+            "hoverColor": "#1e1b4b",
+            "activeColor": "#6366f1",
+            "fontSize": "13px",
+            "fontWeight": "600",
+            "padding": "6px",
+            "borderRadius": "30px",
+            "gap": "4px",
+            "height": "50px",
+            "cssClass": "custom-game-breadcrumb"
+        }!!
+
+
+        title 
+        !!apex-pageTitle:{
+            "title":"Overview",
+            "breadcrumbs":[
+                {"label":"Home", "url":"/"},
+                {"label":"User Profile"}
+            ],
+            "breadcrumbClass":"text-purple-600 font-bold"
+        }!!
+
+
+        !!apex-pageTitle:{
+            "title":"Overview",
+            "breadcrumbs":[
+                {"label":"Home", "url":"/"},
+                {"label":"User Profile"}
+            ],
+            "delimiter":"|",
+            "shadow":true,
+            "border":true,
+            "titleClass":"text-blue-900",
+            "breadcrumbClass":"text-gray-600"            
+        }!!
+
+        !!apex-pageTitle:{
+            "title":"User Management",
+            "breadcrumbs":[
+                {"label":"Admin", "url":"/admin"},
+                {"label":"Users", "url":"/admin/users"},
+                {"label":"Edit User"}
+            ],
+            "delimiter":"/",
+            "breadcrumbClass":"text-gray-500 text-sm uppercase tracking-wide"
+        }!!
+
+        !!apex-pageTitle:{
+            "title":"API Documentation",
+            "breadcrumbs":[
+                {"label":"Docs", "url":"/docs"},
+                {"label":"API", "url":"/docs/api"},
+                {"label":"Authentication"}
+            ],
+            "delimiter":"❯",
+            "titleClass":"text-indigo-900 font-black text-4xl",
+            "breadcrumbClass":"text-indigo-600 font-mono text-sm bg-indigo-50 px-2 py-1 rounded",
+            "backgroundColor":"#ffffff",
+            "shadow":true,
+            "borderRadius":"12px"
+        }!!
+
+        !!apex-pageTitle:{
+            "title":"Shopping Cart",
+            "breadcrumbs":[
+                {"label":"🏠 Home", "url":"/"},
+                {"label":"🛍️ Shop", "url":"/shop"},
+                {"label":"🛒 Cart"}
+            ],
+            "delimiter":"▶",
+            "titleClass":"text-green-800 font-extrabold text-2xl",
+            "breadcrumbClass":"text-green-600 font-medium bg-green-100 px-3 py-1 rounded-full",
+            "backgroundColor":"#f0fdf4",
+            "border":true,
+            "borderColor":"#16a34a",
+            "borderWidth":"2px"
+        }!!
+
+        !!apex-pageTitle:{
+            "title":"Settings",
+            "breadcrumbs":[
+                {"label":"Home", "url":"/"},
+                {"label":"Account", "url":"/account"},
+                {"label":"Privacy"}
+            ],
+            "delimiter":"|",
+            "titleClass":"text-slate-800 font-light text-3xl",
+            "breadcrumbClass":"bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm font-semibold hover:bg-gray-300"
+            "backgroundColor":"transparent",
+            "shadow":false,
+            "border":false
+        }!!
+
+Status BAr
+!!apex-statusBar:{
+    "title": "Using Storage 6854.45 MB of 8 GB",
+    "height": "8px",
+    "gap": "2px",
+    "unit": "MB",
+    "showLegend": true,
+    "legendPosition": "bottom",
+    "shadow": true,
+    "borderWidth": "1px",
+    "borderColor": "#e5e7eb",
+    "values": [
+        {
+            "label": "Regular",
+            "value": 915,
+            "color": "#f59e0b"
+        },
+        {
+            "label": "System", 
+            "value": 415,
+            "color": "#3b82f6"
+        },
+        {
+            "label": "Shared",
+            "value": 201,
+            "color": "#10b981"
+        },
+        {
+            "label": "Free",
+            "value": 612,
+            "color": "#e5e7eb"
+        }
+    ]
+}!!
+
+Without Legend:
+
+!!apex-statusBar:{
+    "title": "Memory Usage",
+    "height": "10px",
+    "gap": "1px",
+    "unit": "GB",
+    "showLegend": false,
+    "shadow": true,
+    "values": [
+        {
+            "label": "Used",
+            "value": 5.2,
+            "color": "#ef4444"
+        },
+        {
+            "label": "Available",
+            "value": 10.8,
+            "color": "#22c55e"
+        }
+    ]
+}!!
+
+With Custom Border and No Shadow:
+
+!!apex-statusBar:{
+    "title": "Project Progress",
+    "height": "12px",
+    "gap": "0px",
+    "unit": "%",
+    "showLegend": true,
+    "legendPosition": "right",
+    "shadow": false,
+    "borderWidth": "2px",
+    "borderColor": "#3b82f6",
+    "values": [
+        {
+            "label": "Completed",
+            "value": 75,
+            "color": "#059669"
+        },
+        {
+            "label": "Remaining",
+            "value": 25,
+            "color": "#e5e7eb"
+        }
+    ]
+}!!
 
         Advanced Example with Custom Styling:
 

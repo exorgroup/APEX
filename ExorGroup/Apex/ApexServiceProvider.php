@@ -219,6 +219,8 @@ class ApexServiceProvider extends ServiceProvider
         $registry->register('logo', \ExorGroup\Apex\Widgets\LogoWidget::class);
         $registry->register('testWidget', \ExorGroup\Apex\Widgets\TestWidget::class);
         $registry->register('rating', \ExorGroup\Apex\Widgets\RatingWidget::class);
+        $registry->register('pageTitle', \ExorGroup\Apex\Widgets\PageTitleWidget::class);
+        $registry->register('breadcrumb', \ExorGroup\Apex\Widgets\BreadcrumbWidget::class);
 
         // You can add more widgets here
     }
