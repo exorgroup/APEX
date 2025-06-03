@@ -185,3 +185,62 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* PrimeVue Dark Mode Support */
+.dark .p-component {
+  color: hsl(var(--foreground));
+}
+
+.dark .p-inputtext {
+  background-color: hsl(var(--input));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.dark .p-button {
+  background-color: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.dark .p-card {
+  background-color: hsl(var(--card));
+  border-color: hsl(var(--border));
+  color: hsl(var(--card-foreground));
+}
+
+/* Ensure PrimeVue components respect the design system */
+.p-inputtext {
+  border-radius: 0.375rem; /* rounded-md */
+}
+
+.p-button {
+  border-radius: 0.375rem; /* rounded-md */
+}
+
+.p-card {
+  border-radius: 0.5rem; /* rounded-lg */
+}
+
+/* PrimeVue Dark Mode Support */
+.dark .p-component {
+  color: var(--foreground);
+}
+
+.dark .p-inputtext {
+  background-color: hsl(var(--input));
+  border-color: hsl(var(--border));
+  color: var(--foreground);
+}
+
+.dark .p-button {
+  background-color: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.dark .p-card {
+  background-color: hsl(var(--card));
+  border-color: hsl(var(--border));
+  color: hsl(var(--card-foreground));
+}
