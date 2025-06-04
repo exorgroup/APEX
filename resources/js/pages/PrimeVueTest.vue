@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
+import WidgetRenderer from '@/components/apex/WidgetRenderer.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
@@ -23,6 +24,39 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/primevue-test',
     },
 ];
+
+// APEX Widget Configuration
+const widgetConfig = ref([
+    {
+        "type": "breadcrumb",
+        "id": "main-breadcrumb",
+        "items": [
+            {
+                "label": "Home",
+                "url": "/"
+            },
+            {
+                "label": "APEX Framework",
+                "url": "/apex"
+            },
+            {
+                "label": "Widget Test",
+                "disabled": true
+            }
+        ],
+        "home": {
+            "icon": "pi pi-home",
+            "url": "/"
+        }
+    }
+]);
+
+// Transform widget config to match the expected format
+const widgets = ref(widgetConfig.value.map(config => ({
+    id: config.id || `widget_${Math.random().toString(36).substring(2, 9)}`,
+    type: config.type,
+    props: config
+})));
 </script>
 
 <template>
@@ -34,6 +68,28 @@ const breadcrumbs: BreadcrumbItem[] = [
                 <h1 class="mb-8 text-3xl font-bold text-gray-900 dark:text-white">
                     PrimeVue Component Test
                 </h1>
+
+                <!-- APEX Widget System Section -->
+                <PCard class="mb-8 shadow-lg">
+                    <template #header>
+                        <div class="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4">
+                            <h2 class="text-xl font-semibold text-white">APEX JSON Widget System</h2>
+                        </div>
+                    </template>
+                    
+                    <template #content>
+                        <div class="space-y-4 p-6">
+                            <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                                These breadcrumb widgets are rendered using the APEX JSON widget system:
+                            </p>
+                            
+                            <!-- Render APEX Widgets -->
+                            <WidgetRenderer :widgets="widgets" />
+                            
+                            
+                        </div>
+                    </template>
+                </PCard>
 
                 <div class="grid gap-8 md:grid-cols-2">
                     <!-- Counter Test Card -->
@@ -188,6 +244,17 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     Status: {{ temperature < 10 ? 'Cold' : temperature < 30 ? 'Comfortable' : 'Hot' }}
                                 </p>
                             </div>
+                        </div>
+                        
+                        <div class="mt-4 rounded-lg bg-purple-50 p-4 dark:bg-purple-900/20">
+                            <h3 class="mb-2 font-semibold text-purple-800 dark:text-purple-200">
+                                <i class="pi pi-sitemap mr-2"></i>
+                                APEX Widget System
+                            </h3>
+                            <p class="text-sm text-purple-600 dark:text-purple-300">
+                                Rendering <strong>{{ widgets.length }}</strong> breadcrumb widgets<br>
+                                Widget IDs: {{ widgets.map(w => w.id).join(', ') }}
+                            </p>
                         </div>
                     </template>
                 </PCard>

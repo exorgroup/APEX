@@ -4,6 +4,7 @@ import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import Knob from 'primevue/knob';
 import Card from 'primevue/card';
+import Breadcrumb from 'primevue/breadcrumb';
 import Aura from '@primeuix/themes/aura';
 
 export default {
@@ -24,5 +25,6 @@ export default {
         app.component('PInputText', InputText);
         app.component('PKnob', Knob);
         app.component('PCard', Card);
+        app.component('PBreadcrumb', Breadcrumb);
     }
 };
