@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\ApexTestController;
 use App\Http\Controllers\ApexTestController2;
 use App\Http\Controllers\CounterTestController;
+use App\Http\Controllers\PrimeVueTestController;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
@@ -33,14 +34,15 @@ Route::middleware([
     });
 
     Route::get('/counter-test', [CounterTestController::class, 'index'])->name('counter.test');
+    Route::get('/primevue-test', [PrimeVueTestController::class, 'index'])->name('primevue.test');
 
     // PrimeVue Test Route
-    Route::get('/primevue-test', function () {
+    /*Route::get('/primevue-test', function () {
         return Inertia::render('PrimeVueTest');
     })->name('tenant.primevue.test');
 
     // APEX Test Routes
-    /* Route::prefix('apex')->group(function () {
+     Route::prefix('apex')->group(function () {
         Route::get('/test', [ApexTestController::class, 'index'])->name('apex.test');
         Route::post('/dynamic-test', [ApexTestController::class, 'dynamicTest'])->name('apex.dynamic-test');
     });

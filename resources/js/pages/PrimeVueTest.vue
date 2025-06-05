@@ -5,6 +5,12 @@ import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
+interface Props {
+    widgets: any[];
+}
+
+const props = defineProps<Props>();
+
 // Reactive data
 const counter = ref(0);
 const temperature = ref(20);
@@ -24,39 +30,6 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/primevue-test',
     },
 ];
-
-// APEX Widget Configuration
-const widgetConfig = ref([
-    {
-        "type": "breadcrumb",
-        "id": "main-breadcrumb",
-        "items": [
-            {
-                "label": "Home",
-                "url": "/"
-            },
-            {
-                "label": "APEX Framework",
-                "url": "/apex"
-            },
-            {
-                "label": "Widget Test",
-                "disabled": true
-            }
-        ],
-        "home": {
-            "icon": "pi pi-home",
-            "url": "/"
-        }
-    }
-]);
-
-// Transform widget config to match the expected format
-const widgets = ref(widgetConfig.value.map(config => ({
-    id: config.id || `widget_${Math.random().toString(36).substring(2, 9)}`,
-    type: config.type,
-    props: config
-})));
 </script>
 
 <template>
@@ -80,13 +53,11 @@ const widgets = ref(widgetConfig.value.map(config => ({
                     <template #content>
                         <div class="space-y-4 p-6">
                             <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                                These breadcrumb widgets are rendered using the APEX JSON widget system:
+                                These breadcrumb widgets are rendered using the APEX JSON widget system from the server:
                             </p>
                             
                             <!-- Render APEX Widgets -->
                             <WidgetRenderer :widgets="widgets" />
-                            
-                            
                         </div>
                     </template>
                 </PCard>
@@ -252,7 +223,7 @@ const widgets = ref(widgetConfig.value.map(config => ({
                                 APEX Widget System
                             </h3>
                             <p class="text-sm text-purple-600 dark:text-purple-300">
-                                Rendering <strong>{{ widgets.length }}</strong> breadcrumb widgets<br>
+                                Rendering <strong>{{ widgets.length }}</strong> breadcrumb widgets from server<br>
                                 Widget IDs: {{ widgets.map(w => w.id).join(', ') }}
                             </p>
                         </div>
