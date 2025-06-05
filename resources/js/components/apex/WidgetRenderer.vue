@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, markRaw, type Component } from 'vue';
 import BreadcrumbWidget from './widgets/BreadcrumbWidget.vue';
+import KnobWidget from './widgets/KnobWidget.vue';
+import DatePickerWidget from './widgets/DatePickerWidget.vue';
 
 interface WidgetConfig {
     id: string;
@@ -17,6 +19,8 @@ const props = defineProps<Props>();
 // Use Record type for better TypeScript support
 const widgetComponents: Record<string, Component> = {
     breadcrumb: markRaw(BreadcrumbWidget),
+    knob: markRaw(KnobWidget),
+    datepicker: markRaw(DatePickerWidget),
     // Add more widget types here as they are created
 };
 

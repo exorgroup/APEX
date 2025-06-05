@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import WidgetRenderer from '@/components/apex/WidgetRenderer.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 interface Props {
     widgets: any[];
@@ -24,6 +24,19 @@ const decrement = () => {
     counter.value--;
 };
 
+// Separate widgets by type
+const breadcrumbWidgets = computed(() => 
+    props.widgets.filter(w => w.type === 'breadcrumb')
+);
+
+const knobWidgets = computed(() => 
+    props.widgets.filter(w => w.type === 'knob')
+);
+
+const datePickerWidgets = computed(() => 
+    props.widgets.filter(w => w.type === 'datepicker')
+);
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'PrimeVue Test',
@@ -37,7 +50,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="px-4 py-6">
-            <div class="mx-auto max-w-4xl">
+            <div class="mx-auto max-w-6xl">
                 <h1 class="mb-8 text-3xl font-bold text-gray-900 dark:text-white">
                     PrimeVue Component Test
                 </h1>
@@ -51,13 +64,106 @@ const breadcrumbs: BreadcrumbItem[] = [
                     </template>
                     
                     <template #content>
-                        <div class="space-y-4 p-6">
-                            <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                                These breadcrumb widgets are rendered using the APEX JSON widget system from the server:
-                            </p>
-                            
-                            <!-- Render APEX Widgets -->
-                            <WidgetRenderer :widgets="widgets" />
+                        <div class="space-y-8 p-6">
+                            <!-- Breadcrumb Widgets -->
+                            <div>
+                                <h3 class="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-300">
+                                    Breadcrumb Widgets
+                                </h3>
+                                <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                                    Navigation breadcrumbs rendered from JSON configuration:
+                                </p>
+                                <WidgetRenderer :widgets="breadcrumbWidgets" />
+                            </div>
+
+                            <!-- Knob Widgets -->
+                            <div>
+                                <h3 class="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-300">
+                                    Knob Widgets
+                                </h3>
+                                <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                                    Interactive knob controls rendered from JSON configuration:
+                                </p>
+                                <div class="flex flex-wrap items-center justify-around gap-6 rounded-lg bg-gray-50 p-6 dark:bg-gray-800">
+                                    <WidgetRenderer :widgets="knobWidgets" />
+                                </div>
+                                
+                                <!-- Widget Details -->
+                                <div class="mt-4 grid gap-4 text-sm md:grid-cols-3">
+                                    <div class="rounded-lg bg-red-50 p-3 dark:bg-red-900/20">
+                                        <strong class="text-red-700 dark:text-red-300">Temperature:</strong>
+                                        <span class="text-red-600 dark:text-red-400"> Adjustable 0-40°C</span>
+                                    </div>
+                                    <div class="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
+                                        <strong class="text-blue-700 dark:text-blue-300">Volume:</strong>
+                                        <span class="text-blue-600 dark:text-blue-400"> 0-100% control</span>
+                                    </div>
+                                    <div class="rounded-lg bg-green-50 p-3 dark:bg-green-900/20">
+                                        <strong class="text-green-700 dark:text-green-300">Progress:</strong>
+                                        <span class="text-green-600 dark:text-green-400"> Read-only at 75%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- DatePicker Widgets -->
+                            <div>
+                                <h3 class="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-300">
+                                    DatePicker Widgets
+                                </h3>
+                                <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                                    Various date picker configurations rendered from JSON:
+                                </p>
+                                
+                                <div class="space-y-6">
+                                    <!-- Standard Date Pickers -->
+                                    <div class="rounded-lg bg-gray-50 p-6 dark:bg-gray-800">
+                                        <h4 class="mb-4 font-medium text-gray-700 dark:text-gray-300">Standard Date Pickers</h4>
+                                        <div class="flex flex-wrap gap-4">
+                                            <WidgetRenderer :widgets="datePickerWidgets.filter(w => 
+                                                ['basic-datepicker', 'datetime-picker', 'restricted-datepicker'].includes(w.id)
+                                            )" />
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Range Date Picker -->
+                                    <div class="rounded-lg bg-gray-50 p-6 dark:bg-gray-800">
+                                        <h4 class="mb-4 font-medium text-gray-700 dark:text-gray-300">Range Selection</h4>
+                                        <WidgetRenderer :widgets="datePickerWidgets.filter(w => w.id === 'range-datepicker')" />
+                                    </div>
+                                    
+                                    <!-- Inline Date Picker -->
+                                    <div class="rounded-lg bg-gray-50 p-6 dark:bg-gray-800">
+                                        <h4 class="mb-4 font-medium text-gray-700 dark:text-gray-300">Inline Calendar</h4>
+                                        <div class="flex justify-center">
+                                            <WidgetRenderer :widgets="datePickerWidgets.filter(w => w.id === 'inline-datepicker')" />
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Date Picker Details -->
+                                <div class="mt-4 grid gap-4 text-sm md:grid-cols-2 lg:grid-cols-3">
+                                    <div class="rounded-lg bg-indigo-50 p-3 dark:bg-indigo-900/20">
+                                        <strong class="text-indigo-700 dark:text-indigo-300">Basic:</strong>
+                                        <span class="text-indigo-600 dark:text-indigo-400"> Standard date selection</span>
+                                    </div>
+                                    <div class="rounded-lg bg-purple-50 p-3 dark:bg-purple-900/20">
+                                        <strong class="text-purple-700 dark:text-purple-300">DateTime:</strong>
+                                        <span class="text-purple-600 dark:text-purple-400"> With time picker</span>
+                                    </div>
+                                    <div class="rounded-lg bg-pink-50 p-3 dark:bg-pink-900/20">
+                                        <strong class="text-pink-700 dark:text-pink-300">Restricted:</strong>
+                                        <span class="text-pink-600 dark:text-pink-400"> Next 30 days only</span>
+                                    </div>
+                                    <div class="rounded-lg bg-teal-50 p-3 dark:bg-teal-900/20">
+                                        <strong class="text-teal-700 dark:text-teal-300">Range:</strong>
+                                        <span class="text-teal-600 dark:text-teal-400"> Date range selection</span>
+                                    </div>
+                                    <div class="rounded-lg bg-cyan-50 p-3 dark:bg-cyan-900/20">
+                                        <strong class="text-cyan-700 dark:text-cyan-300">Inline:</strong>
+                                        <span class="text-cyan-600 dark:text-cyan-400"> Always visible calendar</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </template>
                 </PCard>
@@ -223,8 +329,11 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 APEX Widget System
                             </h3>
                             <p class="text-sm text-purple-600 dark:text-purple-300">
-                                Rendering <strong>{{ widgets.length }}</strong> breadcrumb widgets from server<br>
-                                Widget IDs: {{ widgets.map(w => w.id).join(', ') }}
+                                Total widgets rendered: <strong>{{ widgets.length }}</strong><br>
+                                Breadcrumb widgets: <strong>{{ breadcrumbWidgets.length }}</strong><br>
+                                Knob widgets: <strong>{{ knobWidgets.length }}</strong><br>
+                                DatePicker widgets: <strong>{{ datePickerWidgets.length }}</strong><br>
+                                Widget types: breadcrumb, knob, datepicker
                             </p>
                         </div>
                     </template>

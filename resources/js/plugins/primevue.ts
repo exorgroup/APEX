@@ -5,6 +5,7 @@ import InputText from 'primevue/inputtext';
 import Knob from 'primevue/knob';
 import Card from 'primevue/card';
 import Breadcrumb from 'primevue/breadcrumb';
+import DatePicker from 'primevue/datepicker';
 import Aura from '@primeuix/themes/aura';
 
 export default {
@@ -26,5 +27,6 @@ export default {
         app.component('PKnob', Knob);
         app.component('PCard', Card);
         app.component('PBreadcrumb', Breadcrumb);
+        app.component('PDatePicker', DatePicker);
     }
 };
