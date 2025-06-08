@@ -18,12 +18,25 @@ export interface NavItem {
     isActive?: boolean;
 }
 
+export interface TemplateConfig {
+    name: string;
+    description: string;
+    layout: string;
+    has_sidebar: boolean;
+}
+
+export interface Template {
+    current: string;
+    config: TemplateConfig;
+}
+
 export interface SharedData extends PageProps {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
     ziggy: Config & { location: string };
     sidebarOpen: boolean;
+    template: Template;
 }
 
 export interface User {

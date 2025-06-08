@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Apex\Core\Widget\WidgetRegistry;
 use App\Apex\Core\Widget\WidgetRenderer;
+use App\Apex\Core\Template\TemplateManager;
 use App\Apex\Widgets\BreadcrumbWidget;
 use App\Apex\Widgets\KnobWidget;
 use App\Apex\Widgets\DatePickerWidget;
@@ -16,6 +17,11 @@ class ApexServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Register the template manager
+        $this->app->singleton(TemplateManager::class, function ($app) {
+            return new TemplateManager();
+        });
+
         // Register the widget registry as a singleton
         $this->app->singleton(WidgetRegistry::class, function ($app) {
             $registry = new WidgetRegistry();
@@ -39,6 +45,9 @@ class ApexServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Publish config file
+        $this->publishes([
+            __DIR__ . '/../../config/apex.php' => config_path('apex.php'),
+        ], 'apex-config');
     }
 }
