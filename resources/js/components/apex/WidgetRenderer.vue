@@ -3,6 +3,8 @@ import { computed, markRaw, type Component } from 'vue';
 import BreadcrumbWidget from './widgets/BreadcrumbWidget.vue';
 import KnobWidget from './widgets/KnobWidget.vue';
 import DatePickerWidget from './widgets/DatePickerWidget.vue';
+import InputTextWidget from './widgets/InputTextWidget.vue';
+
 
 interface WidgetConfig {
     id: string;
@@ -21,6 +23,7 @@ const widgetComponents: Record<string, Component> = {
     breadcrumb: markRaw(BreadcrumbWidget),
     knob: markRaw(KnobWidget),
     datepicker: markRaw(DatePickerWidget),
+    inputtext: markRaw(InputTextWidget),
     // Add more widget types here as they are created
 };
 

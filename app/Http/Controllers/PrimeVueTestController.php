@@ -16,7 +16,7 @@ class PrimeVueTestController extends Controller
 
     public function index()
     {
-        // Define widget configurations including datepickers
+        // Define widget configurations
         $widgetConfigs = [
             // Breadcrumb widget
             [
@@ -119,6 +119,48 @@ class PrimeVueTestController extends Controller
                 'maxDate' => date('Y-m-d', strtotime('+30 days')),
                 'showIcon' => true,
                 'showButtonBar' => true,
+            ],
+            // Input text widgets
+            [
+                'type' => 'inputtext',
+                'id' => 'basic-input',
+                'label' => 'Basic Input',
+                'placeholder' => 'Enter text here...',
+            ],
+            [
+                'type' => 'inputtext',
+                'id' => 'search-input',
+                'label' => 'Search Input',
+                'placeholder' => 'Search...',
+                'icon' => 'pi-search',
+                'iconPosition' => 'left',
+            ],
+            [
+                'type' => 'inputtext',
+                'id' => 'email-input',
+                'label' => 'Email Address',
+                'placeholder' => 'your.email@example.com',
+                'icon' => 'pi-envelope',
+                'iconPosition' => 'left',
+                'required' => true,
+                'helpText' => 'We\'ll never share your email with anyone else.',
+            ],
+            [
+                'type' => 'inputtext',
+                'id' => 'disabled-input',
+                'label' => 'Disabled Input',
+                'value' => 'This input is disabled',
+                'disabled' => true,
+            ],
+            [
+                'type' => 'inputtext',
+                'id' => 'password-input',
+                'label' => 'Password',
+                'placeholder' => 'Enter your password',
+                'icon' => 'pi-lock',
+                'iconPosition' => 'right',
+                'required' => true,
+                'helpText' => 'Your password must be at least 8 characters long.',
             ],
         ];
 

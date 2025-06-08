@@ -8,6 +8,7 @@ use App\Apex\Core\Template\TemplateManager;
 use App\Apex\Widgets\BreadcrumbWidget;
 use App\Apex\Widgets\KnobWidget;
 use App\Apex\Widgets\DatePickerWidget;
+use App\Apex\Widgets\InputTextWidget;
 use Illuminate\Support\ServiceProvider;
 
 class ApexServiceProvider extends ServiceProvider
@@ -30,6 +31,7 @@ class ApexServiceProvider extends ServiceProvider
             $registry->register('breadcrumb', BreadcrumbWidget::class);
             $registry->register('knob', KnobWidget::class);
             $registry->register('datepicker', DatePickerWidget::class);
+            $registry->register('inputtext', InputTextWidget::class);
 
             return $registry;
         });
