@@ -15,7 +15,6 @@ const props = defineProps<Props>();
 // Reactive data
 const counter = ref(0);
 const temperature = ref(20);
-const searchText = ref('');
 
 // Methods
 const increment = () => {
@@ -24,10 +23,6 @@ const increment = () => {
 
 const decrement = () => {
     counter.value--;
-};
-
-const handleSearch = () => {
-    console.log('Searching for:', searchText.value);
 };
 
 // Separate widgets by type
@@ -41,10 +36,6 @@ const knobWidgets = computed(() =>
 
 const datePickerWidgets = computed(() => 
     props.widgets.filter(w => w.type === 'datepicker')
-);
-
-const inputTextWidgets = computed(() => 
-    props.widgets.filter(w => w.type === 'inputtext')
 );
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -64,24 +55,6 @@ const breadcrumbs: BreadcrumbItem[] = [
                 <h1 class="mb-8 text-3xl font-bold text-gray-900 dark:text-white">
                     PrimeVue Component Test
                 </h1>
-
-                <!-- Search Bar -->
-                <div class="mb-6 flex items-center">
-                    <span class="p-input-icon-left w-full">
-                        <i class="pi pi-search"></i>
-                        <PInputText
-                            v-model="searchText"
-                            placeholder="Search..."
-                            class="w-full"
-                        />
-                    </span>
-                    <PButton
-                        @click="handleSearch"
-                        label="Search"
-                        icon="pi pi-search"
-                        class="ml-2"
-                    />
-                </div>
 
                 <!-- APEX Widget System Section -->
                 <PCard class="mb-8 shadow-lg">
@@ -103,38 +76,70 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 </p>
                                 <WidgetRenderer :widgets="breadcrumbWidgets" />
                             </div>
-                            
-                            <!-- InputText Widgets -->
-                            <div v-if="inputTextWidgets.length > 0">
-                                <h3 class="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-300">
-                                    Input Text Widgets
-                                </h3>
-                                <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                                    Text input fields rendered from JSON configuration:
-                                </p>
-                                <WidgetRenderer :widgets="inputTextWidgets" />
-                            </div>
-                            
+
                             <!-- Knob Widgets -->
                             <div>
                                 <h3 class="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-300">
                                     Knob Widgets
                                 </h3>
                                 <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                                    Circular value selectors rendered from JSON configuration:
+                                    Interactive knob controls rendered from JSON configuration:
                                 </p>
-                                <WidgetRenderer :widgets="knobWidgets" />
+                                <div class="flex flex-wrap items-center justify-around gap-6 rounded-lg bg-gray-50 p-6 dark:bg-gray-800">
+                                    <WidgetRenderer :widgets="knobWidgets" />
+                                </div>
+                                
+                                <!-- Widget Details -->
+                                <div class="mt-4 grid gap-4 text-sm md:grid-cols-3">
+                                    <div class="rounded-lg bg-red-50 p-3 dark:bg-red-900/20">
+                                        <strong class="text-red-700 dark:text-red-300">Temperature:</strong>
+                                        <span class="text-red-600 dark:text-red-400"> Adjustable 0-40°C</span>
+                                    </div>
+                                    <div class="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
+                                        <strong class="text-blue-700 dark:text-blue-300">Volume:</strong>
+                                        <span class="text-blue-600 dark:text-blue-400"> 0-100% control</span>
+                                    </div>
+                                    <div class="rounded-lg bg-green-50 p-3 dark:bg-green-900/20">
+                                        <strong class="text-green-700 dark:text-green-300">Progress:</strong>
+                                        <span class="text-green-600 dark:text-green-400"> Read-only at 75%</span>
+                                    </div>
+                                </div>
                             </div>
-                            
+
                             <!-- DatePicker Widgets -->
                             <div>
                                 <h3 class="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-300">
-                                    Date Picker Widgets
+                                    DatePicker Widgets
                                 </h3>
                                 <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                                    Date selector components rendered from JSON configuration:
+                                    Various date picker configurations rendered from JSON:
                                 </p>
-                                <WidgetRenderer :widgets="datePickerWidgets" />
+                                
+                                <div class="space-y-6">
+                                    <!-- Standard Date Pickers -->
+                                    <div class="rounded-lg bg-gray-50 p-6 dark:bg-gray-800">
+                                        <h4 class="mb-4 font-medium text-gray-700 dark:text-gray-300">Standard Date Pickers</h4>
+                                        <div class="flex flex-wrap gap-4">
+                                            <WidgetRenderer :widgets="datePickerWidgets.filter(w => 
+                                                ['basic-datepicker', 'datetime-picker', 'restricted-datepicker'].includes(w.id)
+                                            )" />
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Range Date Picker -->
+                                    <div class="rounded-lg bg-gray-50 p-6 dark:bg-gray-800">
+                                        <h4 class="mb-4 font-medium text-gray-700 dark:text-gray-300">Range Selection</h4>
+                                        <WidgetRenderer :widgets="datePickerWidgets.filter(w => w.id === 'range-datepicker')" />
+                                    </div>
+                                    
+                                    <!-- Inline Date Picker -->
+                                    <div class="rounded-lg bg-gray-50 p-6 dark:bg-gray-800">
+                                        <h4 class="mb-4 font-medium text-gray-700 dark:text-gray-300">Inline Calendar</h4>
+                                        <div class="flex justify-center">
+                                            <WidgetRenderer :widgets="datePickerWidgets.filter(w => w.id === 'inline-datepicker')" />
+                                        </div>
+                                    </div>
+                                </div>
                                 
                                 <!-- Date Picker Details -->
                                 <div class="mt-4 grid gap-4 text-sm md:grid-cols-2 lg:grid-cols-3">
@@ -329,8 +334,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 Breadcrumb widgets: <strong>{{ breadcrumbWidgets.length }}</strong><br>
                                 Knob widgets: <strong>{{ knobWidgets.length }}</strong><br>
                                 DatePicker widgets: <strong>{{ datePickerWidgets.length }}</strong><br>
-                                InputText widgets: <strong>{{ inputTextWidgets.length }}</strong><br>
-                                Widget types: breadcrumb, knob, datepicker, inputtext
+                                Widget types: breadcrumb, knob, datepicker
                             </p>
                         </div>
                     </template>

@@ -9,6 +9,12 @@ use App\Apex\Widgets\BreadcrumbWidget;
 use App\Apex\Widgets\KnobWidget;
 use App\Apex\Widgets\DatePickerWidget;
 use App\Apex\Widgets\InputTextWidget;
+use App\Apex\Widgets\InputNumberWidget;
+use App\Apex\Widgets\TextareaWidget;
+use App\Apex\Widgets\SelectWidget;
+use App\Apex\Widgets\CheckboxWidget;
+use App\Apex\Widgets\ButtonWidget;
+
 use Illuminate\Support\ServiceProvider;
 
 class ApexServiceProvider extends ServiceProvider
@@ -32,6 +38,12 @@ class ApexServiceProvider extends ServiceProvider
             $registry->register('knob', KnobWidget::class);
             $registry->register('datepicker', DatePickerWidget::class);
             $registry->register('inputtext', InputTextWidget::class);
+            $registry->register('inputnumber', InputNumberWidget::class);
+            $registry->register('textarea', TextareaWidget::class);
+            $registry->register('select', SelectWidget::class);
+            $registry->register('checkbox', CheckboxWidget::class);
+            $registry->register('button', ButtonWidget::class);
+
 
             return $registry;
         });

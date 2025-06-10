@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import { computed, markRaw, type Component } from 'vue';
 import BreadcrumbWidget from './widgets/BreadcrumbWidget.vue';
+import TextareaWidget from './widgets/TextareaWidget.vue'; 
 import KnobWidget from './widgets/KnobWidget.vue';
 import DatePickerWidget from './widgets/DatePickerWidget.vue';
 import InputTextWidget from './widgets/InputTextWidget.vue';
+import InputNumberWidget from './widgets/InputNumberWidget.vue';
+import SelectWidget from './widgets/SelectWidget.vue';
+import CheckboxWidget from './widgets/CheckboxWidget.vue';
+import ButtonWidget from './widgets/ButtonWidget.vue';
 
 
 interface WidgetConfig {
@@ -24,6 +29,11 @@ const widgetComponents: Record<string, Component> = {
     knob: markRaw(KnobWidget),
     datepicker: markRaw(DatePickerWidget),
     inputtext: markRaw(InputTextWidget),
+    inputnumber: markRaw(InputNumberWidget),
+    textarea: markRaw(TextareaWidget),
+    select: markRaw(SelectWidget),
+    checkbox: markRaw(CheckboxWidget),
+    button: markRaw(ButtonWidget),
     // Add more widget types here as they are created
 };
 
