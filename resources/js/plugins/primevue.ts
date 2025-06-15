@@ -9,8 +9,17 @@ import Breadcrumb from 'primevue/breadcrumb';
 import DatePicker from 'primevue/datepicker';
 import Select from 'primevue/select';
 import Checkbox from 'primevue/checkbox';
+
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
+import ColumnGroup from 'primevue/columngroup';
+import Row from 'primevue/row';
+import Divider from 'primevue/divider';
+
+import MultiSelect from 'primevue/multiselect';
+import Calendar from 'primevue/calendar';
+import Dropdown from 'primevue/dropdown';
+import Menu from 'primevue/menu';
 
 import Aura from '@primeuix/themes/aura';
 
@@ -37,7 +46,17 @@ export default {
         app.component('PDatePicker', DatePicker);
         app.component('PSelect', Select);
         app.component('PCheckbox', Checkbox);
+
+        
         app.component('PDataTable', DataTable);
         app.component('PColumn', Column);
+        app.component('PColumnGroup', ColumnGroup);
+        app.component('PRow', Row);
+
+        app.component('PMultiSelect', MultiSelect);
+        app.component('PCalendar', Calendar);
+        app.component('PDropdown', Dropdown);
+        app.component('PDivider', Divider);
+        app.component('PMenu', Menu);
     }
 };

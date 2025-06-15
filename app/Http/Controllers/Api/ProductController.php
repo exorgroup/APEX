@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\DataTableController;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -13,57 +14,27 @@ class ProductController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        // Product data (you would normally get this from a database)
+        // Get raw product data
         $products = $this->getProductsData();
 
-        // Handle server-side processing
-        $page = $request->input('page', 0);
-        $rows = $request->input('rows', 10);
-        $sortField = $request->input('sortField');
-        $sortOrder = $request->input('sortOrder', 1);
-        $globalFilter = $request->input('globalFilter', '');
+        // Get column configuration from request (sent by widget)
+        $columns = $request->input('columns', []);
 
-        // Apply global filter
-        if (!empty($globalFilter)) {
-            $products = array_filter($products, function ($product) use ($globalFilter) {
-                $searchStr = strtolower($globalFilter);
-                return str_contains(strtolower($product['name']), $searchStr) ||
-                    str_contains(strtolower($product['category']), $searchStr) ||
-                    str_contains(strtolower($product['code']), $searchStr);
-            });
-        }
+        // Use DataTableController to process the data
+        $dataTableController = new DataTableController();
+        $result = $dataTableController->process($request, $products, $columns);
 
-        // Apply sorting
-        if ($sortField) {
-            usort($products, function ($a, $b) use ($sortField, $sortOrder) {
-                $aValue = $a[$sortField] ?? '';
-                $bValue = $b[$sortField] ?? '';
-
-                if ($sortOrder == 1) {
-                    return $aValue <=> $bValue;
-                } else {
-                    return $bValue <=> $aValue;
-                }
-            });
-        }
-
-        // Reset array keys after filtering
-        $products = array_values($products);
-
-        // Calculate pagination
-        $totalRecords = count($products);
-        $start = $page * $rows;
-        $paginatedProducts = array_slice($products, $start, $rows);
-
-        return response()->json([
-            'data' => $paginatedProducts,
-            'total' => $totalRecords
-        ]);
+        return response()->json($result);
     }
 
     /**
-     * Get mini product dataset
+     * Get product count for auto-lazy detection
      */
+    public function count(): JsonResponse
+    {
+        $count = count($this->getProductsData());
+        return response()->json(['count' => $count]);
+    }
     public function mini(): JsonResponse
     {
         $products = array_slice($this->getProductsData(), 0, 5);

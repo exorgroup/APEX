@@ -67,6 +67,7 @@ Route::middleware([
     // Product API routes
     Route::prefix('products')->group(function () {
         Route::get('/', [ProductController::class, 'index']);
+        Route::get('/count', [ProductController::class, 'count']);  // Add this line
         Route::get('/mini', [ProductController::class, 'mini']);
         Route::get('/small', [ProductController::class, 'small']);
         Route::get('/all', [ProductController::class, 'all']);

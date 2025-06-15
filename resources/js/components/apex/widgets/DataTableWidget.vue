@@ -1,63 +1,329 @@
 // resources/js/components/apex/widgets/DataTableWidget.vue
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import axios from 'axios';
+import PMultiSelect from 'primevue/multiselect';
 
 interface Column {
     field: string;
     header: string;
     sortable?: boolean;
     filter?: boolean;
+    filterType?: 'text' | 'numeric' | 'date' | 'dropdown' | 'multiselect';
+    filterOptions?: Array<{ label: string; value: string }>;
     style?: string;
+    bodyStyle?: string;
+    headerStyle?: string;
+    hidden?: boolean;
+    resizable?: boolean;
+    minWidth?: string;
+    maxWidth?: string;
+    searchExclude?: boolean;
     exportable?: boolean;
+    reorderable?: boolean;
+    frozen?: boolean;
 }
 
 interface DataSource {
     url: string;
     method?: 'GET' | 'POST';
-    lazy?: boolean;
+    lazy?: boolean | 'auto';
+    lazyThreshold?: number;
+    preload?: boolean;
+    countUrl?: string;
+}
+
+interface GroupAction {
+    label: string;
+    icon?: string;
+    action: string;
+    severity?: string;
+    confirm?: boolean;
+    confirmMessage?: string;
 }
 
 interface Props {
     widgetId: string;
+    // Header/Footer
+    header?: {
+        title?: string;
+        subtitle?: string;
+        actions?: Array<{ label: string; icon?: string; action: string; severity?: string }>;
+    };
+    footer?: {
+        showRecordCount?: boolean;
+        text?: string;
+        showSelectedCount?: boolean;
+    };
+    // Columns
     columns: Column[];
+    // Visual
+    gridLines?: 'both' | 'horizontal' | 'vertical' | 'none';
+    stripedRows?: boolean;
+    showGridlines?: boolean;
+    size?: 'small' | 'normal' | 'large';
+    // Data
     dataKey?: string;
+    dataSource?: DataSource;
+    // Pagination
     paginator?: boolean;
+    paginatorPosition?: 'top' | 'bottom' | 'both';
     rows?: number;
     rowsPerPageOptions?: number[];
+    currentPageReportTemplate?: string;
+    // Sorting
     sortMode?: 'single' | 'multiple';
+    removableSort?: boolean;
+    defaultSortOrder?: 1 | -1;
+    multiSortMeta?: Array<{ field: string; order: number }>;
+    // Selection
+    selectionMode?: 'single' | 'multiple' | 'checkbox' | null;
+    selection?: any[];
+    metaKeySelection?: boolean;
+    selectAll?: boolean;
+    // Group Actions
+    groupActions?: GroupAction[];
+    // Filters
+    filters?: any;
+    filterDisplay?: 'menu' | 'row';
     globalFilter?: boolean;
+    globalFilterFields?: string[];
+    filterMatchModeOptions?: any;
+    // Scroll
+    scrollable?: boolean;
+    scrollHeight?: string;
+    virtualScroll?: boolean;
+    frozenColumns?: number;
+    // Column Toggle
+    columnToggle?: boolean;
+    columnTogglePosition?: 'left' | 'right';
+    // Resizable
+    resizableColumns?: boolean;
+    columnResizeMode?: 'fit' | 'expand';
+    // Reorder
+    reorderableColumns?: boolean;
+    reorderableRows?: boolean;
+    // Export
     exportable?: boolean;
-    selectionMode?: 'single' | 'multiple' | null;
-    dataSource?: DataSource;
+    exportFormats?: Array<'csv' | 'excel' | 'pdf'>;
+    exportFilename?: string;
+    // Other
+    loading?: boolean;
+    emptyMessage?: string;
     tableStyle?: string;
-    stripedRows?: boolean;
+    tableClass?: string;
+    responsiveLayout?: 'scroll' | 'stack';
+    stateStorage?: 'session' | 'local' | null;
+    stateKey?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    // Defaults
+    footer: () => ({ showRecordCount: true, showSelectedCount: true }),
+    gridLines: 'both',
+    stripedRows: true,
+    showGridlines: true,
+    size: 'normal',
     dataKey: 'id',
     paginator: true,
+    paginatorPosition: 'bottom',
     rows: 10,
-    rowsPerPageOptions: () => [5, 10, 25, 50],
+    rowsPerPageOptions: () => [5, 10, 25, 50, 100],
+    currentPageReportTemplate: 'Showing {first} to {last} of {totalRecords} entries',
     sortMode: 'single',
-    globalFilter: false,
-    exportable: false,
+    removableSort: true,
+    defaultSortOrder: 1,
     selectionMode: null,
+    selection: () => [],
+    metaKeySelection: true,
+    selectAll: false,
+    groupActions: () => [],
+    filterDisplay: 'row',
+    globalFilter: false,
+    scrollable: false,
+    scrollHeight: 'flex',
+    virtualScroll: false,
+    frozenColumns: 0,
+    reorderableColumns: false,
+    reorderableRows: false,
+    exportable: false,
+    exportFormats: () => ['csv', 'excel', 'pdf'],
+    exportFilename: 'data-export',
+    loading: false,
+    emptyMessage: 'No records found',
     tableStyle: 'min-width: 50rem',
-    stripedRows: true
+    responsiveLayout: 'scroll',
+    stateStorage: null
 });
 
 // State
-const loading = ref(false);
+const loading = ref(props.loading);
 const data = ref<any[]>([]);
 const totalRecords = ref(0);
-const filters = ref({});
+const filters = ref(props.filters || {});
 const lazyParams = ref({});
-const selectedItems = ref<any[]>([]);
+const selectedItems = ref<any[]>([...props.selection]);
 const globalFilterValue = ref('');
+const sortField = ref<string | undefined>();
+const sortOrder = ref<number | undefined>();
+const multiSortMeta = ref(props.multiSortMeta || []);
+const first = ref(0);
+const isLazyMode = ref<boolean>(false); // Determined at runtime
+const visibleColumns = ref<Column[]>([]); // Track visible columns as objects
+
+// Initialize visible columns based on hidden property
+const initVisibleColumns = () => {
+    // Include all columns that are not marked as hidden
+    // This includes frozen columns (which can't be toggled but are visible)
+    visibleColumns.value = props.columns.filter(col => !col.hidden);
+};
+
+// Handle column toggle
+const onColumnToggle = (val: Column[]) => {
+    visibleColumns.value = props.columns.filter(col => val.includes(col));
+};
+
+// Initialize lazy mode
+if (props.dataSource?.lazy === true) {
+    isLazyMode.value = true;
+} else if (props.dataSource?.lazy === false) {
+    isLazyMode.value = false;
+}
+// For 'auto' mode, will be set in determineLazyMode()
 
 // Computed properties
-const hasLazyLoading = computed(() => props.dataSource?.lazy ?? false);
+const lazyThreshold = computed(() => props.dataSource?.lazyThreshold || 1000);
+const showCheckboxColumn = computed(() => props.selectionMode === 'checkbox' || (props.selectionMode === 'multiple' && props.selectAll));
+const hasSelectedItems = computed(() => selectedItems.value.length > 0);
+const selectedCount = computed(() => selectedItems.value.length);
+
+// Computed property for all columns (visible and hidden)
+const allColumns = computed(() => props.columns);
+
+// Column options for toggle dropdown (exclude hidden and frozen columns)
+const columnOptions = computed(() => {
+    return props.columns.filter(col => !col.frozen && !col.hidden);
+});
+
+// Computed properties for client-side filtering
+const filteredData = computed(() => {
+    if (isLazyMode.value) {
+        // In lazy mode, data is already filtered by server
+        return data.value;
+    }
+    
+    let filtered = [...data.value];
+    
+    // Apply global filter for client-side mode
+    if (globalFilterValue.value && props.globalFilter) {
+        const searchStr = globalFilterValue.value.toLowerCase();
+        const searchableColumns = props.columns.filter(col => !col.searchExclude).map(col => col.field);
+        
+        filtered = filtered.filter(item => {
+            return searchableColumns.some(field => {
+                const value = item[field];
+                if (value === null || value === undefined) return false;
+                
+                // Convert to string for searching
+                const strValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+                return strValue.toLowerCase().includes(searchStr);
+            });
+        });
+    }
+    
+    // Apply column filters for client-side mode
+    if (filters.value && Object.keys(filters.value).length > 0) {
+        Object.keys(filters.value).forEach(field => {
+            const filterMeta = filters.value[field];
+            if (filterMeta && filterMeta.constraints) {
+                filterMeta.constraints.forEach((constraint: any) => {
+                    if (constraint.value !== null && constraint.value !== undefined) {
+                        filtered = filtered.filter(item => {
+                            const itemValue = item[field];
+                            const filterValue = constraint.value;
+                            const matchMode = constraint.matchMode || 'contains';
+                            
+                            switch (matchMode) {
+                                case 'contains':
+                                    return String(itemValue).toLowerCase().includes(String(filterValue).toLowerCase());
+                                case 'equals':
+                                    return itemValue === filterValue;
+                                case 'notEquals':
+                                    return itemValue !== filterValue;
+                                case 'in':
+                                    return Array.isArray(filterValue) && filterValue.includes(itemValue);
+                                default:
+                                    return true;
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    }
+    
+    return filtered;
+});
+
+// Update totalRecords for client-side filtering
+const clientSideTotalRecords = computed(() => {
+    return isLazyMode.value ? totalRecords.value : filteredData.value.length;
+});
+
+// Initialize filters
+const initFilters = () => {
+    if (!props.filters) {
+        filters.value = {};
+    } else {
+        filters.value = props.filters;
+    }
+};
+
+// Determine lazy mode for auto
+const determineLazyMode = async () => {
+    if (!props.dataSource || props.dataSource.lazy !== 'auto') {
+        return;
+    }
+
+    loading.value = true;
+    
+    try {
+        // If a count URL is provided, use it
+        if (props.dataSource.countUrl) {
+            const response = await axios.get(props.dataSource.countUrl);
+            const count = response.data.count || response.data.total || 0;
+            isLazyMode.value = count > lazyThreshold.value;
+            console.log(`Auto lazy mode: ${count} records, threshold: ${lazyThreshold.value}, using lazy: ${isLazyMode.value}`);
+        } else {
+            // Otherwise, try to fetch all data to check count
+            const response = await axios({
+                method: props.dataSource.method || 'GET',
+                url: props.dataSource.url
+            });
+            
+            const responseData = Array.isArray(response.data) ? response.data : (response.data.data || []);
+            const count = response.data.total || responseData.length;
+            
+            // Determine based on count
+            isLazyMode.value = count > lazyThreshold.value;
+            console.log(`Auto lazy mode: ${count} records, threshold: ${lazyThreshold.value}, using lazy: ${isLazyMode.value}`);
+            
+            // If we're not using lazy mode, we already have the data
+            if (!isLazyMode.value) {
+                data.value = responseData;
+                totalRecords.value = count;
+                loading.value = false;
+                return;
+            }
+        }
+    } catch (error) {
+        console.error('Error determining lazy mode:', error);
+        // Default to lazy mode on error
+        isLazyMode.value = true;
+    }
+    
+    loading.value = false;
+};
 
 // Load data from server
 const loadData = async (event: any = null) => {
@@ -66,31 +332,45 @@ const loadData = async (event: any = null) => {
     loading.value = true;
 
     try {
-        const params = hasLazyLoading.value ? {
-            page: event?.page ?? 0,
-            rows: event?.rows ?? props.rows,
-            sortField: event?.sortField,
-            sortOrder: event?.sortOrder,
-            filters: event?.filters ?? {},
-            globalFilter: globalFilterValue.value
-        } : {};
-
-        const response = await axios({
-            method: props.dataSource.method || 'GET',
-            url: props.dataSource.url,
-            params: props.dataSource.method === 'GET' ? params : undefined,
-            data: props.dataSource.method === 'POST' ? params : undefined
-        });
-
-        if (hasLazyLoading.value) {
-            data.value = response.data.data;
-            totalRecords.value = response.data.total;
+        // For non-lazy loading, always fetch all data
+        if (!isLazyMode.value) {
+            const response = await axios({
+                method: props.dataSource.method || 'GET',
+                url: props.dataSource.url,
+                params: props.dataSource.method === 'GET' ? { columns: props.columns } : undefined,
+                data: props.dataSource.method === 'POST' ? { columns: props.columns } : undefined
+            });
+            
+            data.value = Array.isArray(response.data) ? response.data : (response.data.data || []);
+            totalRecords.value = data.value.length;
         } else {
-            data.value = response.data;
-            totalRecords.value = response.data.length;
+            // Lazy loading with server-side processing
+            const params = {
+                page: event?.page ?? 0,
+                first: event?.first ?? 0,
+                rows: event?.rows ?? props.rows,
+                sortField: event?.sortField || sortField.value,
+                sortOrder: event?.sortOrder || sortOrder.value,
+                multiSortMeta: props.sortMode === 'multiple' ? multiSortMeta.value : undefined,
+                filters: event?.filters ?? filters.value,
+                globalFilter: globalFilterValue.value,
+                columns: props.columns  // Send column configuration
+            };
+
+            const response = await axios({
+                method: props.dataSource.method || 'GET',
+                url: props.dataSource.url,
+                params: props.dataSource.method === 'GET' ? params : undefined,
+                data: props.dataSource.method === 'POST' ? params : undefined
+            });
+
+            data.value = response.data.data || response.data;
+            totalRecords.value = response.data.total || response.data.length;
         }
     } catch (error) {
         console.error('Error loading data:', error);
+        data.value = [];
+        totalRecords.value = 0;
     } finally {
         loading.value = false;
     }
@@ -99,14 +379,20 @@ const loadData = async (event: any = null) => {
 // Event handlers
 const onPage = (event: any) => {
     lazyParams.value = event;
-    if (hasLazyLoading.value) {
+    first.value = event.first;
+    // Only reload data if using lazy loading
+    if (isLazyMode.value) {
         loadData(event);
     }
 };
 
 const onSort = (event: any) => {
     lazyParams.value = event;
-    if (hasLazyLoading.value) {
+    sortField.value = event.sortField;
+    sortOrder.value = event.sortOrder;
+    multiSortMeta.value = event.multiSortMeta || [];
+    // Only reload data if using lazy loading
+    if (isLazyMode.value) {
         loadData(event);
     }
 };
@@ -114,117 +400,402 @@ const onSort = (event: any) => {
 const onFilter = (event: any) => {
     lazyParams.value = event;
     filters.value = event.filters;
-    if (hasLazyLoading.value) {
+    first.value = 0; // Reset to first page on filter
+    // Only reload data if using lazy loading
+    if (isLazyMode.value) {
         loadData(event);
     }
 };
 
 const onGlobalFilter = () => {
-    const event = { ...lazyParams.value, globalFilter: globalFilterValue.value };
-    if (hasLazyLoading.value) {
-        loadData(event);
+    // For client-side mode, the computed property will handle filtering
+    if (!isLazyMode.value) {
+        // Just trigger reactivity, no need to reload data
+        first.value = 0; // Reset to first page
+        return;
     }
+    
+    // For server-side mode, reload data
+    const event = { ...lazyParams.value, globalFilter: globalFilterValue.value, first: 0 };
+    first.value = 0;
+    loadData(event);
+};
+
+// Row reorder
+const onRowReorder = (event: any) => {
+    data.value = event.value;
+    // Emit event for parent to handle persistence
+    console.log('Row reorder:', event);
+};
+
+// Column reorder
+const onColReorder = (event: any) => {
+    console.log('Column reorder:', event);
+};
+
+// Group actions
+const executeGroupAction = (action: GroupAction) => {
+    if (action.confirm) {
+        if (confirm(action.confirmMessage || `Are you sure you want to ${action.label.toLowerCase()}?`)) {
+            performGroupAction(action);
+        }
+    } else {
+        performGroupAction(action);
+    }
+};
+
+const performGroupAction = (action: GroupAction) => {
+    console.log(`Executing ${action.action} on ${selectedCount.value} items:`, selectedItems.value);
+    // Emit event for parent to handle
 };
 
 // Export functionality
-const exportCSV = () => {
-    // This would be implemented based on your export requirements
-    console.log('Export CSV functionality');
+const exportData = (format: 'csv' | 'excel' | 'pdf') => {
+    console.log(`Exporting as ${format}`, {
+        filename: props.exportFilename,
+        data: data.value,
+        columns: props.columns.filter(col => col.exportable !== false)
+    });
+    // Implement actual export logic here
 };
 
-// Load initial data
-onMounted(() => {
-    if (props.dataSource?.url) {
-        loadData({ page: 0, rows: props.rows });
+// Computed table classes
+const tableClasses = computed(() => {
+    const classes = [];
+    if (props.size === 'small') classes.push('p-datatable-sm');
+    if (props.size === 'large') classes.push('p-datatable-lg');
+    if (props.gridLines === 'horizontal') classes.push('p-datatable-gridlines-horizontal');
+    if (props.gridLines === 'vertical') classes.push('p-datatable-gridlines-vertical');
+    if (props.gridLines === 'none') classes.push('p-datatable-gridlines-none');
+    if (props.tableClass) classes.push(props.tableClass);
+    return classes.join(' ');
+});
+
+// Initialize
+onMounted(async () => {
+    // Initialize filters first
+    initFilters();
+    
+    // Initialize visible columns
+    initVisibleColumns();
+    
+    // Skip loading if no data source
+    if (!props.dataSource?.url) {
+        console.log('No data source URL provided');
+        return;
     }
+    
+    try {
+        // Handle explicit lazy modes (true/false)
+        if (props.dataSource.lazy === true || props.dataSource.lazy === false) {
+            isLazyMode.value = props.dataSource.lazy;
+            console.log(`Loading data with lazy mode: ${isLazyMode.value}`);
+            await loadData();
+            return;
+        }
+        
+        // Handle auto mode
+        if (props.dataSource.lazy === 'auto') {
+            console.log('Auto mode detected, determining best loading strategy...');
+            await determineLazyMode();
+            
+            // If client-side mode and data already loaded, we're done
+            if (!isLazyMode.value && data.value.length > 0) {
+                console.log('Data already loaded during auto detection');
+                return;
+            }
+            
+            // Otherwise load data
+            console.log(`Auto mode determined: lazy = ${isLazyMode.value}`);
+            await loadData();
+        }
+    } catch (error) {
+        console.error('Error in onMounted:', error);
+        loading.value = false;
+    }
+});
+
+// Watch for external selection changes
+watch(() => props.selection, (newVal) => {
+    selectedItems.value = [...newVal];
 });
 </script>
 
 <template>
     <div class="apex-datatable-widget">
-        <div v-if="globalFilter || exportable" class="mb-4 flex items-center justify-between">
-            <PInputText
-                v-if="globalFilter"
-                v-model="globalFilterValue"
-                placeholder="Search..."
-                @input="onGlobalFilter"
-                class="max-w-md"
-            />
-            <PButton
-                v-if="exportable"
-                label="Export"
-                icon="pi pi-download"
-                severity="secondary"
-                @click="exportCSV"
-            />
+        <!-- Header -->
+        <div v-if="header" class="mb-4 rounded-t-lg border border-b-0 border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 v-if="header.title" class="text-lg font-semibold text-gray-900 dark:text-white">
+                        {{ header.title }}
+                    </h3>
+                    <p v-if="header.subtitle" class="text-sm text-gray-600 dark:text-gray-400">
+                        {{ header.subtitle }}
+                    </p>
+                </div>
+                <div v-if="header.actions" class="flex gap-2">
+                    <PButton
+                        v-for="(action, idx) in header.actions"
+                        :key="idx"
+                        :label="action.label"
+                        :icon="action.icon"
+                        :severity="action.severity || 'secondary'"
+                        size="small"
+                        @click="$emit('headerAction', action.action)"
+                    />
+                </div>
+            </div>
         </div>
 
+        <!-- Toolbar -->
+        <div v-if="globalFilter || exportable || (hasSelectedItems && groupActions.length > 0)" 
+             class="mb-4 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <!-- Global Filter -->
+                <span v-if="globalFilter" class="p-input-icon-left">
+                    <i class="pi pi-search" />
+                    <PInputText
+                        v-model="globalFilterValue"
+                        placeholder="Search all columns..."
+                        @input="onGlobalFilter"
+                        class="w-80"
+                    />
+                </span>
+
+                <!-- Group Actions -->
+                <template v-if="hasSelectedItems && groupActions.length > 0">
+                    <PDivider layout="vertical" />
+                    <span class="text-sm text-gray-600 dark:text-gray-400">
+                        {{ selectedCount }} selected
+                    </span>
+                    <PButton
+                        v-for="(action, idx) in groupActions"
+                        :key="idx"
+                        :label="action.label"
+                        :icon="action.icon"
+                        :severity="action.severity || 'danger'"
+                        size="small"
+                        @click="executeGroupAction(action)"
+                    />
+                </template>
+            </div>
+
+            <!-- Export Buttons -->
+            <div v-if="exportable" class="flex items-center gap-2">
+                <PButton
+                    v-for="format in exportFormats"
+                    :key="format"
+                    :label="`Export ${format.toUpperCase()}`"
+                    icon="pi pi-download"
+                    severity="secondary"
+                    size="small"
+                    @click="exportData(format)"
+                />
+            </div>
+        </div>
+
+        <!-- DataTable -->
         <PDataTable
-            :value="data"
+            :value="isLazyMode ? data : filteredData"
             :loading="loading"
+            :dataKey="dataKey"
+            v-model:selection="selectedItems"
+            v-model:filters="filters"
             :paginator="paginator"
+            :paginatorPosition="paginatorPosition"
             :rows="rows"
             :rowsPerPageOptions="rowsPerPageOptions"
-            :totalRecords="totalRecords"
-            :lazy="hasLazyLoading"
-            :dataKey="dataKey"
+            :currentPageReportTemplate="currentPageReportTemplate"
+            :first="first"
+            :totalRecords="clientSideTotalRecords"
+            :lazy="isLazyMode"
             :sortMode="sortMode"
+            :removableSort="removableSort"
+            :defaultSortOrder="defaultSortOrder"
+            :multiSortMeta="multiSortMeta"
+            :sortField="sortField"
+            :sortOrder="sortOrder"
+            :selectionMode="selectionMode === 'checkbox' ? null : selectionMode"
+            :metaKeySelection="metaKeySelection"
+            :filterDisplay="filterDisplay"
+            :globalFilterFields="globalFilterFields || columns.map(col => col.field)"
+            :scrollable="scrollable"
+            :scrollHeight="scrollHeight"
+            :virtualScrollerOptions="virtualScroll ? { itemSize: 46 } : undefined"
+            :reorderableColumns="reorderableColumns"
+            :reorderableRows="reorderableRows"
+            :resizableColumns="resizableColumns"
+            :columnResizeMode="columnResizeMode"
             :stripedRows="stripedRows"
+            :showGridlines="showGridlines"
+            :responsiveLayout="responsiveLayout"
+            :stateStorage="stateStorage"
+            :stateKey="stateKey"
             :tableStyle="tableStyle"
-            :filters="filters"
-            :globalFilterFields="columns.map(col => col.field)"
-            v-model:selection="selectedItems"
-            :selectionMode="selectionMode"
+            :class="tableClasses"
             @page="onPage"
             @sort="onSort"
             @filter="onFilter"
-            responsiveLayout="scroll"
-            class="apex-datatable"
+            @row-reorder="onRowReorder"
+            @col-reorder="onColReorder"
         >
+            <!-- Column Toggle in Header -->
+            <template v-if="columnToggle" #header>
+                <div :class="columnTogglePosition === 'left' ? 'text-left' : 'text-right'">
+                    <PMultiSelect 
+                        :modelValue="visibleColumns" 
+                        :options="columnOptions" 
+                        optionLabel="header" 
+                        @update:modelValue="onColumnToggle"
+                        display="chip" 
+                        placeholder="Select Columns"
+                        class="w-full max-w-md"
+                    />
+                </div>
+            </template>
+            <!-- Empty Message -->
             <template #empty>
                 <div class="flex items-center justify-center p-8 text-gray-500">
-                    No data available
+                    {{ emptyMessage }}
                 </div>
             </template>
 
+            <!-- Loading -->
             <template #loading>
                 <div class="flex items-center justify-center p-8">
                     <i class="pi pi-spin pi-spinner text-2xl"></i>
                 </div>
             </template>
 
+            <!-- Selection Column -->
             <PColumn
-                v-if="selectionMode"
+                v-if="showCheckboxColumn"
                 selectionMode="multiple"
                 :style="{ width: '3rem' }"
+                :frozen="true"
                 :exportable="false"
             />
 
+            <!-- Reorder Column -->
             <PColumn
-                v-for="col in columns"
+                v-if="reorderableRows"
+                :reorderableColumn="false"
+                rowReorder
+                :style="{ width: '3rem' }"
+                :frozen="true"
+                :exportable="false"
+            />
+
+            <!-- Data Columns (All columns rendered, hidden ones use hidden attribute) -->
+            <PColumn
+                v-for="col in allColumns"
                 :key="col.field"
                 :field="col.field"
-                :header="col.header"
                 :sortable="col.sortable"
                 :filter="col.filter"
-                :filterMatchMode="'contains'"
+                :filterField="col.field"
+                :filterMatchMode="col.filterType === 'text' ? 'contains' : 'equals'"
+                :showFilterMatchModes="filterDisplay === 'menu'"
                 :style="col.style"
+                :bodyStyle="col.bodyStyle"
+                :headerStyle="col.headerStyle"
                 :exportable="col.exportable !== false"
+                :reorderableColumn="col.reorderable !== false && reorderableColumns"
+                :frozen="col.frozen"
+                :resizeable="col.resizable !== false && resizableColumns"
+                :pt="{
+                    headerCell: { 
+                        hidden: !visibleColumns.some(vc => vc.field === col.field) 
+                    },
+                    bodyCell: { 
+                        hidden: !visibleColumns.some(vc => vc.field === col.field) 
+                    }
+                }"
             >
+                <!-- Column Header Template -->
+                <template #header>
+                    <span class="font-semibold">{{ col.header }}</span>
+                </template>
+
+                <!-- Column Body Template -->
                 <template #body="slotProps">
                     {{ slotProps.data[col.field] }}
                 </template>
 
+                <!-- Column Filter Template -->
                 <template v-if="col.filter" #filter="{ filterModel }">
+                    <!-- Text Filter -->
                     <PInputText
+                        v-if="!col.filterType || col.filterType === 'text'"
                         v-model="filterModel.value"
                         type="text"
                         class="p-column-filter"
-                        placeholder="Search..."
+                        :placeholder="`Search ${col.header}...`"
+                    />
+                    
+                    <!-- Numeric Filter -->
+                    <PInputNumber
+                        v-else-if="col.filterType === 'numeric'"
+                        v-model="filterModel.value"
+                        class="p-column-filter"
+                        :placeholder="`Filter ${col.header}...`"
+                    />
+                    
+                    <!-- Date Filter -->
+                    <PCalendar
+                        v-else-if="col.filterType === 'date'"
+                        v-model="filterModel.value"
+                        dateFormat="mm/dd/yy"
+                        class="p-column-filter"
+                        :placeholder="`Filter ${col.header}...`"
+                    />
+                    
+                    <!-- Dropdown Filter -->
+                    <PDropdown
+                        v-else-if="col.filterType === 'dropdown'"
+                        v-model="filterModel.value"
+                        :options="col.filterOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        :placeholder="`Select ${col.header}...`"
+                        class="p-column-filter w-full"
+                        :showClear="true"
+                    />
+                    
+                    <!-- MultiSelect Filter -->
+                    <PMultiSelect
+                        v-else-if="col.filterType === 'multiselect'"
+                        v-model="filterModel.value"
+                        :options="col.filterOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        :placeholder="`Select ${col.header}...`"
+                        class="p-column-filter w-full"
+                        :maxSelectedLabels="1"
                     />
                 </template>
             </PColumn>
         </PDataTable>
+
+        <!-- Footer -->
+        <div v-if="footer && (footer.showRecordCount || footer.text || footer.showSelectedCount)" 
+             class="rounded-b-lg border border-t-0 border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+            <div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+                <div>
+                    <span v-if="footer.showRecordCount">
+                        Total Records: {{ clientSideTotalRecords }}
+                    </span>
+                    <span v-if="footer.showRecordCount && footer.showSelectedCount && hasSelectedItems" class="mx-2">|</span>
+                    <span v-if="footer.showSelectedCount && hasSelectedItems">
+                        Selected: {{ selectedCount }}
+                    </span>
+                </div>
+                <div v-if="footer.text">
+                    {{ footer.text }}
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -241,5 +812,29 @@ onMounted(() => {
 .apex-datatable :deep(.p-paginator) {
     border-width: 0;
     background-color: transparent;
+}
+
+.apex-datatable :deep(.p-datatable.p-datatable-sm) {
+    font-size: 0.75rem;
+}
+
+.apex-datatable :deep(.p-datatable.p-datatable-lg) {
+    font-size: 1rem;
+}
+
+.apex-datatable :deep(.p-datatable-gridlines-horizontal) .p-datatable-tbody > tr > td {
+    border-width: 1px 0;
+}
+
+.apex-datatable :deep(.p-datatable-gridlines-vertical) .p-datatable-tbody > tr > td {
+    border-width: 0 1px;
+}
+
+.apex-datatable :deep(.p-datatable-gridlines-none) .p-datatable-tbody > tr > td {
+    border-width: 0;
+}
+
+.apex-datatable :deep(.p-column-filter) {
+    width: 100%;
 }
 </style>

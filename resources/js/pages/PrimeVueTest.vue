@@ -42,6 +42,23 @@ const dataTableWidgets = computed(() =>
     props.widgets.filter(w => w.type === 'datatable')
 );
 
+// Separate DataTables by their characteristics for better organization
+const serverSideDataTable = computed(() => 
+    dataTableWidgets.value.find(w => w.props.header?.title === 'Product Inventory Management')
+);
+
+const clientSideDataTable = computed(() => 
+    dataTableWidgets.value.find(w => w.props.header?.title === 'Client-Side DataTable')
+);
+
+const autoModeDataTables = computed(() => 
+    dataTableWidgets.value.filter(w => w.props.header?.title?.includes('Auto Mode'))
+);
+
+const advancedColumnDataTable = computed(() => 
+    dataTableWidgets.value.find(w => w.props.header?.title === 'Advanced Column Features')
+);
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'PrimeVue Test',
@@ -117,22 +134,53 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 </p>
                                 
                                 <!-- Server-side DataTable -->
-                                <div class="mb-8">
+                                <div v-if="serverSideDataTable" class="mb-8">
                                     <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
                                         Full-featured DataTable with Server-side Processing
                                     </h4>
                                     <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                                        <WidgetRenderer :widgets="[dataTableWidgets[0]]" />
+                                        <WidgetRenderer :widgets="[serverSideDataTable]" />
                                     </div>
                                 </div>
 
-                                <!-- Simple DataTable -->
-                                <div>
+                                <!-- Client-side DataTable -->
+                                <div v-if="clientSideDataTable" class="mb-8">
                                     <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
-                                        Simple DataTable with Client-side Data
+                                        Simple Client-side DataTable
                                     </h4>
                                     <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                                        <WidgetRenderer :widgets="[dataTableWidgets[1]]" />
+                                        <WidgetRenderer :widgets="[clientSideDataTable]" />
+                                    </div>
+                                </div>
+
+                                <!-- Auto Mode DataTables -->
+                                <div v-if="autoModeDataTables.length > 0" class="space-y-8">
+                                    <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
+                                        Auto Mode DataTables - Intelligent Loading Strategy
+                                    </h4>
+                                    <div v-for="(table, index) in autoModeDataTables" :key="`auto-${index}`" 
+                                         class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                        <WidgetRenderer :widgets="[table]" />
+                                    </div>
+                                </div>
+
+                                <!-- Advanced Column Features DataTable -->
+                                <div v-if="advancedColumnDataTable" class="mt-8">
+                                    <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
+                                        Advanced Column Features Demo
+                                    </h4>
+                                    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                        <div class="mb-4 rounded-lg bg-blue-50 p-4 text-sm text-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
+                                            <div class="mb-2 font-semibold">Try these features:</div>
+                                            <ul class="list-inside list-disc space-y-1">
+                                                <li>Click "Columns" button to show/hide columns</li>
+                                                <li>Drag column borders to resize (except Price column)</li>
+                                                <li>Drag column headers to reorder</li>
+                                                <li>ID and Stock columns are hidden by default</li>
+                                                <li>Code column is frozen and cannot be hidden</li>
+                                            </ul>
+                                        </div>
+                                        <WidgetRenderer :widgets="[advancedColumnDataTable]" />
                                     </div>
                                 </div>
                             </div>
