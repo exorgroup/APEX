@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 use Inertia\Inertia;
+use App\Http\Controllers\Api\ProductController;
 
 /*
 |--------------------------------------------------------------------------
@@ -61,5 +62,13 @@ Route::middleware([
     Route::prefix('apexA')->group(function () {
         Route::get('/', [ApexTestController2::class, 'index'])->name('apexA.index');
         Route::post('/dynamic-test', [ApexTestController2::class, 'dynamicTest'])->name('apexA.dynamic-test');
+    });
+
+    // Product API routes
+    Route::prefix('products')->group(function () {
+        Route::get('/', [ProductController::class, 'index']);
+        Route::get('/mini', [ProductController::class, 'mini']);
+        Route::get('/small', [ProductController::class, 'small']);
+        Route::get('/all', [ProductController::class, 'all']);
     });
 });

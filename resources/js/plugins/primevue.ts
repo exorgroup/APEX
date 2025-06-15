@@ -9,6 +9,8 @@ import Breadcrumb from 'primevue/breadcrumb';
 import DatePicker from 'primevue/datepicker';
 import Select from 'primevue/select';
 import Checkbox from 'primevue/checkbox';
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
 
 import Aura from '@primeuix/themes/aura';
 
@@ -35,5 +37,7 @@ export default {
         app.component('PDatePicker', DatePicker);
         app.component('PSelect', Select);
         app.component('PCheckbox', Checkbox);
+        app.component('PDataTable', DataTable);
+        app.component('PColumn', Column);
     }
 };

@@ -14,6 +14,7 @@ use App\Apex\Widgets\TextareaWidget;
 use App\Apex\Widgets\SelectWidget;
 use App\Apex\Widgets\CheckboxWidget;
 use App\Apex\Widgets\ButtonWidget;
+use App\Apex\Widgets\DataTableWidget;
 
 use Illuminate\Support\ServiceProvider;
 
@@ -43,6 +44,7 @@ class ApexServiceProvider extends ServiceProvider
             $registry->register('select', SelectWidget::class);
             $registry->register('checkbox', CheckboxWidget::class);
             $registry->register('button', ButtonWidget::class);
+            $registry->register('datatable', DataTableWidget::class);
 
 
             return $registry;

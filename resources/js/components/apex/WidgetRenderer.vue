@@ -9,6 +9,7 @@ import InputNumberWidget from './widgets/InputNumberWidget.vue';
 import SelectWidget from './widgets/SelectWidget.vue';
 import CheckboxWidget from './widgets/CheckboxWidget.vue';
 import ButtonWidget from './widgets/ButtonWidget.vue';
+import DataTableWidget from './widgets/DataTableWidget.vue';
 
 
 interface WidgetConfig {
@@ -34,6 +35,7 @@ const widgetComponents: Record<string, Component> = {
     select: markRaw(SelectWidget),
     checkbox: markRaw(CheckboxWidget),
     button: markRaw(ButtonWidget),
+    datatable: markRaw(DataTableWidget),
     // Add more widget types here as they are created
 };
 

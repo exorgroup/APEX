@@ -14,119 +14,146 @@ class PrimeVueTestController extends Controller
         $this->widgetRenderer = $widgetRenderer;
     }
 
+    // app/Http/Controllers/PrimeVueTestController.php - Updated index method
     public function index()
     {
-        // Define widget configurations including datepickers
-        $widgetConfigs = [
-            // Breadcrumb widget
+        $widgetRenderer = app(WidgetRenderer::class);
+
+        $widgets = [
+            // Existing breadcrumb widget
             [
                 'type' => 'breadcrumb',
-                'id' => 'main-breadcrumb',
                 'items' => [
                     ['label' => 'Home', 'url' => '/'],
-                    ['label' => 'APEX Framework', 'url' => '/apex'],
-                    ['label' => 'Widget Test', 'disabled' => true],
+                    ['label' => 'Components', 'url' => '/components'],
+                    ['label' => 'PrimeVue Test'],
                 ],
-                'home' => [
-                    'icon' => 'pi pi-home',
-                    'url' => '/',
-                ],
+                'home' => ['icon' => 'pi pi-home', 'url' => '/']
             ],
-            // Temperature knob widget
+
+            // Existing knob widgets...
             [
                 'type' => 'knob',
-                'id' => 'temperature-knob',
-                'value' => 22,
+                'value' => 20,
                 'min' => 0,
                 'max' => 40,
-                'step' => 0.5,
-                'size' => 120,
-                'strokeWidth' => 8,
+                'step' => 1,
+                'size' => 150,
+                'strokeWidth' => 14,
                 'showValue' => true,
+                'valueColor' => '#ef4444',
+                'rangeColor' => '#fecaca',
                 'valueTemplate' => '{value}°C',
-                'valueColor' => '#ff5757',
+                'label' => 'Temperature',
+                'readonly' => false
             ],
-            // Volume knob widget
             [
                 'type' => 'knob',
-                'id' => 'volume-knob',
                 'value' => 50,
                 'min' => 0,
                 'max' => 100,
-                'step' => 1,
-                'size' => 100,
-                'strokeWidth' => 6,
+                'step' => 10,
+                'size' => 150,
+                'strokeWidth' => 14,
                 'showValue' => true,
+                'valueColor' => '#3b82f6',
+                'rangeColor' => '#dbeafe',
                 'valueTemplate' => '{value}%',
-                'valueColor' => '#20a8d8',
+                'label' => 'Volume',
+                'readonly' => false
             ],
-            // Progress knob widget (readonly)
             [
                 'type' => 'knob',
-                'id' => 'progress-knob',
                 'value' => 75,
                 'min' => 0,
                 'max' => 100,
-                'step' => 1,
-                'size' => 80,
-                'strokeWidth' => 10,
+                'size' => 150,
+                'strokeWidth' => 14,
                 'showValue' => true,
-                'readonly' => true,
+                'valueColor' => '#10b981',
+                'rangeColor' => '#d1fae5',
                 'valueTemplate' => '{value}%',
-                'valueColor' => '#4dbd74',
-                'rangeColor' => '#e0e0e0',
+                'label' => 'Progress',
+                'readonly' => true
             ],
-            // Basic date picker
+
+            // Existing datepicker widgets...
             [
                 'type' => 'datepicker',
-                'id' => 'basic-datepicker',
                 'placeholder' => 'Select a date',
                 'dateFormat' => 'mm/dd/yy',
                 'showIcon' => true,
-            ],
-            // Date picker with time
-            [
-                'type' => 'datepicker',
-                'id' => 'datetime-picker',
-                'placeholder' => 'Select date and time',
-                'dateFormat' => 'mm/dd/yy',
-                'showTime' => true,
-                'showIcon' => true,
-                'hourFormat' => '12',
-            ],
-            // Inline date picker
-            [
-                'type' => 'datepicker',
-                'id' => 'inline-datepicker',
-                'inline' => true,
                 'showButtonBar' => true,
+                'label' => 'Basic Date'
             ],
-            // Range date picker
             [
                 'type' => 'datepicker',
-                'id' => 'range-datepicker',
                 'placeholder' => 'Select date range',
                 'selectionMode' => 'range',
+                'dateFormat' => 'mm/dd/yy',
                 'showIcon' => true,
-                'numberOfMonths' => 2,
+                'label' => 'Date Range'
             ],
-            // Date picker with restrictions
             [
                 'type' => 'datepicker',
-                'id' => 'restricted-datepicker',
-                'placeholder' => 'Future dates only',
-                'minDate' => date('Y-m-d'),
-                'maxDate' => date('Y-m-d', strtotime('+30 days')),
+                'placeholder' => 'Pick multiple dates',
+                'selectionMode' => 'multiple',
+                'dateFormat' => 'mm/dd/yy',
                 'showIcon' => true,
-                'showButtonBar' => true,
+                'label' => 'Multiple Dates'
             ],
+
+            // NEW: DataTable widget with server-side data
+            [
+                'type' => 'datatable',
+                'columns' => [
+                    ['field' => 'code', 'header' => 'Code', 'sortable' => true],
+                    ['field' => 'name', 'header' => 'Name', 'sortable' => true, 'filter' => true],
+                    ['field' => 'category', 'header' => 'Category', 'sortable' => true, 'filter' => true],
+                    ['field' => 'price', 'header' => 'Price', 'sortable' => true],
+                    ['field' => 'quantity', 'header' => 'Quantity', 'sortable' => true],
+                    ['field' => 'inventoryStatus', 'header' => 'Status', 'sortable' => true, 'filter' => true],
+                    ['field' => 'rating', 'header' => 'Rating', 'sortable' => true]
+                ],
+                'dataSource' => [
+                    'url' => '/products',
+                    'method' => 'GET',
+                    'lazy' => true
+                ],
+                'paginator' => true,
+                'rows' => 10,
+                'rowsPerPageOptions' => [5, 10, 25, 50],
+                'globalFilter' => true,
+                'stripedRows' => true,
+                'selectionMode' => 'multiple',
+                'exportable' => true,
+                'tableStyle' => 'min-width: 60rem'
+            ],
+
+            // NEW: Simple DataTable with client-side data
+            [
+                'type' => 'datatable',
+                'columns' => [
+                    ['field' => 'code', 'header' => 'Code'],
+                    ['field' => 'name', 'header' => 'Name'],
+                    ['field' => 'category', 'header' => 'Category'],
+                    ['field' => 'price', 'header' => 'Price']
+                ],
+                'dataSource' => [
+                    'url' => '/products/mini',
+                    'method' => 'GET',
+                    'lazy' => false
+                ],
+                'paginator' => false,
+                'stripedRows' => true,
+                'tableStyle' => 'min-width: 30rem'
+            ]
         ];
 
-        // Render widgets
-        $widgets = $this->widgetRenderer->renderMany($widgetConfigs);
+        $renderedWidgets = $widgetRenderer->renderMany($widgets);
 
         return Inertia::render('PrimeVueTest', [
-            'widgets' => $widgets,
+            'widgets' => $renderedWidgets
         ]);
     }
 }
