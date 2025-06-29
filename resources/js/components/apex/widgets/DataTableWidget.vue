@@ -3,6 +3,8 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import axios from 'axios';
 import PMultiSelect from 'primevue/multiselect';
+import PButton from 'primevue/button';
+import vTooltip from 'primevue/tooltip';
 
 interface Column {
     field: string;
@@ -18,6 +20,11 @@ interface Column {
     resizable?: boolean;
     minWidth?: string;
     maxWidth?: string;
+    url?: string;
+    urlTarget?: '_self' | '_blank' | '_parent' | '_top';
+    clickable?: boolean;
+    action?: string;
+    actionField?: string;
     searchExclude?: boolean;
     exportable?: boolean;
     reorderable?: boolean;
@@ -94,6 +101,29 @@ interface Props {
     scrollHeight?: string;
     virtualScroll?: boolean;
     frozenColumns?: number;
+    // CRUD Actions
+    showView?: boolean;
+    showEdit?: boolean;
+    showDelete?: boolean;
+    showHistory?: boolean;
+    showPrint?: boolean;
+    crudActions?: {
+        idField?: string;
+        permissions?: {
+            view?: boolean;
+            edit?: boolean;
+            delete?: boolean;
+            history?: boolean;
+            print?: boolean;
+        };
+        routes?: {
+            view?: string;
+            edit?: string;
+            delete?: string;
+            history?: string;
+            print?: string;
+        };
+    };
     // Column Toggle
     columnToggle?: boolean;
     columnTogglePosition?: 'left' | 'right';
@@ -173,15 +203,65 @@ const visibleColumns = ref<Column[]>([]); // Track visible columns as objects
 
 // Initialize visible columns based on hidden property
 const initVisibleColumns = () => {
-    // Include all columns that are not marked as hidden
-    // This includes frozen columns (which can't be toggled but are visible)
-    visibleColumns.value = props.columns.filter(col => !col.hidden);
+    // Include all data columns that are not marked as hidden
+    const dataColumns = props.columns.filter(col => !col.hidden);
+    // Always include action columns in visible columns
+    visibleColumns.value = [...dataColumns, ...actionColumns.value];
 };
 
 // Handle column toggle
 const onColumnToggle = (val: Column[]) => {
-    visibleColumns.value = props.columns.filter(col => val.includes(col));
+    // Filter to only data columns (exclude action columns from toggle)
+    const selectedDataColumns = val.filter(col => !col.field.startsWith('_action_'));
+    // Always keep action columns visible
+    visibleColumns.value = [...selectedDataColumns, ...actionColumns.value];
 };
+
+// Handle cell click
+const handleCellClick = (data: any, column: Column) => {
+    if (column.url) {
+        // Handle URL navigation
+        const url = column.url.replace(/{(\w+)}/g, (match, field) => data[field] || '');
+        window.open(url, column.urlTarget || '_self');
+    } else if (column.action) {
+        // Emit custom action
+        const actionField = column.actionField || props.crudActions?.idField || 'id';
+        emit('action', {
+            action: column.action,
+            data: data,
+            value: data[actionField]
+        });
+    }
+};
+
+// Handle CRUD actions
+const handleCrudAction = (action: string, data: any) => {
+    const idField = props.crudActions?.idField || 'id';
+    const routes = props.crudActions?.routes || {};
+    
+    // Type-safe way to access routes
+    const actionRoute = routes[action as keyof typeof routes];
+    
+    if (actionRoute) {
+        // Use configured route
+        const url = actionRoute.replace(/{id}/g, data[idField]);
+        window.location.href = url;
+    } else {
+        // Emit action event
+        emit('crud-action', {
+            action: action,
+            id: data[idField],
+            data: data
+        });
+    }
+};
+
+// Define emits
+const emit = defineEmits<{
+    action: [payload: { action: string; data: any; value: any }];
+    'crud-action': [payload: { action: string; id: any; data: any }];
+    headerAction: [action: string];
+}>(); 
 
 // Initialize lazy mode
 if (props.dataSource?.lazy === true) {
@@ -200,7 +280,88 @@ const selectedCount = computed(() => selectedItems.value.length);
 // Computed property for all columns (visible and hidden)
 const allColumns = computed(() => props.columns);
 
-// Column options for toggle dropdown (exclude hidden and frozen columns)
+// Action columns based on permissions and configuration
+const actionColumns = computed(() => {
+    const actions: Column[] = [];
+    const permissions = props.crudActions?.permissions || {};
+    
+    if (props.showView && permissions.view !== false) {
+        actions.push({
+            field: '_action_view',
+            header: '',
+            sortable: false,
+            filter: false,
+            exportable: false,
+            reorderable: false,
+            resizable: false,
+            style: 'width: 50px',
+            frozen: true
+        });
+    }
+    
+    if (props.showEdit && permissions.edit !== false) {
+        actions.push({
+            field: '_action_edit',
+            header: '',
+            sortable: false,
+            filter: false,
+            exportable: false,
+            reorderable: false,
+            resizable: false,
+            style: 'width: 50px',
+            frozen: true
+        });
+    }
+    
+    if (props.showDelete && permissions.delete !== false) {
+        actions.push({
+            field: '_action_delete',
+            header: '',
+            sortable: false,
+            filter: false,
+            exportable: false,
+            reorderable: false,
+            resizable: false,
+            style: 'width: 50px',
+            frozen: true
+        });
+    }
+    
+    if (props.showHistory && permissions.history !== false) {
+        actions.push({
+            field: '_action_history',
+            header: '',
+            sortable: false,
+            filter: false,
+            exportable: false,
+            reorderable: false,
+            resizable: false,
+            style: 'width: 50px',
+            frozen: true
+        });
+    }
+    
+    if (props.showPrint && permissions.print !== false) {
+        actions.push({
+            field: '_action_print',
+            header: '',
+            sortable: false,
+            filter: false,
+            exportable: false,
+            reorderable: false,
+            resizable: false,
+            style: 'width: 50px',
+            frozen: true
+        });
+    }
+    
+    return actions;
+});
+
+// Combined columns with action columns at the end
+const columnsWithActions = computed(() => [...allColumns.value, ...actionColumns.value]);
+
+// Column options for toggle dropdown (exclude hidden, frozen, and action columns)
 const columnOptions = computed(() => {
     return props.columns.filter(col => !col.frozen && !col.hidden);
 });
@@ -689,7 +850,7 @@ watch(() => props.selection, (newVal) => {
 
             <!-- Data Columns (All columns rendered, hidden ones use hidden attribute) -->
             <PColumn
-                v-for="col in allColumns"
+                v-for="col in columnsWithActions"
                 :key="col.field"
                 :field="col.field"
                 :sortable="col.sortable"
@@ -720,7 +881,74 @@ watch(() => props.selection, (newVal) => {
 
                 <!-- Column Body Template -->
                 <template #body="slotProps">
-                    {{ slotProps.data[col.field] }}
+                    <!-- Action Buttons -->
+                    <template v-if="col.field.startsWith('_action_')">
+                        <PButton
+                            v-if="col.field === '_action_view'"
+                            icon="pi pi-eye"
+                            rounded
+                            severity="success"
+                            outlined
+                            size="small"
+                            @click="handleCrudAction('view', slotProps.data)"
+                            v-tooltip="'View'"
+                        />
+                        <PButton
+                            v-else-if="col.field === '_action_edit'"
+                            icon="pi pi-pen-to-square"
+                            rounded
+                            severity="info"
+                            outlined
+                            size="small"
+                            @click="handleCrudAction('edit', slotProps.data)"
+                            v-tooltip="'Edit'"
+                        />
+                        <PButton
+                            v-else-if="col.field === '_action_delete'"
+                            icon="pi pi-eraser"
+                            rounded
+                            severity="danger"
+                            outlined
+                            size="small"
+                            @click="handleCrudAction('delete', slotProps.data)"
+                            v-tooltip="'Delete'"
+                        />
+                        <PButton
+                            v-else-if="col.field === '_action_history'"
+                            icon="pi pi-history"
+                            rounded
+                            severity="secondary"
+                            outlined
+                            size="small"
+                            @click="handleCrudAction('history', slotProps.data)"
+                            v-tooltip="'History'"
+                        />
+                        <PButton
+                            v-else-if="col.field === '_action_print'"
+                            icon="pi pi-print"
+                            rounded
+                            severity="help"
+                            outlined
+                            size="small"
+                            @click="handleCrudAction('print', slotProps.data)"
+                            v-tooltip="'Print'"
+                        />
+                    </template>
+                    
+                    <!-- Regular Cell Content -->
+                    <template v-else>
+                        <a
+                            v-if="col.url || col.clickable"
+                            href="#"
+                            @click.prevent="handleCellClick(slotProps.data, col)"
+                            class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                            {{ slotProps.data[col.field] }}
+                        </a>
+                        <span v-else>
+                            {{ slotProps.data[col.field] }}
+                        </span>
+                    </template>
                 </template>
 
                 <!-- Column Filter Template -->

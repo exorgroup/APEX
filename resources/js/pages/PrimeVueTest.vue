@@ -59,6 +59,42 @@ const advancedColumnDataTable = computed(() =>
     dataTableWidgets.value.find(w => w.props.header?.title === 'Advanced Column Features')
 );
 
+const actionDataTable = computed(() => 
+    dataTableWidgets.value.find(w => w.props.header?.title === 'Products with Actions')
+);
+
+// Handle custom actions from DataTable
+const handleCustomAction = (payload: any) => {
+    console.log('Custom Action:', payload);
+    alert(`Action: ${payload.action}\nValue: ${payload.value}\nData: ${JSON.stringify(payload.data, null, 2)}`);
+};
+
+// Handle CRUD actions from DataTable
+const handleCrudAction = (payload: any) => {
+    console.log('CRUD Action:', payload);
+    
+    switch (payload.action) {
+        case 'view':
+            alert(`View Product ID: ${payload.id}`);
+            break;
+        case 'edit':
+            alert(`Edit Product ID: ${payload.id}`);
+            break;
+        case 'delete':
+            if (confirm(`Are you sure you want to delete product ID: ${payload.id}?`)) {
+                alert(`Delete Product ID: ${payload.id}`);
+            }
+            break;
+        case 'history':
+            alert(`View History for Product ID: ${payload.id}`);
+            break;
+        case 'print':
+            alert(`Print Product ID: ${payload.id}`);
+            window.print();
+            break;
+    }
+};
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'PrimeVue Test',
@@ -181,6 +217,29 @@ const breadcrumbs: BreadcrumbItem[] = [
                                             </ul>
                                         </div>
                                         <WidgetRenderer :widgets="[advancedColumnDataTable]" />
+                                    </div>
+                                </div>
+
+                                <!-- Action Handler DataTable -->
+                                <div v-if="actionDataTable" class="mt-8">
+                                    <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
+                                        DataTable with Action Handlers
+                                    </h4>
+                                    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                        <div class="mb-4 rounded-lg bg-purple-50 p-4 text-sm text-purple-800 dark:bg-purple-900/20 dark:text-purple-200">
+                                            <div class="mb-2 font-semibold">Interactive Features:</div>
+                                            <ul class="list-inside list-disc space-y-1">
+                                                <li><strong>Product Names:</strong> Click to open details in new tab</li>
+                                                <li><strong>Categories:</strong> Click to trigger filter action</li>
+                                                <li><strong>Action Buttons:</strong> View, Edit, History, Print (Delete disabled by permission)</li>
+                                                <li><strong>Events:</strong> Check console for action events</li>
+                                            </ul>
+                                        </div>
+                                        <WidgetRenderer 
+                                            :widgets="[actionDataTable]" 
+                                            @action="handleCustomAction"
+                                            @crud-action="handleCrudAction"
+                                        />
                                     </div>
                                 </div>
                             </div>

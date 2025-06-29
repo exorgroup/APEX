@@ -355,6 +355,92 @@ class PrimeVueTestController extends Controller
                 'tableStyle' => 'min-width: 60rem'
             ],
 
+            // DataTable with Action Handlers
+            [
+                'type' => 'datatable',
+                'header' => [
+                    'title' => 'Products with Actions',
+                    'subtitle' => 'Click on product names or use action buttons'
+                ],
+                'columns' => [
+                    [
+                        'field' => 'code',
+                        'header' => 'Code',
+                        'sortable' => true,
+                        'frozen' => true,
+                        'style' => 'width: 100px'
+                    ],
+                    [
+                        'field' => 'name',
+                        'header' => 'Product Name',
+                        'sortable' => true,
+                        'clickable' => true,
+                        'url' => '/products/{id}/details',  // URL with placeholder
+                        'urlTarget' => '_blank',
+                        'style' => 'min-width: 200px'
+                    ],
+                    [
+                        'field' => 'category',
+                        'header' => 'Category',
+                        'sortable' => true,
+                        'clickable' => true,
+                        'action' => 'filterByCategory',  // Custom action
+                        'actionField' => 'category'       // Use category as action parameter
+                    ],
+                    [
+                        'field' => 'price',
+                        'header' => 'Price',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: right',
+                        'headerStyle' => 'text-align: right'
+                    ],
+                    [
+                        'field' => 'inventoryStatus',
+                        'header' => 'Status',
+                        'sortable' => true
+                    ]
+                ],
+                'dataSource' => [
+                    'url' => '/products',
+                    'method' => 'GET',
+                    'lazy' => true
+                ],
+                // Enable CRUD actions
+                'showView' => true,
+                'showEdit' => true,
+                'showDelete' => true,
+                'showHistory' => true,
+                'showPrint' => true,
+                'crudActions' => [
+                    'idField' => 'id',
+                    'permissions' => [
+                        'view' => true,
+                        'edit' => true,
+                        'delete' => false,  // Delete disabled by permission
+                        'history' => true,
+                        'print' => true
+                    ],
+                    'routes' => [
+                        'view' => '/products/{id}',
+                        'edit' => '/products/{id}/edit',
+                        // Delete will emit event instead of route
+                        'history' => '/products/{id}/history',
+                        'print' => '/products/{id}/print'
+                    ]
+                ],
+                // Other settings
+                'paginator' => true,
+                'rows' => 10,
+                'stripedRows' => true,
+                'globalFilter' => true,
+                'columnToggle' => true,
+                'footer' => [
+                    'showRecordCount' => true,
+                    'text' => 'Click product names for details, categories to filter'
+                ],
+                'tableStyle' => 'min-width: 70rem'
+            ],
+
             // NEW: DataTable with Advanced Column Features
             [
                 'type' => 'datatable',

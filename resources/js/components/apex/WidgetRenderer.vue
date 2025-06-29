@@ -51,6 +51,12 @@ const processedWidgets = computed(() => {
         component: getWidgetComponent(widget.type)
     }));
 });
+
+const emit = defineEmits<{
+    action: [payload: any];
+    'crud-action': [payload: any];
+    headerAction: [action: string];
+}>();
 </script>
 
 <template>
@@ -61,6 +67,9 @@ const processedWidgets = computed(() => {
             :is="widget.component"
             v-bind="widget.props"
             :widget-id="widget.id"
+            @action="$emit('action', $event)"
+            @crud-action="$emit('crud-action', $event)"
+            @headerAction="$emit('headerAction', $event)"
         />
     </div>
 </template>

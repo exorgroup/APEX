@@ -143,10 +143,28 @@ class DataTableWidget extends BaseWidget
                                 'type' => 'string',
                                 'description' => 'Maximum column width for resizing'
                             ],
-                            'searchExclude' => [
+                            'url' => [
+                                'type' => 'string',
+                                'description' => 'URL for clickable columns'
+                            ],
+                            'urlTarget' => [
+                                'type' => 'string',
+                                'enum' => ['_self', '_blank', '_parent', '_top'],
+                                'default' => '_self',
+                                'description' => 'Target for URL links'
+                            ],
+                            'clickable' => [
                                 'type' => 'boolean',
                                 'default' => false,
-                                'description' => 'Exclude this column from global search'
+                                'description' => 'Make column content clickable'
+                            ],
+                            'action' => [
+                                'type' => 'string',
+                                'description' => 'Custom action name to emit on click'
+                            ],
+                            'actionField' => [
+                                'type' => 'string',
+                                'description' => 'Field to use as parameter for action'
                             ],
                             'exportable' => [
                                 'type' => 'boolean',
@@ -429,6 +447,63 @@ class DataTableWidget extends BaseWidget
                     'default' => 'fit',
                     'description' => 'Column resize behavior'
                 ],
+                // CRUD Actions Configuration
+                'showView' => [
+                    'type' => 'boolean',
+                    'default' => false,
+                    'description' => 'Show view button column'
+                ],
+                'showEdit' => [
+                    'type' => 'boolean',
+                    'default' => false,
+                    'description' => 'Show edit button column'
+                ],
+                'showDelete' => [
+                    'type' => 'boolean',
+                    'default' => false,
+                    'description' => 'Show delete button column'
+                ],
+                'showHistory' => [
+                    'type' => 'boolean',
+                    'default' => false,
+                    'description' => 'Show history button column'
+                ],
+                'showPrint' => [
+                    'type' => 'boolean',
+                    'default' => false,
+                    'description' => 'Show print button column'
+                ],
+                'crudActions' => [
+                    'type' => 'object',
+                    'description' => 'CRUD action configuration',
+                    'properties' => [
+                        'idField' => [
+                            'type' => 'string',
+                            'default' => 'id',
+                            'description' => 'Field to use as record identifier'
+                        ],
+                        'permissions' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'view' => ['type' => 'boolean', 'default' => true],
+                                'edit' => ['type' => 'boolean', 'default' => true],
+                                'delete' => ['type' => 'boolean', 'default' => true],
+                                'history' => ['type' => 'boolean', 'default' => true],
+                                'print' => ['type' => 'boolean', 'default' => true]
+                            ]
+                        ],
+                        'routes' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'view' => ['type' => 'string'],
+                                'edit' => ['type' => 'string'],
+                                'delete' => ['type' => 'string'],
+                                'history' => ['type' => 'string'],
+                                'print' => ['type' => 'string']
+                            ]
+                        ]
+                    ]
+                ],
                 // Other Configuration
                 'loading' => [
                     'type' => 'boolean',
@@ -489,6 +564,11 @@ class DataTableWidget extends BaseWidget
                 'resizable' => $column['resizable'] ?? true,
                 'minWidth' => $column['minWidth'] ?? null,
                 'maxWidth' => $column['maxWidth'] ?? null,
+                'url' => $column['url'] ?? null,
+                'urlTarget' => $column['urlTarget'] ?? '_self',
+                'clickable' => $column['clickable'] ?? false,
+                'action' => $column['action'] ?? null,
+                'actionField' => $column['actionField'] ?? null,
                 'searchExclude' => $column['searchExclude'] ?? false,
                 'exportable' => $column['exportable'] ?? true,
                 'reorderable' => $column['reorderable'] ?? true,
@@ -541,6 +621,22 @@ class DataTableWidget extends BaseWidget
             'scrollHeight' => $config['scrollHeight'] ?? 'flex',
             'virtualScroll' => $config['virtualScroll'] ?? false,
             'frozenColumns' => $config['frozenColumns'] ?? 0,
+            // CRUD Actions
+            'showView' => $config['showView'] ?? false,
+            'showEdit' => $config['showEdit'] ?? false,
+            'showDelete' => $config['showDelete'] ?? false,
+            'showHistory' => $config['showHistory'] ?? false,
+            'showPrint' => $config['showPrint'] ?? false,
+            'crudActions' => $config['crudActions'] ?? [
+                'idField' => 'id',
+                'permissions' => [
+                    'view' => true,
+                    'edit' => true,
+                    'delete' => true,
+                    'history' => true,
+                    'print' => true
+                ]
+            ],
             // Column Toggle
             'columnToggle' => $config['columnToggle'] ?? false,
             'columnTogglePosition' => $config['columnTogglePosition'] ?? 'right',
