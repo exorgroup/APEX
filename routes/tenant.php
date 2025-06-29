@@ -71,5 +71,6 @@ Route::middleware([
         Route::get('/mini', [ProductController::class, 'mini']);
         Route::get('/small', [ProductController::class, 'small']);
         Route::get('/all', [ProductController::class, 'all']);
+        Route::get('/datatypes', [ProductController::class, 'datatypes']);
     });
 });

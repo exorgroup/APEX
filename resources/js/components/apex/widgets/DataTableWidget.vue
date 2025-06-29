@@ -1,6 +1,6 @@
 // resources/js/components/apex/widgets/DataTableWidget.vue
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, defineAsyncComponent } from 'vue';
 import axios from 'axios';
 import PMultiSelect from 'primevue/multiselect';
 import PButton from 'primevue/button';
@@ -20,6 +20,11 @@ interface Column {
     resizable?: boolean;
     minWidth?: string;
     maxWidth?: string;
+    dataType?: 'text' | 'number' | 'currency' | 'shortdate' | 'longdate1' | 'longdate2' | 'time' | 'shortdatetime' | 'longdate1time' | 'longdate2time' | 'percentage' | 'image' | 'apexwidget';
+    format?: string | number;
+    leadText?: string;
+    trailText?: string;
+    widgetConfig?: any;
     url?: string;
     urlTarget?: '_self' | '_blank' | '_parent' | '_top';
     clickable?: boolean;
@@ -256,6 +261,139 @@ const handleCrudAction = (action: string, data: any) => {
     }
 };
 
+// Format cell value based on data type
+const formatCellValue = (value: any, column: Column): string => {
+    if (value === null || value === undefined) return '';
+    
+    let formattedValue = '';
+    
+    switch (column.dataType) {
+        case 'currency':
+            const decimals = typeof column.format === 'number' ? column.format : 2;
+            formattedValue = parseFloat(value).toFixed(decimals);
+            break;
+            
+        case 'percentage':
+            const percentDecimals = typeof column.format === 'number' ? column.format : 2;
+            formattedValue = parseFloat(value).toFixed(percentDecimals);
+            break;
+            
+        case 'number':
+            const numberDecimals = typeof column.format === 'number' ? column.format : 0;
+            formattedValue = parseFloat(value).toFixed(numberDecimals);
+            break;
+            
+        case 'shortdate':
+            formattedValue = formatDate(value, 'short', column.format as string);
+            break;
+            
+        case 'longdate1':
+            formattedValue = formatDate(value, 'long1', column.format as string);
+            break;
+            
+        case 'longdate2':
+            formattedValue = formatDate(value, 'long2', column.format as string);
+            break;
+            
+        case 'time':
+            formattedValue = formatTime(value, column.format as string);
+            break;
+            
+        case 'shortdatetime':
+            formattedValue = formatDateTime(value, 'short', column.format as string);
+            break;
+            
+        case 'longdate1time':
+            formattedValue = formatDateTime(value, 'long1', column.format as string);
+            break;
+            
+        case 'longdate2time':
+            formattedValue = formatDateTime(value, 'long2', column.format as string);
+            break;
+            
+        case 'text':
+            const maxLength = typeof column.format === 'number' ? column.format : 0;
+            if (maxLength > 0 && value.length > maxLength) {
+                formattedValue = value.substring(0, maxLength) + '...';
+            } else {
+                formattedValue = value;
+            }
+            break;
+            
+        default:
+            formattedValue = String(value);
+    }
+    
+    // Add lead and trail text
+    return `${column.leadText || ''}${formattedValue}${column.trailText || ''}`;
+};
+
+// Format date based on culture
+const formatDate = (value: any, style: 'short' | 'long1' | 'long2', culture?: string): string => {
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return String(value);
+    
+    const cultureSetting = culture || 'US';
+    
+    if (style === 'short') {
+        switch (cultureSetting) {
+            case 'EU':
+                return date.toLocaleDateString('en-GB'); // DD/MM/YYYY
+            case 'Asia':
+                return date.toLocaleDateString('zh-CN'); // YYYY/MM/DD
+            default: // US
+                return date.toLocaleDateString('en-US'); // MM/DD/YYYY
+        }
+    } else if (style === 'long1') {
+        const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' };
+        switch (cultureSetting) {
+            case 'EU':
+                return date.toLocaleDateString('en-GB', options); // 12 Oct 2020
+            case 'Asia':
+                return date.toLocaleDateString('zh-CN', options);
+            default: // US
+                return date.toLocaleDateString('en-US', options); // Oct 12, 2020
+        }
+    } else { // long2
+        const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
+        switch (cultureSetting) {
+            case 'EU':
+                return date.toLocaleDateString('en-GB', options); // 12 October 2020
+            case 'Asia':
+                return date.toLocaleDateString('zh-CN', options);
+            default: // US
+                return date.toLocaleDateString('en-US', options); // October 12, 2020
+        }
+    }
+};
+
+// Format time
+const formatTime = (value: any, format?: string): string => {
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return String(value);
+    
+    const is24Hour = format === '24';
+    const options: Intl.DateTimeFormatOptions = {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: !is24Hour
+    };
+    
+    return date.toLocaleTimeString('en-US', options);
+};
+
+// Format date and time
+const formatDateTime = (value: any, dateStyle: 'short' | 'long1' | 'long2', format?: string): string => {
+    const parts = format?.split('-') || ['US', '12'];
+    const culture = parts[0];
+    const timeFormat = parts[1];
+    
+    const dateStr = formatDate(value, dateStyle, culture);
+    const timeStr = formatTime(value, timeFormat);
+    
+    return `${dateStr} ${timeStr}`;
+};
+
 // Define emits
 const emit = defineEmits<{
     action: [payload: { action: string; data: any; value: any }];
@@ -360,6 +498,22 @@ const actionColumns = computed(() => {
 
 // Combined columns with action columns at the end
 const columnsWithActions = computed(() => [...allColumns.value, ...actionColumns.value]);
+
+// Get widget component for ApexWidget type
+const getWidgetComponent = (type: string) => {
+    // Import widget components as needed
+    const widgetMap: Record<string, any> = {
+        'knob': defineAsyncComponent(() => import('./KnobWidget.vue')),
+        'datepicker': defineAsyncComponent(() => import('./DatePickerWidget.vue')),
+        'inputtext': defineAsyncComponent(() => import('./InputTextWidget.vue')),
+        'inputnumber': defineAsyncComponent(() => import('./InputNumberWidget.vue')),
+        'checkbox': defineAsyncComponent(() => import('./CheckboxWidget.vue')),
+        'button': defineAsyncComponent(() => import('./ButtonWidget.vue')),
+        // Add more widgets as needed
+    };
+    
+    return widgetMap[type] || null;
+};
 
 // Column options for toggle dropdown (exclude hidden, frozen, and action columns)
 const columnOptions = computed(() => {
@@ -937,16 +1091,35 @@ watch(() => props.selection, (newVal) => {
                     
                     <!-- Regular Cell Content -->
                     <template v-else>
+                        <!-- Image Type -->
+                        <img
+                            v-if="col.dataType === 'image'"
+                            :src="slotProps.data[col.field]"
+                            :alt="col.header"
+                            :style="{ width: typeof col.format === 'number' ? `${col.format}px` : col.format }"
+                            class="h-auto"
+                        />
+                        
+                        <!-- ApexWidget Type -->
+                        <component
+                            v-else-if="col.dataType === 'apexwidget' && col.widgetConfig"
+                            :is="getWidgetComponent(col.widgetConfig.type)"
+                            v-bind="{ ...col.widgetConfig, value: slotProps.data[col.field] }"
+                        />
+                        
+                        <!-- Clickable Content -->
                         <a
-                            v-if="col.url || col.clickable"
+                            v-else-if="col.url || col.clickable"
                             href="#"
                             @click.prevent="handleCellClick(slotProps.data, col)"
                             class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                         >
-                            {{ slotProps.data[col.field] }}
+                            {{ formatCellValue(slotProps.data[col.field], col) }}
                         </a>
+                        
+                        <!-- Regular Content -->
                         <span v-else>
-                            {{ slotProps.data[col.field] }}
+                            {{ formatCellValue(slotProps.data[col.field], col) }}
                         </span>
                     </template>
                 </template>

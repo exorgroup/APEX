@@ -63,6 +63,10 @@ const actionDataTable = computed(() =>
     dataTableWidgets.value.find(w => w.props.header?.title === 'Products with Actions')
 );
 
+const dataTypesDataTable = computed(() => 
+    dataTableWidgets.value.find(w => w.props.header?.title === 'Data Type Formatting Demo')
+);
+
 // Handle custom actions from DataTable
 const handleCustomAction = (payload: any) => {
     console.log('Custom Action:', payload);
@@ -240,6 +244,28 @@ const breadcrumbs: BreadcrumbItem[] = [
                                             @action="handleCustomAction"
                                             @crud-action="handleCrudAction"
                                         />
+                                    </div>
+                                </div>
+
+                                <!-- Data Types DataTable -->
+                                <div v-if="dataTypesDataTable" class="mt-8">
+                                    <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
+                                        Data Type Formatting Demo
+                                    </h4>
+                                    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                        <div class="mb-4 rounded-lg bg-green-50 p-4 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-200">
+                                            <div class="mb-2 font-semibold">Data Type Examples:</div>
+                                            <ul class="list-inside list-disc space-y-1">
+                                                <li><strong>Currency:</strong> Multiple formats with $ and € symbols</li>
+                                                <li><strong>Dates:</strong> Short/Long formats, US/EU cultures</li>
+                                                <li><strong>DateTime:</strong> Combined date and time with 12/24 hour formats</li>
+                                                <li><strong>Percentage & Numbers:</strong> Decimal place control</li>
+                                                <li><strong>Text:</strong> Truncation with ellipsis</li>
+                                                <li><strong>Images:</strong> Inline images with controlled width</li>
+                                                <li><strong>Widgets:</strong> Embedded knob widgets for ratings</li>
+                                            </ul>
+                                        </div>
+                                        <WidgetRenderer :widgets="[dataTypesDataTable]" />
                                     </div>
                                 </div>
                             </div>

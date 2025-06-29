@@ -441,6 +441,141 @@ class PrimeVueTestController extends Controller
                 'tableStyle' => 'min-width: 70rem'
             ],
 
+            // DataTable with Various Data Types
+            [
+                'type' => 'datatable',
+                'header' => [
+                    'title' => 'Data Type Formatting Demo',
+                    'subtitle' => 'Different column data types with formatting'
+                ],
+                'columns' => [
+                    [
+                        'field' => 'name',
+                        'header' => 'Product',
+                        'dataType' => 'text',
+                        'format' => 20,  // Trim at 20 characters
+                        'sortable' => true
+                    ],
+                    [
+                        'field' => 'price',
+                        'header' => 'Price',
+                        'dataType' => 'currency',
+                        'format' => 2,  // 2 decimal places
+                        'leadText' => '$',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: right',
+                        'headerStyle' => 'text-align: right'
+                    ],
+                    [
+                        'field' => 'cost',
+                        'header' => 'Cost (EUR)',
+                        'dataType' => 'currency',
+                        'format' => 2,
+                        'trailText' => ' €',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: right',
+                        'headerStyle' => 'text-align: right'
+                    ],
+                    [
+                        'field' => 'discount',
+                        'header' => 'Discount',
+                        'dataType' => 'percentage',
+                        'format' => 1,  // 1 decimal place
+                        'trailText' => '%',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: center'
+                    ],
+                    [
+                        'field' => 'quantity',
+                        'header' => 'Stock',
+                        'dataType' => 'number',
+                        'format' => 0,  // No decimals
+                        'leadText' => '',
+                        'trailText' => ' units',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: center'
+                    ],
+                    [
+                        'field' => 'createdDate',
+                        'header' => 'Created (US)',
+                        'dataType' => 'shortdate',
+                        'format' => 'US',
+                        'sortable' => true
+                    ],
+                    [
+                        'field' => 'createdDate',
+                        'header' => 'Created (EU)',
+                        'dataType' => 'longdate1',
+                        'format' => 'EU',
+                        'sortable' => true
+                    ],
+                    [
+                        'field' => 'lastUpdate',
+                        'header' => 'Last Update',
+                        'dataType' => 'shortdatetime',
+                        'format' => 'US-12',  // US format, 12-hour
+                        'sortable' => true
+                    ],
+                    [
+                        'field' => 'nextReview',
+                        'header' => 'Next Review',
+                        'dataType' => 'longdate2time',
+                        'format' => 'EU-24',  // EU format, 24-hour
+                        'sortable' => true
+                    ],
+                    [
+                        'field' => 'openTime',
+                        'header' => 'Opens At',
+                        'dataType' => 'time',
+                        'format' => '12',  // 12-hour format
+                        'sortable' => true
+                    ],
+                    [
+                        'field' => 'image',
+                        'header' => 'Image',
+                        'dataType' => 'image',
+                        'format' => 50,  // 50px width
+                        'sortable' => false,
+                        'exportable' => false
+                    ],
+                    [
+                        'field' => 'rating',
+                        'header' => 'Rating',
+                        'dataType' => 'apexwidget',
+                        'widgetConfig' => [
+                            'type' => 'knob',
+                            'min' => 0,
+                            'max' => 5,
+                            'step' => 0.1,
+                            'size' => 50,
+                            'showValue' => true,
+                            'readonly' => true,
+                            'valueColor' => '#10b981',
+                            'rangeColor' => '#d1fae5'
+                        ],
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: center',
+                        'exportable' => false
+                    ]
+                ],
+                'dataSource' => [
+                    'url' => '/products/datatypes',  // You'll need to create this endpoint
+                    'method' => 'GET',
+                    'lazy' => false
+                ],
+                'paginator' => true,
+                'rows' => 5,
+                'stripedRows' => true,
+                'globalFilter' => true,
+                'columnToggle' => true,
+                'resizableColumns' => true,
+                'footer' => [
+                    'showRecordCount' => true,
+                    'text' => 'Various data type formatting examples'
+                ],
+                'tableStyle' => 'min-width: 90rem'
+            ],
+
             // NEW: DataTable with Advanced Column Features
             [
                 'type' => 'datatable',

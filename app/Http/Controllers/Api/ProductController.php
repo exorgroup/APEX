@@ -35,6 +35,10 @@ class ProductController extends Controller
         $count = count($this->getProductsData());
         return response()->json(['count' => $count]);
     }
+
+    /**
+     * Get mini product dataset
+     */
     public function mini(): JsonResponse
     {
         $products = array_slice($this->getProductsData(), 0, 5);
@@ -56,6 +60,87 @@ class ProductController extends Controller
     public function all(): JsonResponse
     {
         return response()->json($this->getProductsData());
+    }
+
+    /**
+     * Get products with various data types for demo
+     */
+    public function datatypes(): JsonResponse
+    {
+        $products = [
+            [
+                'id' => '1',
+                'name' => 'Premium Wireless Headphones with Noise Cancellation',
+                'price' => 299.99,
+                'cost' => 150.50,
+                'discount' => 15.5,
+                'quantity' => 125,
+                'createdDate' => '2024-01-15T10:30:00',
+                'lastUpdate' => '2024-12-20T14:45:30',
+                'nextReview' => '2025-02-15T09:00:00',
+                'openTime' => '09:00:00',
+                'image' => 'https://via.placeholder.com/150x150/3B82F6/FFFFFF?text=Headphones',
+                'rating' => 4.5
+            ],
+            [
+                'id' => '2',
+                'name' => 'Smart Watch Series X',
+                'price' => 399.00,
+                'cost' => 200.00,
+                'discount' => 10.0,
+                'quantity' => 89,
+                'createdDate' => '2024-02-20T11:15:00',
+                'lastUpdate' => '2024-12-21T16:30:00',
+                'nextReview' => '2025-03-01T10:00:00',
+                'openTime' => '08:30:00',
+                'image' => 'https://via.placeholder.com/150x150/10B981/FFFFFF?text=Watch',
+                'rating' => 4.8
+            ],
+            [
+                'id' => '3',
+                'name' => 'Portable Bluetooth Speaker',
+                'price' => 79.99,
+                'cost' => 35.75,
+                'discount' => 25.0,
+                'quantity' => 250,
+                'createdDate' => '2024-03-10T09:00:00',
+                'lastUpdate' => '2024-12-19T13:20:00',
+                'nextReview' => '2025-01-30T14:00:00',
+                'openTime' => '10:00:00',
+                'image' => 'https://via.placeholder.com/150x150/F59E0B/FFFFFF?text=Speaker',
+                'rating' => 4.2
+            ],
+            [
+                'id' => '4',
+                'name' => 'Laptop Stand',
+                'price' => 49.99,
+                'cost' => 20.00,
+                'discount' => 5.5,
+                'quantity' => 500,
+                'createdDate' => '2024-04-05T12:00:00',
+                'lastUpdate' => '2024-12-18T10:15:00',
+                'nextReview' => '2025-02-10T11:30:00',
+                'openTime' => '09:30:00',
+                'image' => 'https://via.placeholder.com/150x150/EF4444/FFFFFF?text=Stand',
+                'rating' => 3.9
+            ],
+            [
+                'id' => '5',
+                'name' => 'USB-C Hub Multiport Adapter with HDMI and Ethernet',
+                'price' => 89.99,
+                'cost' => 40.00,
+                'discount' => 20.0,
+                'quantity' => 175,
+                'createdDate' => '2024-05-12T14:30:00',
+                'lastUpdate' => '2024-12-22T09:45:00',
+                'nextReview' => '2025-03-15T15:00:00',
+                'openTime' => '08:00:00',
+                'image' => 'https://www.icentre.com.mt/wp-content/uploads/2025/01/EPICO-Spello-USB-C-Hub-9in1-space-grey-.jpg',
+                'rating' => 4.6
+            ]
+        ];
+
+        return response()->json($products);
     }
 
     /**

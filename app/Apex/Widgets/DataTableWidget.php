@@ -143,6 +143,28 @@ class DataTableWidget extends BaseWidget
                                 'type' => 'string',
                                 'description' => 'Maximum column width for resizing'
                             ],
+                            'dataType' => [
+                                'type' => 'string',
+                                'enum' => ['text', 'number', 'currency', 'shortdate', 'longdate1', 'longdate2', 'time', 'shortdatetime', 'longdate1time', 'longdate2time', 'percentage', 'image', 'apexwidget'],
+                                'default' => 'text',
+                                'description' => 'Column data type for formatting'
+                            ],
+                            'format' => [
+                                'type' => ['string', 'integer'],
+                                'description' => 'Format parameter based on data type'
+                            ],
+                            'leadText' => [
+                                'type' => 'string',
+                                'description' => 'Text to prepend to the value'
+                            ],
+                            'trailText' => [
+                                'type' => 'string',
+                                'description' => 'Text to append to the value'
+                            ],
+                            'widgetConfig' => [
+                                'type' => 'object',
+                                'description' => 'Configuration for ApexWidget data type'
+                            ],
                             'url' => [
                                 'type' => 'string',
                                 'description' => 'URL for clickable columns'
@@ -564,6 +586,11 @@ class DataTableWidget extends BaseWidget
                 'resizable' => $column['resizable'] ?? true,
                 'minWidth' => $column['minWidth'] ?? null,
                 'maxWidth' => $column['maxWidth'] ?? null,
+                'dataType' => $column['dataType'] ?? 'text',
+                'format' => $column['format'] ?? null,
+                'leadText' => $column['leadText'] ?? '',
+                'trailText' => $column['trailText'] ?? '',
+                'widgetConfig' => $column['widgetConfig'] ?? null,
                 'url' => $column['url'] ?? null,
                 'urlTarget' => $column['urlTarget'] ?? '_self',
                 'clickable' => $column['clickable'] ?? false,
