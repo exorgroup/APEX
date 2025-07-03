@@ -1,4 +1,5 @@
 <?php
+// App\Http\Controllers\PrimeVueTestController.php
 
 namespace App\Http\Controllers;
 
@@ -94,6 +95,135 @@ class PrimeVueTestController extends Controller
                 'dateFormat' => 'mm/dd/yy',
                 'showIcon' => true,
                 'label' => 'Multiple Dates'
+            ],
+
+            // DD20250710-1240 - NEW: DataTable with Conditional Row Styling
+            [
+                'type' => 'datatable',
+                'header' => [
+                    'title' => 'Conditional Row Styling Demo',
+                    'subtitle' => 'Rows change color based on inventory status and price'
+                ],
+                'footer' => [
+                    'showRecordCount' => true,
+                    'text' => 'Red=Out of Stock, Orange=Low Stock, Green=In Stock, Blue=Expensive (>$100), Yellow=Very Low Quantity (<5)'
+                ],
+                'columns' => [
+                    [
+                        'field' => 'code',
+                        'header' => 'Code',
+                        'sortable' => true,
+                        'style' => 'width: 100px'
+                    ],
+                    [
+                        'field' => 'name',
+                        'header' => 'Product Name',
+                        'sortable' => true,
+                        'style' => 'min-width: 200px'
+                    ],
+                    [
+                        'field' => 'category',
+                        'header' => 'Category',
+                        'sortable' => true
+                    ],
+                    [
+                        'field' => 'price',
+                        'header' => 'Price',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: right',
+                        'headerStyle' => 'text-align: right'
+                    ],
+                    [
+                        'field' => 'quantity',
+                        'header' => 'Stock',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: center',
+                        'headerStyle' => 'text-align: center'
+                    ],
+                    [
+                        'field' => 'inventoryStatus',
+                        'header' => 'Status',
+                        'sortable' => true
+                    ],
+                    [
+                        'field' => 'rating',
+                        'header' => 'Rating',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: center',
+                        'headerStyle' => 'text-align: center'
+                    ]
+                ],
+                'dataSource' => [
+                    'url' => '/products/datatypes',
+                    'method' => 'GET',
+                    'lazy' => false
+                ],
+                // DD20250710-1240 - Conditional styling rules with priorities and user-defined styles
+                'conditionalStyles' => [
+                    // Priority 1 (HIGHEST): Out of stock items - RED background
+                    [
+                        'column' => 'inventoryStatus',
+                        'value' => 'OUTOFSTOCK',
+                        'operator' => 'eq',
+                        'priority' => 1,
+                        'styleObject' => [
+                            'backgroundColor' => '#fee2e2',
+                            'color' => '#7f1d1d',
+                            'fontWeight' => 'bold'
+                        ]
+                    ],
+                    // Priority 2: Low stock items - ORANGE background
+                    [
+                        'column' => 'inventoryStatus',
+                        'value' => 'LOWSTOCK',
+                        'operator' => 'eq',
+                        'priority' => 2,
+                        'styleObject' => [
+                            'backgroundColor' => '#fed7aa',
+                            'color' => '#9a3412'
+                        ]
+                    ],
+                    // Priority 3: In stock items - GREEN background
+                    [
+                        'column' => 'inventoryStatus',
+                        'value' => 'INSTOCK',
+                        'operator' => 'eq',
+                        'priority' => 3,
+                        'styleObject' => [
+                            'backgroundColor' => '#dcfce7',
+                            'color' => '#14532d'
+                        ]
+                    ],
+                    // Priority 4: Expensive items (price > 100) - BLUE background with italic
+                    [
+                        'column' => 'price',
+                        'value' => 100,
+                        'operator' => 'gt',
+                        'priority' => 4,
+                        'styleObject' => [
+                            'backgroundColor' => '#dbeafe',
+                            'color' => '#1e3a8a',
+                            'fontStyle' => 'italic'
+                        ]
+                    ],
+                    // Priority 5 (LOWEST): Very low quantity items (< 5) - YELLOW background with left border
+                    [
+                        'column' => 'quantity',
+                        'value' => 5,
+                        'operator' => 'lt',
+                        'priority' => 5,
+                        'styleObject' => [
+                            'backgroundColor' => '#fef3c7',
+                            'color' => '#92400e',
+                            'borderLeft' => '4px solid #f59e0b'
+                        ]
+                    ]
+                ],
+                'paginator' => true,
+                'rows' => 10,
+                'stripedRows' => false, // Disable striped rows to better see conditional styling
+                'globalFilter' => true,
+                'tableStyle' => 'min-width: 70rem'
             ],
 
             // COMPREHENSIVE DataTable with all features

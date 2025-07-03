@@ -1,4 +1,5 @@
 <?php
+// App\Http\Controllers\Api\ProductController.php
 
 namespace App\Http\Controllers\Api;
 
@@ -64,6 +65,7 @@ class ProductController extends Controller
 
     /**
      * Get products with various data types for demo
+     * DD20250710-1240 - Enhanced with conditional styling test data
      */
     public function datatypes(): JsonResponse
     {
@@ -71,72 +73,197 @@ class ProductController extends Controller
             [
                 'id' => '1',
                 'name' => 'Premium Wireless Headphones with Noise Cancellation',
+                'code' => 'PWH001',
+                'category' => 'Electronics',
                 'price' => 299.99,
-                'cost' => 150.50,
-                'discount' => 15.5,
-                'quantity' => 125,
-                'createdDate' => '2024-01-15T10:30:00',
-                'lastUpdate' => '2024-12-20T14:45:30',
-                'nextReview' => '2025-02-15T09:00:00',
-                'openTime' => '09:00:00',
-                'image' => 'https://via.placeholder.com/150x150/3B82F6/FFFFFF?text=Headphones',
-                'rating' => 4.5
+                'cost' => 180.50,
+                'discount' => 15.0,
+                'quantity' => 0, // Out of stock - should trigger red styling
+                'inventoryStatus' => 'OUTOFSTOCK',
+                'rating' => 4.5,
+                'image' => 'headphones.jpg'
             ],
             [
                 'id' => '2',
-                'name' => 'Smart Watch Series X',
-                'price' => 399.00,
-                'cost' => 200.00,
+                'name' => 'Smart Fitness Watch Pro',
+                'code' => 'SFW002',
+                'category' => 'Wearables',
+                'price' => 450.00, // Expensive - should trigger blue styling
+                'cost' => 280.75,
                 'discount' => 10.0,
-                'quantity' => 89,
-                'createdDate' => '2024-02-20T11:15:00',
-                'lastUpdate' => '2024-12-21T16:30:00',
-                'nextReview' => '2025-03-01T10:00:00',
-                'openTime' => '08:30:00',
-                'image' => 'https://via.placeholder.com/150x150/10B981/FFFFFF?text=Watch',
-                'rating' => 4.8
+                'quantity' => 25,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 4.8,
+                'image' => 'smartwatch.jpg'
             ],
             [
                 'id' => '3',
-                'name' => 'Portable Bluetooth Speaker',
-                'price' => 79.99,
-                'cost' => 35.75,
-                'discount' => 25.0,
-                'quantity' => 250,
-                'createdDate' => '2024-03-10T09:00:00',
-                'lastUpdate' => '2024-12-19T13:20:00',
-                'nextReview' => '2025-01-30T14:00:00',
-                'openTime' => '10:00:00',
-                'image' => 'https://via.placeholder.com/150x150/F59E0B/FFFFFF?text=Speaker',
-                'rating' => 4.2
+                'name' => 'Bluetooth Gaming Mouse',
+                'code' => 'BGM003',
+                'category' => 'Gaming',
+                'price' => 89.99,
+                'cost' => 45.20,
+                'discount' => 5.0,
+                'quantity' => 3, // Very low quantity - should trigger yellow styling
+                'inventoryStatus' => 'LOWSTOCK',
+                'rating' => 4.2,
+                'image' => 'gaming-mouse.jpg'
             ],
             [
                 'id' => '4',
-                'name' => 'Laptop Stand',
-                'price' => 49.99,
-                'cost' => 20.00,
-                'discount' => 5.5,
-                'quantity' => 500,
-                'createdDate' => '2024-04-05T12:00:00',
-                'lastUpdate' => '2024-12-18T10:15:00',
-                'nextReview' => '2025-02-10T11:30:00',
-                'openTime' => '09:30:00',
-                'image' => 'https://via.placeholder.com/150x150/EF4444/FFFFFF?text=Stand',
-                'rating' => 3.9
+                'name' => 'Mechanical Keyboard RGB',
+                'code' => 'MKR004',
+                'category' => 'Gaming',
+                'price' => 150.00, // Expensive - should trigger blue styling
+                'cost' => 92.30,
+                'discount' => 8.0,
+                'quantity' => 15,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 4.7,
+                'image' => 'mechanical-keyboard.jpg'
             ],
             [
                 'id' => '5',
-                'name' => 'USB-C Hub Multiport Adapter with HDMI and Ethernet',
-                'price' => 89.99,
-                'cost' => 40.00,
+                'name' => 'Portable Phone Charger',
+                'code' => 'PPC005',
+                'category' => 'Accessories',
+                'price' => 25.99,
+                'cost' => 12.50,
+                'discount' => 0.0,
+                'quantity' => 8, // Low stock - should trigger orange styling
+                'inventoryStatus' => 'LOWSTOCK',
+                'rating' => 4.0,
+                'image' => 'phone-charger.jpg'
+            ],
+            [
+                'id' => '6',
+                'name' => 'Wireless Speaker Bluetooth',
+                'code' => 'WSB006',
+                'category' => 'Audio',
+                'price' => 75.50,
+                'cost' => 38.95,
+                'discount' => 12.0,
+                'quantity' => 50,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 4.3,
+                'image' => 'bluetooth-speaker.jpg'
+            ],
+            [
+                'id' => '7',
+                'name' => 'USB-C Hub Multi-Port',
+                'code' => 'UCH007',
+                'category' => 'Accessories',
+                'price' => 45.00,
+                'cost' => 22.75,
+                'discount' => 0.0,
+                'quantity' => 0, // Out of stock - should trigger red styling
+                'inventoryStatus' => 'OUTOFSTOCK',
+                'rating' => 4.1,
+                'image' => 'usb-hub.jpg'
+            ],
+            [
+                'id' => '8',
+                'name' => 'Gaming Laptop Stand',
+                'code' => 'GLS008',
+                'category' => 'Gaming',
+                'price' => 65.99,
+                'cost' => 31.20,
                 'discount' => 20.0,
-                'quantity' => 175,
-                'createdDate' => '2024-05-12T14:30:00',
-                'lastUpdate' => '2024-12-22T09:45:00',
-                'nextReview' => '2025-03-15T15:00:00',
-                'openTime' => '08:00:00',
-                'image' => 'https://www.icentre.com.mt/wp-content/uploads/2025/01/EPICO-Spello-USB-C-Hub-9in1-space-grey-.jpg',
-                'rating' => 4.6
+                'quantity' => 2, // Very low quantity - should trigger yellow styling
+                'inventoryStatus' => 'LOWSTOCK',
+                'rating' => 4.4,
+                'image' => 'laptop-stand.jpg'
+            ],
+            [
+                'id' => '9',
+                'name' => 'Smartphone Camera Lens Kit',
+                'code' => 'SCL009',
+                'category' => 'Photography',
+                'price' => 120.00, // Expensive - should trigger blue styling
+                'cost' => 68.40,
+                'discount' => 15.0,
+                'quantity' => 12,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 4.6,
+                'image' => 'camera-lens.jpg'
+            ],
+            [
+                'id' => '10',
+                'name' => 'Desk Organizer with Wireless Charging',
+                'code' => 'DOW010',
+                'category' => 'Office',
+                'price' => 85.00,
+                'cost' => 42.50,
+                'discount' => 5.0,
+                'quantity' => 1, // Very low quantity - should trigger yellow styling
+                'inventoryStatus' => 'LOWSTOCK',
+                'rating' => 4.2,
+                'image' => 'desk-organizer.jpg'
+            ],
+            [
+                'id' => '11',
+                'name' => 'Ergonomic Office Chair',
+                'code' => 'EOC011',
+                'category' => 'Furniture',
+                'price' => 320.00, // Expensive - should trigger blue styling
+                'cost' => 198.40,
+                'discount' => 10.0,
+                'quantity' => 5,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 4.9,
+                'image' => 'office-chair.jpg'
+            ],
+            [
+                'id' => '12',
+                'name' => 'LED Desk Lamp with Timer',
+                'code' => 'LDL012',
+                'category' => 'Lighting',
+                'price' => 42.99,
+                'cost' => 21.50,
+                'discount' => 0.0,
+                'quantity' => 35,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 4.1,
+                'image' => 'desk-lamp.jpg'
+            ],
+            [
+                'id' => '13',
+                'name' => 'Tablet Stand Adjustable',
+                'code' => 'TSA013',
+                'category' => 'Accessories',
+                'price' => 28.50,
+                'cost' => 14.25,
+                'discount' => 0.0,
+                'quantity' => 0, // Out of stock - should trigger red styling
+                'inventoryStatus' => 'OUTOFSTOCK',
+                'rating' => 3.8,
+                'image' => 'tablet-stand.jpg'
+            ],
+            [
+                'id' => '14',
+                'name' => 'Wireless Earbuds Pro',
+                'code' => 'WEP014',
+                'category' => 'Audio',
+                'price' => 180.00, // Expensive - should trigger blue styling
+                'cost' => 108.00,
+                'discount' => 25.0,
+                'quantity' => 18,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 4.7,
+                'image' => 'wireless-earbuds.jpg'
+            ],
+            [
+                'id' => '15',
+                'name' => 'Monitor Screen Cleaner Kit',
+                'code' => 'MSC015',
+                'category' => 'Cleaning',
+                'price' => 15.99,
+                'cost' => 8.00,
+                'discount' => 0.0,
+                'quantity' => 4, // Very low quantity - should trigger yellow styling
+                'inventoryStatus' => 'LOWSTOCK',
+                'rating' => 4.0,
+                'image' => 'screen-cleaner.jpg'
             ]
         ];
 
@@ -144,7 +271,7 @@ class ProductController extends Controller
     }
 
     /**
-     * Product data array
+     * Get base product data
      */
     private function getProductsData(): array
     {
@@ -269,8 +396,246 @@ class ProductController extends Controller
                 'inventoryStatus' => 'INSTOCK',
                 'rating' => 3
             ],
-            // ... Add the rest of the products from your data file here
-            // I'm truncating for brevity, but you should include all 30 products
+            [
+                'id' => '1010',
+                'code' => 'plb34234v',
+                'name' => 'Gold Phone Case',
+                'description' => 'Product Description',
+                'image' => 'gold-phone-case.jpg',
+                'price' => 24,
+                'category' => 'Accessories',
+                'quantity' => 0,
+                'inventoryStatus' => 'OUTOFSTOCK',
+                'rating' => 4
+            ],
+            [
+                'id' => '1011',
+                'code' => '4920nnc2d',
+                'name' => 'Green Earbuds',
+                'description' => 'Product Description',
+                'image' => 'green-earbuds.jpg',
+                'price' => 89,
+                'category' => 'Electronics',
+                'quantity' => 23,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 4
+            ],
+            [
+                'id' => '1012',
+                'code' => 'cx11jjwiw',
+                'name' => 'Green T-Shirt',
+                'description' => 'Product Description',
+                'image' => 'green-t-shirt.jpg',
+                'price' => 49,
+                'category' => 'Clothing',
+                'quantity' => 74,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 5
+            ],
+            [
+                'id' => '1013',
+                'code' => 'iosomz4js',
+                'name' => 'Grey T-Shirt',
+                'description' => 'Product Description',
+                'image' => 'grey-t-shirt.jpg',
+                'price' => 48,
+                'category' => 'Clothing',
+                'quantity' => 0,
+                'inventoryStatus' => 'OUTOFSTOCK',
+                'rating' => 3
+            ],
+            [
+                'id' => '1014',
+                'code' => 'k8l6j58jl',
+                'name' => 'Headphones',
+                'description' => 'Product Description',
+                'image' => 'headphones.jpg',
+                'price' => 175,
+                'category' => 'Electronics',
+                'quantity' => 8,
+                'inventoryStatus' => 'LOWSTOCK',
+                'rating' => 5
+            ],
+            [
+                'id' => '1015',
+                'code' => 'v435nn85n',
+                'name' => 'Light Green T-Shirt',
+                'description' => 'Product Description',
+                'image' => 'light-green-t-shirt.jpg',
+                'price' => 49,
+                'category' => 'Clothing',
+                'quantity' => 34,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 4
+            ],
+            [
+                'id' => '1016',
+                'code' => 'k8l6j58jl',
+                'name' => 'Lime Band',
+                'description' => 'Product Description',
+                'image' => 'lime-band.jpg',
+                'price' => 79,
+                'category' => 'Fitness',
+                'quantity' => 12,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 3
+            ],
+            [
+                'id' => '1017',
+                'code' => 'nbm5mv45n',
+                'name' => 'Mini Speakers',
+                'description' => 'Product Description',
+                'image' => 'mini-speakers.jpg',
+                'price' => 85,
+                'category' => 'Clothing',
+                'quantity' => 42,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 4
+            ],
+            [
+                'id' => '1018',
+                'code' => 'pxpzczo23',
+                'name' => 'Painted Phone Case',
+                'description' => 'Product Description',
+                'image' => 'painted-phone-case.jpg',
+                'price' => 56,
+                'category' => 'Accessories',
+                'quantity' => 41,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 5
+            ],
+            [
+                'id' => '1019',
+                'code' => 'mnb5mb2m5',
+                'name' => 'Pink Band',
+                'description' => 'Product Description',
+                'image' => 'pink-band.jpg',
+                'price' => 79,
+                'category' => 'Fitness',
+                'quantity' => 63,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 4
+            ],
+            [
+                'id' => '1020',
+                'code' => 'r23fwf2w3',
+                'name' => 'Pink Purse',
+                'description' => 'Product Description',
+                'image' => 'pink-purse.jpg',
+                'price' => 110,
+                'category' => 'Accessories',
+                'quantity' => 0,
+                'inventoryStatus' => 'OUTOFSTOCK',
+                'rating' => 4
+            ],
+            [
+                'id' => '1021',
+                'code' => 'pxpzczo23',
+                'name' => 'Purple Band',
+                'description' => 'Product Description',
+                'image' => 'purple-band.jpg',
+                'price' => 79,
+                'category' => 'Fitness',
+                'quantity' => 6,
+                'inventoryStatus' => 'LOWSTOCK',
+                'rating' => 3
+            ],
+            [
+                'id' => '1022',
+                'code' => '2c42cb5cb',
+                'name' => 'Purple Gemstone Necklace',
+                'description' => 'Product Description',
+                'image' => 'purple-gemstone-necklace.jpg',
+                'price' => 45,
+                'category' => 'Accessories',
+                'quantity' => 62,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 4
+            ],
+            [
+                'id' => '1023',
+                'code' => '5k43kkk23',
+                'name' => 'Purple T-Shirt',
+                'description' => 'Product Description',
+                'image' => 'purple-t-shirt.jpg',
+                'price' => 49,
+                'category' => 'Clothing',
+                'quantity' => 2,
+                'inventoryStatus' => 'LOWSTOCK',
+                'rating' => 5
+            ],
+            [
+                'id' => '1024',
+                'code' => 'lm2tny2k4',
+                'name' => 'Shoes',
+                'description' => 'Product Description',
+                'image' => 'shoes.jpg',
+                'price' => 64,
+                'category' => 'Clothing',
+                'quantity' => 0,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 4
+            ],
+            [
+                'id' => '1025',
+                'code' => 'nbm5mv45n',
+                'name' => 'Sneakers',
+                'description' => 'Product Description',
+                'image' => 'sneakers.jpg',
+                'price' => 78,
+                'category' => 'Clothing',
+                'quantity' => 52,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 4
+            ],
+            [
+                'id' => '1026',
+                'code' => 'zx4k5l2jl',
+                'name' => 'Teal T-Shirt',
+                'description' => 'Product Description',
+                'image' => 'teal-t-shirt.jpg',
+                'price' => 49,
+                'category' => 'Clothing',
+                'quantity' => 3,
+                'inventoryStatus' => 'LOWSTOCK',
+                'rating' => 3
+            ],
+            [
+                'id' => '1027',
+                'code' => 'acvx872gc',
+                'name' => 'Yellow Earbuds',
+                'description' => 'Product Description',
+                'image' => 'yellow-earbuds.jpg',
+                'price' => 89,
+                'category' => 'Electronics',
+                'quantity' => 35,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 3
+            ],
+            [
+                'id' => '1028',
+                'code' => 'tx125ck42',
+                'name' => 'Yoga Mat',
+                'description' => 'Product Description',
+                'image' => 'yoga-mat.jpg',
+                'price' => 20,
+                'category' => 'Fitness',
+                'quantity' => 15,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 5
+            ],
+            [
+                'id' => '1029',
+                'code' => 'gwuby345v',
+                'name' => 'Yoga Set',
+                'description' => 'Product Description',
+                'image' => 'yoga-set.jpg',
+                'price' => 20,
+                'category' => 'Fitness',
+                'quantity' => 25,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 8
+            ]
         ];
     }
 }

@@ -42,6 +42,11 @@ const dataTableWidgets = computed(() =>
     props.widgets.filter(w => w.type === 'datatable')
 );
 
+// DD20250710-1240 - Add conditional styling DataTable
+const conditionalStylingDataTable = computed(() => 
+    dataTableWidgets.value.find(w => w.props.header?.title === 'Conditional Row Styling Demo')
+);
+
 // Separate DataTables by their characteristics for better organization
 const serverSideDataTable = computed(() => 
     dataTableWidgets.value.find(w => w.props.header?.title === 'Product Inventory Management')
@@ -173,6 +178,53 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     Server-side data tables with sorting, filtering, and pagination:
                                 </p>
                                 
+                                <!-- DD20250710-1240 - Conditional Styling DataTable -->
+                                <div v-if="conditionalStylingDataTable" class="mb-8">
+                                    <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
+                                        🎨 Conditional Row Styling Demo - NEW FEATURE!
+                                    </h4>
+                                    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                        <div class="mb-4 rounded-lg bg-gradient-to-r from-green-50 to-blue-50 p-4 text-sm dark:from-green-900/20 dark:to-blue-900/20">
+                                            <div class="mb-3 text-lg font-semibold text-gray-800 dark:text-gray-200">
+                                                ✨ Conditional Styling Rules Demonstration
+                                            </div>
+                                            <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                                                <div class="flex items-center space-x-2">
+                                                    <div class="h-4 w-4 rounded border border-red-400 bg-red-200"></div>
+                                                    <span class="text-red-800 dark:text-red-200"><strong>Red:</strong> Out of Stock</span>
+                                                </div>
+                                                <div class="flex items-center space-x-2">
+                                                    <div class="h-4 w-4 rounded border border-orange-400 bg-orange-200"></div>
+                                                    <span class="text-orange-800 dark:text-orange-200"><strong>Orange:</strong> Low Stock</span>
+                                                </div>
+                                                <div class="flex items-center space-x-2">
+                                                    <div class="h-4 w-4 rounded border border-green-400 bg-green-200"></div>
+                                                    <span class="text-green-800 dark:text-green-200"><strong>Green:</strong> In Stock</span>
+                                                </div>
+                                                <div class="flex items-center space-x-2">
+                                                    <div class="h-4 w-4 rounded border border-blue-400 bg-blue-200"></div>
+                                                    <span class="text-blue-800 dark:text-blue-200"><strong>Blue:</strong> Price > $100 (italic)</span>
+                                                </div>
+                                                <div class="flex items-center space-x-2">
+                                                    <div class="h-4 w-4 rounded border border-yellow-400 bg-yellow-200"></div>
+                                                    <span class="text-yellow-800 dark:text-yellow-200"><strong>Yellow:</strong> Quantity < 5 (left border)</span>
+                                                </div>
+                                            </div>
+                                            <div class="mt-3 text-xs text-gray-600 dark:text-gray-400">
+                                                💡 <strong>Implementation:</strong> Uses column-based conditions with operators (eq, gt, lt), priority levels (1=highest), and user-configurable styling (CSS classes, inline styles, style objects)
+                                            </div>
+                                            <div class="mt-2 text-xs text-gray-500 dark:text-gray-500">
+                                                🏆 <strong>Priority System:</strong> Out of Stock (Priority 1) overrides Low Quantity (Priority 5) - that's why items with 0 stock show red instead of yellow
+                                            </div>
+                                        </div>
+                                        <WidgetRenderer 
+                                            :widgets="[conditionalStylingDataTable]" 
+                                            @action="handleCustomAction"
+                                            @crud-action="handleCrudAction"
+                                        />
+                                    </div>
+                                </div>
+
                                 <!-- Server-side DataTable -->
                                 <div v-if="serverSideDataTable" class="mb-8">
                                     <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
@@ -309,6 +361,95 @@ const breadcrumbs: BreadcrumbItem[] = [
                                             <PInputText placeholder="Enter text..." />
                                             <PInputNumber v-model="counter" showButtons :min="0" :max="100" />
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </PCard>
+
+                <!-- DD20250710-1240 - Add Documentation Section for Conditional Styling -->
+                <PCard class="mt-8 shadow-lg">
+                    <template #header>
+                        <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
+                            <h2 class="text-xl font-semibold text-white">🎨 Conditional Styling Documentation</h2>
+                        </div>
+                    </template>
+                    
+                    <template #content>
+                        <div class="space-y-6 p-6">
+                            <div>
+                                <h3 class="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-300">
+                                    Implementation Guide
+                                </h3>
+                                <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                                    The DataTable widget now supports conditional row styling based on column values. Configure styles using the <code class="rounded bg-gray-100 px-1 py-0.5 text-xs dark:bg-gray-800">conditionalStyles</code> property:
+                                </p>
+                                
+                                <div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+                                    <h4 class="mb-2 font-semibold text-gray-700 dark:text-gray-300">Configuration Example:</h4>
+                                    <pre class="overflow-x-auto text-xs text-gray-700 dark:text-gray-300"><code>{
+  "conditionalStyles": [
+    {
+      "column": "inventoryStatus",
+      "value": "OUTOFSTOCK", 
+      "operator": "eq",
+      "priority": 1,
+      "styleObject": {
+        "backgroundColor": "#fee2e2",
+        "color": "#7f1d1d",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "column": "quantity",
+      "value": 5,
+      "operator": "lt",
+      "priority": 5,
+      "styleObject": {
+        "backgroundColor": "#fef3c7",
+        "color": "#92400e"
+      }
+    }
+  ]
+}</code></pre>
+                                </div>
+
+                                <div class="mt-4 grid gap-4 md:grid-cols-3">
+                                    <div class="rounded-lg bg-yellow-50 p-4 dark:bg-yellow-900/20">
+                                        <h4 class="mb-2 font-semibold text-yellow-800 dark:text-yellow-200">Priority System:</h4>
+                                        <ul class="list-inside list-disc text-sm text-yellow-700 dark:text-yellow-300">
+                                            <li><code>priority: 1</code> - Highest priority</li>
+                                            <li><code>priority: 2-998</code> - Medium priority</li>
+                                            <li><code>priority: 9999</code> - Default (lowest)</li>
+                                            <li>Lower numbers override higher numbers</li>
+                                            <li>Rules without priority get 9999</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
+                                        <h4 class="mb-2 font-semibold text-blue-800 dark:text-blue-200">Available Operators:</h4>
+                                        <ul class="list-inside list-disc text-sm text-blue-700 dark:text-blue-300">
+                                            <li><code>eq</code> - equals</li>
+                                            <li><code>ne</code> - not equals</li>
+                                            <li><code>lt / lte</code> - less than (or equal)</li>
+                                            <li><code>gt / gte</code> - greater than (or equal)</li>
+                                            <li><code>contains</code> - string contains</li>
+                                            <li><code>startsWith / endsWith</code> - string patterns</li>
+                                            <li><code>in / notIn</code> - array membership</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="rounded-lg bg-purple-50 p-4 dark:bg-purple-900/20">
+                                        <h4 class="mb-2 font-semibold text-purple-800 dark:text-purple-200">Styling Methods:</h4>
+                                        <ul class="list-inside list-disc text-sm text-purple-700 dark:text-purple-300">
+                                            <li><code>cssClasses</code> - Apply CSS class names</li>
+                                            <li><code>inlineStyles</code> - CSS string format</li>
+                                            <li><code>styleObject</code> - JavaScript object format</li>
+                                        </ul>
+                                        <p class="mt-2 text-xs text-purple-600 dark:text-purple-400">
+                                            💡 All three methods can be combined for complex styling
+                                        </p>
                                     </div>
                                 </div>
                             </div>

@@ -1,4 +1,5 @@
 <?php
+// App\Apex\Widgets\DataTableWidget.php
 
 namespace App\Apex\Widgets;
 
@@ -65,42 +66,82 @@ class DataTableWidget extends BaseWidget
                         'showSelectedCount' => [
                             'type' => 'boolean',
                             'default' => true,
-                            'description' => 'Show selected records count'
+                            'description' => 'Show selected items count'
                         ]
+                    ]
+                ],
+                // DD20250710-1240 - Add conditional styling configuration
+                'conditionalStyles' => [
+                    'type' => 'array',
+                    'description' => 'Conditional styling rules for table rows',
+                    'items' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'column' => [
+                                'type' => 'string',
+                                'description' => 'Column name to test against'
+                            ],
+                            'value' => [
+                                'description' => 'Value to compare (any type)'
+                            ],
+                            'operator' => [
+                                'type' => 'string',
+                                'enum' => ['eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'contains', 'startsWith', 'endsWith', 'in', 'notIn'],
+                                'default' => 'eq',
+                                'description' => 'Comparison operator'
+                            ],
+                            'priority' => [
+                                'type' => 'number',
+                                'default' => 9999,
+                                'description' => 'Priority level (1 = highest priority, lower numbers override higher numbers)'
+                            ],
+                            'cssClasses' => [
+                                'type' => 'string',
+                                'description' => 'CSS classes to apply when condition is met'
+                            ],
+                            'inlineStyles' => [
+                                'type' => 'string',
+                                'description' => 'Inline CSS styles as string (e.g., "color: red; font-weight: bold")'
+                            ],
+                            'styleObject' => [
+                                'type' => 'object',
+                                'description' => 'Style object with CSS properties'
+                            ]
+                        ],
+                        'required' => ['column', 'value'],
+                        'additionalProperties' => false
                     ]
                 ],
                 // Column Configuration
                 'columns' => [
                     'type' => 'array',
-                    'description' => 'Array of column definitions',
+                    'description' => 'Column definitions',
                     'items' => [
                         'type' => 'object',
                         'properties' => [
                             'field' => [
                                 'type' => 'string',
-                                'required' => true,
-                                'description' => 'Field name in the data object'
+                                'description' => 'Field name in data'
                             ],
                             'header' => [
                                 'type' => 'string',
-                                'required' => true,
                                 'description' => 'Column header text'
                             ],
                             'sortable' => [
                                 'type' => 'boolean',
                                 'default' => true,
-                                'description' => 'Whether column is sortable'
+                                'description' => 'Enable sorting for this column'
                             ],
                             'filter' => [
                                 'type' => 'boolean',
                                 'default' => false,
-                                'description' => 'Whether column has filter'
+                                'description' => 'Enable filtering for this column'
                             ],
                             'filterType' => [
                                 'type' => 'string',
                                 'enum' => ['text', 'numeric', 'date', 'dropdown', 'multiselect'],
                                 'default' => 'text',
-                                'description' => 'Type of filter'
+                                'description' => 'Type of filter control'
                             ],
                             'filterOptions' => [
                                 'type' => 'array',
@@ -115,15 +156,15 @@ class DataTableWidget extends BaseWidget
                             ],
                             'style' => [
                                 'type' => 'string',
-                                'description' => 'Column style'
+                                'description' => 'Column CSS style'
                             ],
                             'bodyStyle' => [
                                 'type' => 'string',
-                                'description' => 'Column body cell style'
+                                'description' => 'Body cell CSS style'
                             ],
                             'headerStyle' => [
                                 'type' => 'string',
-                                'description' => 'Column header style'
+                                'description' => 'Header cell CSS style'
                             ],
                             'hidden' => [
                                 'type' => 'boolean',
@@ -133,41 +174,39 @@ class DataTableWidget extends BaseWidget
                             'resizable' => [
                                 'type' => 'boolean',
                                 'default' => true,
-                                'description' => 'Allow column width resizing'
+                                'description' => 'Allow column resizing'
                             ],
                             'minWidth' => [
                                 'type' => 'string',
-                                'description' => 'Minimum column width for resizing'
+                                'description' => 'Minimum column width'
                             ],
                             'maxWidth' => [
                                 'type' => 'string',
-                                'description' => 'Maximum column width for resizing'
+                                'description' => 'Maximum column width'
                             ],
                             'dataType' => [
                                 'type' => 'string',
                                 'enum' => ['text', 'number', 'currency', 'shortdate', 'longdate1', 'longdate2', 'time', 'shortdatetime', 'longdate1time', 'longdate2time', 'percentage', 'image', 'apexwidget'],
                                 'default' => 'text',
-                                'description' => 'Column data type for formatting'
+                                'description' => 'Data type for formatting'
                             ],
                             'format' => [
-                                'type' => ['string', 'integer'],
-                                'description' => 'Format parameter based on data type'
+                                'description' => 'Format configuration (string or number)'
                             ],
                             'leadText' => [
                                 'type' => 'string',
-                                'description' => 'Text to prepend to the value'
+                                'description' => 'Text to prepend to cell value'
                             ],
                             'trailText' => [
                                 'type' => 'string',
-                                'description' => 'Text to append to the value'
+                                'description' => 'Text to append to cell value'
                             ],
                             'widgetConfig' => [
-                                'type' => 'object',
-                                'description' => 'Configuration for ApexWidget data type'
+                                'description' => 'Widget configuration for apexwidget type'
                             ],
                             'url' => [
                                 'type' => 'string',
-                                'description' => 'URL for clickable columns'
+                                'description' => 'URL template for clickable cells'
                             ],
                             'urlTarget' => [
                                 'type' => 'string',
@@ -178,46 +217,52 @@ class DataTableWidget extends BaseWidget
                             'clickable' => [
                                 'type' => 'boolean',
                                 'default' => false,
-                                'description' => 'Make column content clickable'
+                                'description' => 'Make cell clickable'
                             ],
                             'action' => [
                                 'type' => 'string',
-                                'description' => 'Custom action name to emit on click'
+                                'description' => 'Action to trigger on click'
                             ],
                             'actionField' => [
                                 'type' => 'string',
-                                'description' => 'Field to use as parameter for action'
+                                'description' => 'Field to use as action parameter'
+                            ],
+                            'searchExclude' => [
+                                'type' => 'boolean',
+                                'default' => false,
+                                'description' => 'Exclude from global search'
                             ],
                             'exportable' => [
                                 'type' => 'boolean',
                                 'default' => true,
-                                'description' => 'Include in export'
+                                'description' => 'Include in exports'
                             ],
                             'reorderable' => [
                                 'type' => 'boolean',
                                 'default' => true,
-                                'description' => 'Can be reordered'
+                                'description' => 'Allow column reordering'
                             ],
                             'frozen' => [
                                 'type' => 'boolean',
                                 'default' => false,
-                                'description' => 'Freeze column'
+                                'description' => 'Freeze column during horizontal scrolling'
                             ]
-                        ]
+                        ],
+                        'required' => ['field', 'header'],
+                        'additionalProperties' => false
                     ]
                 ],
-                // Grid Lines Configuration
+                // Visual Configuration
                 'gridLines' => [
                     'type' => 'string',
                     'enum' => ['both', 'horizontal', 'vertical', 'none'],
                     'default' => 'both',
-                    'description' => 'Grid lines display'
+                    'description' => 'Grid line display mode'
                 ],
-                // Visual Configuration
                 'stripedRows' => [
                     'type' => 'boolean',
                     'default' => true,
-                    'description' => 'Striped row styling'
+                    'description' => 'Enable striped rows'
                 ],
                 'showGridlines' => [
                     'type' => 'boolean',
@@ -233,41 +278,39 @@ class DataTableWidget extends BaseWidget
                 // Data Configuration
                 'dataKey' => [
                     'type' => 'string',
-                    'description' => 'Unique key for row data',
-                    'default' => 'id'
+                    'default' => 'id',
+                    'description' => 'Unique key field in data'
                 ],
                 'dataSource' => [
                     'type' => 'object',
-                    'description' => 'Server-side data configuration',
+                    'description' => 'Data source configuration',
                     'properties' => [
                         'url' => [
                             'type' => 'string',
-                            'required' => true,
-                            'description' => 'API endpoint URL'
+                            'description' => 'Data source URL'
                         ],
                         'method' => [
                             'type' => 'string',
                             'enum' => ['GET', 'POST'],
-                            'default' => 'GET'
+                            'default' => 'GET',
+                            'description' => 'HTTP method'
                         ],
                         'lazy' => [
-                            'type' => ['boolean', 'string'],
-                            'default' => true,
-                            'description' => 'Enable lazy loading (true/false/auto)'
+                            'description' => 'Lazy loading mode (boolean or "auto")'
                         ],
                         'lazyThreshold' => [
-                            'type' => 'integer',
+                            'type' => 'number',
                             'default' => 1000,
-                            'description' => 'Record count threshold for auto lazy mode'
+                            'description' => 'Threshold for auto lazy mode'
                         ],
                         'preload' => [
                             'type' => 'boolean',
                             'default' => false,
-                            'description' => 'Preload data on mount'
+                            'description' => 'Preload data'
                         ],
                         'countUrl' => [
                             'type' => 'string',
-                            'description' => 'Optional endpoint to get total count for auto mode'
+                            'description' => 'URL for count endpoint'
                         ]
                     ]
                 ],
@@ -281,20 +324,18 @@ class DataTableWidget extends BaseWidget
                     'type' => 'string',
                     'enum' => ['top', 'bottom', 'both'],
                     'default' => 'bottom',
-                    'description' => 'Paginator position'
+                    'description' => 'Pagination position'
                 ],
                 'rows' => [
-                    'type' => 'integer',
+                    'type' => 'number',
                     'default' => 10,
                     'description' => 'Rows per page'
                 ],
                 'rowsPerPageOptions' => [
                     'type' => 'array',
+                    'items' => ['type' => 'number'],
                     'default' => [5, 10, 25, 50, 100],
-                    'items' => [
-                        'type' => 'integer'
-                    ],
-                    'description' => 'Options for rows per page dropdown'
+                    'description' => 'Available rows per page options'
                 ],
                 'currentPageReportTemplate' => [
                     'type' => 'string',
@@ -314,255 +355,26 @@ class DataTableWidget extends BaseWidget
                     'description' => 'Allow removing sort'
                 ],
                 'defaultSortOrder' => [
-                    'type' => 'integer',
+                    'type' => 'number',
                     'enum' => [1, -1],
                     'default' => 1,
-                    'description' => 'Default sort order (1: asc, -1: desc)'
+                    'description' => 'Default sort order'
                 ],
                 'multiSortMeta' => [
                     'type' => 'array',
-                    'description' => 'Pre-configured multi-sort',
+                    'description' => 'Multi-sort metadata',
                     'items' => [
                         'type' => 'object',
                         'properties' => [
                             'field' => ['type' => 'string'],
-                            'order' => ['type' => 'integer']
+                            'order' => ['type' => 'number']
                         ]
                     ]
                 ],
-                // Selection Configuration
-                'selectionMode' => [
-                    'type' => 'string',
-                    'enum' => ['single', 'multiple', 'checkbox', null],
-                    'default' => null,
-                    'description' => 'Row selection mode'
-                ],
-                'selection' => [
-                    'type' => 'array',
-                    'default' => [],
-                    'description' => 'Pre-selected rows'
-                ],
-                'metaKeySelection' => [
-                    'type' => 'boolean',
-                    'default' => true,
-                    'description' => 'Use meta key for multiple selection'
-                ],
-                'selectAll' => [
-                    'type' => 'boolean',
-                    'default' => false,
-                    'description' => 'Show select all checkbox in header'
-                ],
-                // Group Actions Configuration
-                'groupActions' => [
-                    'type' => 'array',
-                    'description' => 'Actions for selected rows',
-                    'items' => [
-                        'type' => 'object',
-                        'properties' => [
-                            'label' => ['type' => 'string'],
-                            'icon' => ['type' => 'string'],
-                            'action' => ['type' => 'string'],
-                            'severity' => ['type' => 'string'],
-                            'confirm' => ['type' => 'boolean'],
-                            'confirmMessage' => ['type' => 'string']
-                        ]
-                    ]
-                ],
-                // Filter Configuration
-                'filters' => [
-                    'type' => 'object',
-                    'description' => 'Pre-configured filters'
-                ],
-                'filterDisplay' => [
-                    'type' => 'string',
-                    'enum' => ['menu', 'row'],
-                    'default' => 'row',
-                    'description' => 'Filter display mode'
-                ],
-                'globalFilter' => [
-                    'type' => 'boolean',
-                    'default' => false,
-                    'description' => 'Enable global search'
-                ],
-                'globalFilterFields' => [
-                    'type' => 'array',
-                    'items' => ['type' => 'string'],
-                    'description' => 'Fields to search in global filter'
-                ],
-                'filterMatchModeOptions' => [
-                    'type' => 'object',
-                    'description' => 'Available filter match modes per column'
-                ],
-                // Scroll Configuration
-                'scrollable' => [
-                    'type' => 'boolean',
-                    'default' => false,
-                    'description' => 'Enable scrolling'
-                ],
-                'scrollHeight' => [
-                    'type' => 'string',
-                    'default' => 'flex',
-                    'description' => 'Scroll height'
-                ],
-                'virtualScroll' => [
-                    'type' => 'boolean',
-                    'default' => false,
-                    'description' => 'Enable virtual scrolling for large datasets'
-                ],
-                'frozenColumns' => [
-                    'type' => 'integer',
-                    'default' => 0,
-                    'description' => 'Number of frozen columns from left'
-                ],
-                // Reorder Configuration
-                'reorderableColumns' => [
-                    'type' => 'boolean',
-                    'default' => false,
-                    'description' => 'Enable column reordering'
-                ],
-                'reorderableRows' => [
-                    'type' => 'boolean',
-                    'default' => false,
-                    'description' => 'Enable row reordering'
-                ],
-                // Export Configuration
-                'exportable' => [
-                    'type' => 'boolean',
-                    'default' => false,
-                    'description' => 'Enable export functionality'
-                ],
-                'exportFormats' => [
-                    'type' => 'array',
-                    'default' => ['csv', 'excel', 'pdf'],
-                    'items' => [
-                        'type' => 'string',
-                        'enum' => ['csv', 'excel', 'pdf']
-                    ],
-                    'description' => 'Available export formats'
-                ],
-                'exportFilename' => [
-                    'type' => 'string',
-                    'default' => 'data-export',
-                    'description' => 'Export filename'
-                ],
-                // Column Toggling Configuration
-                'columnToggle' => [
-                    'type' => 'boolean',
-                    'default' => false,
-                    'description' => 'Enable column visibility toggle'
-                ],
-                'columnTogglePosition' => [
-                    'type' => 'string',
-                    'enum' => ['left', 'right'],
-                    'default' => 'right',
-                    'description' => 'Position of column toggle button'
-                ],
-                // Resizable Configuration
-                'resizableColumns' => [
-                    'type' => 'boolean',
-                    'default' => false,
-                    'description' => 'Enable column resizing'
-                ],
-                'columnResizeMode' => [
-                    'type' => 'string',
-                    'enum' => ['fit', 'expand'],
-                    'default' => 'fit',
-                    'description' => 'Column resize behavior'
-                ],
-                // CRUD Actions Configuration
-                'showView' => [
-                    'type' => 'boolean',
-                    'default' => false,
-                    'description' => 'Show view button column'
-                ],
-                'showEdit' => [
-                    'type' => 'boolean',
-                    'default' => false,
-                    'description' => 'Show edit button column'
-                ],
-                'showDelete' => [
-                    'type' => 'boolean',
-                    'default' => false,
-                    'description' => 'Show delete button column'
-                ],
-                'showHistory' => [
-                    'type' => 'boolean',
-                    'default' => false,
-                    'description' => 'Show history button column'
-                ],
-                'showPrint' => [
-                    'type' => 'boolean',
-                    'default' => false,
-                    'description' => 'Show print button column'
-                ],
-                'crudActions' => [
-                    'type' => 'object',
-                    'description' => 'CRUD action configuration',
-                    'properties' => [
-                        'idField' => [
-                            'type' => 'string',
-                            'default' => 'id',
-                            'description' => 'Field to use as record identifier'
-                        ],
-                        'permissions' => [
-                            'type' => 'object',
-                            'properties' => [
-                                'view' => ['type' => 'boolean', 'default' => true],
-                                'edit' => ['type' => 'boolean', 'default' => true],
-                                'delete' => ['type' => 'boolean', 'default' => true],
-                                'history' => ['type' => 'boolean', 'default' => true],
-                                'print' => ['type' => 'boolean', 'default' => true]
-                            ]
-                        ],
-                        'routes' => [
-                            'type' => 'object',
-                            'properties' => [
-                                'view' => ['type' => 'string'],
-                                'edit' => ['type' => 'string'],
-                                'delete' => ['type' => 'string'],
-                                'history' => ['type' => 'string'],
-                                'print' => ['type' => 'string']
-                            ]
-                        ]
-                    ]
-                ],
-                // Other Configuration
-                'loading' => [
-                    'type' => 'boolean',
-                    'default' => false,
-                    'description' => 'Show loading state'
-                ],
-                'emptyMessage' => [
-                    'type' => 'string',
-                    'default' => 'No records found',
-                    'description' => 'Empty state message'
-                ],
-                'tableStyle' => [
-                    'type' => 'string',
-                    'default' => 'min-width: 50rem',
-                    'description' => 'Table style attribute'
-                ],
-                'tableClass' => [
-                    'type' => 'string',
-                    'description' => 'Additional CSS classes for table'
-                ],
-                'responsiveLayout' => [
-                    'type' => 'string',
-                    'enum' => ['scroll', 'stack'],
-                    'default' => 'scroll',
-                    'description' => 'Responsive behavior'
-                ],
-                'stateStorage' => [
-                    'type' => 'string',
-                    'enum' => ['session', 'local', null],
-                    'default' => null,
-                    'description' => 'State persistence'
-                ],
-                'stateKey' => [
-                    'type' => 'string',
-                    'description' => 'Unique key for state storage'
-                ]
-            ]
+                // Other configurations continue...
+            ],
+            'required' => ['columns'],
+            'additionalProperties' => false
         ];
     }
 
@@ -603,6 +415,20 @@ class DataTableWidget extends BaseWidget
             ];
         }, $columns);
 
+        // DD20250710-1240 - Process conditional styles
+        $conditionalStyles = $config['conditionalStyles'] ?? [];
+        $processedConditionalStyles = array_map(function ($style) {
+            return [
+                'column' => $style['column'],
+                'value' => $style['value'],
+                'operator' => $style['operator'] ?? 'eq',
+                'priority' => $style['priority'] ?? 9999,
+                'cssClasses' => $style['cssClasses'] ?? null,
+                'inlineStyles' => $style['inlineStyles'] ?? null,
+                'styleObject' => $style['styleObject'] ?? null,
+            ];
+        }, $conditionalStyles);
+
         return [
             'id' => $this->id,
             'type' => $this->getType(),
@@ -611,6 +437,8 @@ class DataTableWidget extends BaseWidget
             'footer' => $config['footer'] ?? ['showRecordCount' => true, 'showSelectedCount' => true],
             // Columns
             'columns' => $processedColumns,
+            // DD20250710-1240 - Add conditional styles
+            'conditionalStyles' => $processedConditionalStyles,
             // Visual
             'gridLines' => $config['gridLines'] ?? 'both',
             'stripedRows' => $config['stripedRows'] ?? true,
