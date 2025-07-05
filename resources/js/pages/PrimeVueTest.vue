@@ -177,9 +177,9 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
                                     Server-side data tables with sorting, filtering, and pagination:
                                 </p>
-                                
-                                <!-- DD20250710-1240 - Conditional Styling DataTable -->
-                                <div v-if="conditionalStylingDataTable" class="mb-8">
+
+                                 <!-- DD20250710-1240 - Conditional Styling DataTable -->
+                                 <div v-if="conditionalStylingDataTable" class="mb-8">
                                     <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
                                         🎨 Conditional Row Styling Demo - NEW FEATURE!
                                     </h4>
@@ -224,7 +224,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                         />
                                     </div>
                                 </div>
-
+                                
                                 <!-- Server-side DataTable -->
                                 <div v-if="serverSideDataTable" class="mb-8">
                                     <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
