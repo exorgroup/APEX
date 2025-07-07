@@ -671,7 +671,7 @@ class PrimeVueTestController extends Controller
                         'column' => 'inventoryStatus',
                         'value' => 'INSTOCK',
                         'operator' => 'eq',
-                        'priority' => 3,
+                        'priority' => 4,
                         'styleObject' => [
                             'backgroundColor' => '#dcfce7',
                             'color' => '#14532d'
@@ -682,7 +682,7 @@ class PrimeVueTestController extends Controller
                         'column' => 'price',
                         'value' => 100,
                         'operator' => 'gt',
-                        'priority' => 4,
+                        'priority' => 3,
                         'styleObject' => [
                             'backgroundColor' => '#dbeafe',
                             'color' => '#1e3a8a',

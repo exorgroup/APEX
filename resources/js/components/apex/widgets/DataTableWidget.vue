@@ -214,7 +214,8 @@ const props = withDefaults(defineProps<Props>(), {
     conditionalStyles: () => []
 });
 
-// State
+// DD20250707-2330 BEGIN - Add DataTable ref for export functionality
+const dt = ref();
 const loading = ref(props.loading);
 const data = ref<any[]>([]);
 const totalRecords = ref(0);
@@ -787,15 +788,57 @@ const performGroupAction = (action: GroupAction) => {
     // Emit event for parent to handle
 };
 
-// Export functionality
+// DD20250707-2330 BEGIN - Replace export functionality with PrimeVue native export
 const exportData = (format: 'csv' | 'excel' | 'pdf') => {
-    console.log(`Exporting as ${format}`, {
-        filename: props.exportFilename,
-        data: data.value,
-        columns: props.columns.filter(col => col.exportable !== false)
-    });
-    // Implement actual export logic here
+    if (!dt.value) {
+        console.error('DataTable ref not available for export');
+        return;
+    }
+
+    try {
+        // Get visible and exportable columns
+        const exportableColumns = visibleColumns.value.filter(col => 
+            col.exportable !== false && !col.field.startsWith('_action_')
+        );
+        
+        // Use PrimeVue's built-in export methods
+        switch (format) {
+            case 'csv':
+                dt.value.exportCSV({
+                    selectionOnly: false,
+                    filename: `${props.exportFilename}.csv`
+                });
+                break;
+                
+            case 'excel':
+                // Note: PrimeVue doesn't have built-in Excel export, so we'll use CSV as fallback
+                console.warn('Excel export not directly supported by PrimeVue, exporting as CSV');
+                dt.value.exportCSV({
+                    selectionOnly: false,
+                    filename: `${props.exportFilename}.csv`
+                });
+                break;
+                
+            case 'pdf':
+                // Note: PrimeVue doesn't have built-in PDF export
+                console.warn('PDF export requires additional implementation');
+                // You would need to implement PDF export using a library like jsPDF
+                break;
+                
+            default:
+                console.warn(`Unsupported export format: ${format}`);
+        }
+        
+        console.log(`Exported ${format.toUpperCase()}:`, {
+            filename: props.exportFilename,
+            visibleColumns: exportableColumns.length,
+            totalRows: isLazyMode.value ? totalRecords.value : filteredData.value.length
+        });
+    } catch (error) {
+        console.error(`Error exporting ${format}:`, error);
+    }
 };
+// DD20250707-2330 END
 
 // Computed table classes
 const tableClasses = computed(() => {
@@ -1055,6 +1098,7 @@ watch(() => props.selection, (newVal) => {
 
         <!-- DataTable -->
         <PDataTable
+            ref="dt"
             :value="isLazyMode ? data : filteredData"
             :loading="loading"
             :dataKey="dataKey"
