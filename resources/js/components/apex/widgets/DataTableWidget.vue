@@ -9,6 +9,9 @@ import PColumn from 'primevue/column';
 import PInputText from 'primevue/inputtext';
 import PDivider from 'primevue/divider';
 import vTooltip from 'primevue/tooltip';
+// DD20250712-1830 BEGIN - Import WidgetRenderer for nested tables
+import WidgetRenderer from '../WidgetRenderer.vue';
+// DD20250712-1830 END
 
 interface Column {
     field: string;
@@ -55,6 +58,33 @@ interface GroupAction {
     confirmMessage?: string;
 }
 
+interface RowExpansion {
+    enabled: boolean;
+    expanderColumn?: {
+        style?: string;
+        frozen?: boolean;
+    };
+    expandControls?: {
+        showExpandAll?: boolean;
+        showCollapseAll?: boolean;
+        expandAllLabel?: string;
+        collapseAllLabel?: string;
+        position?: 'header' | 'toolbar';
+    };
+    expandedContent?: {
+        type: 'datatable' | 'custom';
+        title?: string;
+        titleField?: string; // Field to use in title template like "Orders for {titleField}"
+        titleTemplate?: string; // Custom title template
+        dataField?: string; // Field containing the nested data
+        widget?: any; // DataTableWidget configuration for nested table
+        customTemplate?: string; // For custom content type
+    };
+    events?: {
+        onExpand?: boolean;
+        onCollapse?: boolean;
+    };
+}
 // DD20250710-1240 - Add conditional styling interfaces
 interface ConditionalStyle {
     column: string;
@@ -159,6 +189,12 @@ interface Props {
     responsiveLayout?: 'scroll' | 'stack';
     stateStorage?: 'session' | 'local' | undefined;
     stateKey?: string;
+    // DD20250712-1830 BEGIN - Add static data support for nested tables
+    staticData?: any[];
+    // DD20250712-1830 END
+    // DD20250712-1830 BEGIN - Add row expansion configuration
+    rowExpansion?: RowExpansion;
+    // DD20250712-1830 END
     // DD20250710-1240 - Add conditional styling props
     conditionalStyles?: ConditionalStyle[];
 }
@@ -200,6 +236,9 @@ const props = withDefaults(defineProps<Props>(), {
     responsiveLayout: 'scroll',
     stateStorage: undefined,
    // stateKey: undefined,
+    // DD20250712-1830 BEGIN - Add row expansion defaults
+    rowExpansion: () => ({ enabled: false, expandedContent: undefined }),
+    // DD20250712-1830 END
     // DD20250710-1240 - Add conditional styling defaults
     conditionalStyles: () => []
 });
@@ -209,7 +248,7 @@ const dt = ref();
 const loading = ref(props.loading);
 const data = ref<any[]>([]);
 const totalRecords = ref(0);
-const filters = ref(props.filters || {});
+//const filters = ref(props.filters || {});
 const lazyParams = ref({});
 const selectedItems = ref<any[]>([...props.selection]);
 const globalFilterValue = ref('');
@@ -219,6 +258,13 @@ const multiSortMeta = ref<Array<{ field: string; order: 1 | -1 | 0 }>>(props.mul
 const first = ref(0);
 const isLazyMode = ref<boolean>(false); // Determined at runtime
 const visibleColumns = ref<Column[]>([]); // Track visible columns as objects
+
+// DD20250707-2330 BEGIN - Add DataTable ref for export functionality
+//const dt = ref();
+
+// DD20250712-1830 BEGIN - Add row expansion state
+const expandedRows = ref<Record<string, boolean>>({});
+// DD20250712-1830 END
 
 // Initialize visible columns based on hidden property
 const initVisibleColumns = () => {
@@ -408,12 +454,15 @@ const formatDateTime = (value: any, dateStyle: 'short' | 'long1' | 'long2', form
     return `${dateStr} ${timeStr}`;
 };
 
-// Define emits
+// DD20250712-1830 BEGIN - Add row expansion emits
 const emit = defineEmits<{
     action: [payload: { action: string; data: any; value: any }];
     'crud-action': [payload: { action: string; id: any; data: any }];
     headerAction: [action: string];
-}>(); 
+    'row-expand': [event: any];
+    'row-collapse': [event: any];
+}>();
+// DD20250712-1830 END 
 
 // Initialize lazy mode
 if (props.dataSource?.lazy === true) {
@@ -524,7 +573,110 @@ const getWidgetComponent = (type: string) => {
     return widgetMap[type] || null;
 };
 
-// Column options for toggle dropdown (exclude hidden, frozen, and action columns)
+// DD20250712-1830 BEGIN - Add row expansion functionality
+const hasRowExpansion = computed(() => props.rowExpansion?.enabled || false);
+
+const showExpandControls = computed(() => 
+    hasRowExpansion.value && props.rowExpansion?.expandControls?.showExpandAll !== false
+);
+
+const expandAllLabel = computed(() => 
+    props.rowExpansion?.expandControls?.expandAllLabel || 'Expand All'
+);
+
+const collapseAllLabel = computed(() => 
+    props.rowExpansion?.expandControls?.collapseAllLabel || 'Collapse All'
+);
+
+const expandControlsPosition = computed(() => 
+    props.rowExpansion?.expandControls?.position || 'header'
+);
+
+// Row expansion methods
+const onRowExpand = (event: any) => {
+    if (props.rowExpansion?.events?.onExpand) {
+        emit('row-expand', event);
+    }
+};
+
+const onRowCollapse = (event: any) => {
+    if (props.rowExpansion?.events?.onCollapse) {
+        emit('row-collapse', event);
+    }
+};
+
+const expandAll = () => {
+    if (!hasRowExpansion.value) return;
+    
+    const currentData = isLazyMode.value ? data.value : filteredData.value;
+    expandedRows.value = currentData.reduce((acc: Record<string, boolean>, item: any) => {
+        acc[item[props.dataKey]] = true;
+        return acc;
+    }, {});
+};
+
+const collapseAll = () => {
+    expandedRows.value = {};
+};
+
+const getExpansionTitle = (rowData: any): string => {
+    const config = props.rowExpansion?.expandedContent;
+    if (!config) return '';
+    
+    if (config.titleTemplate) {
+        // Replace placeholders in template
+        return config.titleTemplate.replace(/{(\w+)}/g, (match, field) => rowData[field] || '');
+    } else if (config.title && config.titleField) {
+        // Use title with field value
+        return `${config.title} ${rowData[config.titleField]}`;
+    } else if (config.title) {
+        // Just use title
+        return config.title;
+    }
+    
+    return '';
+};
+
+// DD20250712-1830 BEGIN - Add GUID generation for nested widgets
+const generateGUID = (): string => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+};
+
+const getNestedWidgetConfig = (rowData: any) => {
+    const config = props.rowExpansion?.expandedContent;
+    if (!config || config.type !== 'datatable' || !config.widget || !config.dataField) return null;
+    
+    // Get nested data from the specified field
+    const nestedData = rowData[config.dataField] || [];
+    
+    // Create a copy of the widget configuration and set the data
+    const widgetProps = { ...config.widget };
+    
+    // For nested tables, we typically want client-side mode
+    if (widgetProps.dataSource) {
+        widgetProps.dataSource = null; // Remove URL-based data source
+    }
+    
+    const nestedWidgetProps = {
+        ...widgetProps,
+        // Pass the nested data directly
+        staticData: nestedData,
+        // Ensure nested table has a unique ID
+        widgetId: `${props.widgetId}_expansion_${rowData[props.dataKey]}`
+    };
+    
+    return {
+        id: `nested_${generateGUID()}`,
+        type: 'datatable',
+        props: nestedWidgetProps
+    };
+};
+// DD20250712-1830 END
+// DD20250712-1830 END
 const columnOptions = computed(() => {
     return props.columns.filter(col => !col.frozen && !col.hidden);
 });
@@ -565,7 +717,7 @@ const clientSideTotalRecords = computed(() => {
 
 // Initialize filters
 const initFilters = () => {
-    // No column filters to initialize
+    // No column filters to initialize - filters were removed
 };
 
 // Determine lazy mode for auto
@@ -924,6 +1076,15 @@ onMounted(async () => {
     // Initialize visible columns
     initVisibleColumns();
     
+    // DD20250712-1830 BEGIN - Handle static data for nested tables
+    if (props.staticData) {
+        data.value = props.staticData;
+        totalRecords.value = props.staticData.length;
+        loading.value = false;
+        return;
+    }
+    // DD20250712-1830 END
+    
     // Skip loading if no data source
     if (!props.dataSource?.url) {
         console.log('No data source URL provided');
@@ -994,7 +1155,7 @@ watch(() => props.selection, (newVal) => {
         </div>
 
         <!-- Toolbar -->
-        <div v-if="globalFilter || exportable || (hasSelectedItems && groupActions.length > 0)" 
+        <div v-if="globalFilter || exportable || (hasSelectedItems && groupActions.length > 0) || (showExpandControls && expandControlsPosition === 'toolbar')" 
              class="mb-4 flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center gap-2">
                 <!-- Global Filter -->
@@ -1024,6 +1185,26 @@ watch(() => props.selection, (newVal) => {
                         @click="executeGroupAction(action)"
                     />
                 </template>
+
+                <!-- DD20250712-1830 BEGIN - Row expansion controls in toolbar -->
+                <template v-if="showExpandControls && expandControlsPosition === 'toolbar'">
+                    <PDivider layout="vertical" />
+                    <PButton
+                        :label="expandAllLabel"
+                        icon="pi pi-plus"
+                        text
+                        size="small"
+                        @click="expandAll"
+                    />
+                    <PButton
+                        :label="collapseAllLabel"
+                        icon="pi pi-minus"
+                        text
+                        size="small"
+                        @click="collapseAll"
+                    />
+                </template>
+                <!-- DD20250712-1830 END -->
             </div>
 
             <!-- Export Buttons -->
@@ -1047,6 +1228,7 @@ watch(() => props.selection, (newVal) => {
             :loading="loading"
             :dataKey="dataKey"
             v-model:selection="selectedItems"
+            v-model:expandedRows="expandedRows"
             :paginator="paginator"
             :paginatorPosition="paginatorPosition"
             :rows="rows"
@@ -1084,9 +1266,32 @@ watch(() => props.selection, (newVal) => {
             @sort="onSort"
             @row-reorder="onRowReorder"
             @col-reorder="onColReorder"
+            @row-expand="onRowExpand"
+            @row-collapse="onRowCollapse"
         >
+            <!-- DD20250712-1830 BEGIN - Row expansion controls in header -->
+            <template v-if="showExpandControls && expandControlsPosition === 'header'" #header>
+                <div class="flex justify-end gap-2">
+                    <PButton
+                        :label="expandAllLabel"
+                        icon="pi pi-plus"
+                        text
+                        size="small"
+                        @click="expandAll"
+                    />
+                    <PButton
+                        :label="collapseAllLabel"
+                        icon="pi pi-minus"
+                        text
+                        size="small"
+                        @click="collapseAll"
+                    />
+                </div>
+            </template>
+            <!-- DD20250712-1830 END -->
+
             <!-- Column Toggle in Header -->
-            <template v-if="columnToggle" #header>
+            <template v-if="columnToggle && (!showExpandControls || expandControlsPosition !== 'header')" #header>
                 <div :class="columnTogglePosition === 'left' ? 'text-left' : 'text-right'">
                     <PMultiSelect 
                         :modelValue="visibleColumns" 
@@ -1113,6 +1318,18 @@ watch(() => props.selection, (newVal) => {
                     <i class="pi pi-spin pi-spinner text-2xl"></i>
                 </div>
             </template>
+
+            <!-- DD20250712-1830 BEGIN - Row expander column -->
+            <PColumn 
+                v-if="hasRowExpansion"
+                expander
+                :style="rowExpansion?.expanderColumn?.style || 'width: 5rem'"
+                :frozen="rowExpansion?.expanderColumn?.frozen || false"
+                :exportable="false"
+                :reorderableColumn="false"
+                :resizeable="false"
+            />
+            <!-- DD20250712-1830 END -->
 
             <!-- Selection Column -->
             <PColumn
@@ -1251,6 +1468,33 @@ watch(() => props.selection, (newVal) => {
                     </template>
                 </template>
             </PColumn>
+
+            <!-- DD20250712-1830 BEGIN - Row expansion template -->
+            <template v-if="hasRowExpansion" #expansion="slotProps">
+                <div class="p-4">
+                    <!-- Expansion title -->
+                    <h5 v-if="getExpansionTitle(slotProps.data)" class="mb-4 text-lg font-semibold">
+                        {{ getExpansionTitle(slotProps.data) }}
+                    </h5>
+                    
+                    <!-- Nested DataTable Widget -->
+                    <template v-if="rowExpansion?.expandedContent?.type === 'datatable'">
+                        <template v-if="getNestedWidgetConfig(slotProps.data)">
+                            <WidgetRenderer 
+                                :widgets="[getNestedWidgetConfig(slotProps.data)!]"
+                                @action="$emit('action', $event)"
+                                @crud-action="$emit('crud-action', $event)"
+                            />
+                        </template>
+                    </template>
+                    
+                    <!-- Custom content (for future extensibility) -->
+                    <template v-else-if="rowExpansion?.expandedContent?.type === 'custom'">
+                        <div v-html="rowExpansion?.expandedContent?.customTemplate"></div>
+                    </template>
+                </div>
+            </template>
+            <!-- DD20250712-1830 END -->
         </PDataTable>
 
         <!-- Footer -->

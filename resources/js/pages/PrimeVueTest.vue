@@ -42,6 +42,12 @@ const dataTableWidgets = computed(() =>
     props.widgets.filter(w => w.type === 'datatable')
 );
 
+// DD20250712-1930 BEGIN - Add row expansion demo widget
+const rowExpansionDataTable = computed(() => 
+    dataTableWidgets.value.find(w => w.props.header?.title === 'Products with Order History - Row Expansion Demo')
+);
+// DD20250712-1930 END
+
 // DD20250710-1240 - Add conditional styling DataTable
 const conditionalStylingDataTable = computed(() => 
     dataTableWidgets.value.find(w => w.props.header?.title === 'Conditional Row Styling Demo')
@@ -103,6 +109,36 @@ const handleCrudAction = (payload: any) => {
             break;
     }
 };
+
+// DD20250712-1930 BEGIN - Handle row expansion events
+const handleRowExpansion = (event: any) => {
+    console.log('Row Expanded:', event);
+    // Optional: Show toast notification or perform other actions
+};
+
+const handleRowCollapse = (event: any) => {
+    console.log('Row Collapsed:', event);
+    // Optional: Show toast notification or perform other actions
+};
+
+const handleHeaderAction = (action: string) => {
+    console.log('Header Action:', action);
+    
+    switch (action) {
+        case 'add':
+            alert('Add new product clicked');
+            break;
+        case 'import':
+            alert('Import products clicked');
+            break;
+        case 'refresh':
+            alert('Refresh data clicked');
+            break;
+        default:
+            alert(`Header action: ${action}`);
+    }
+};
+// DD20250712-1930 END
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -178,10 +214,54 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     Server-side data tables with sorting, filtering, and pagination:
                                 </p>
 
+                                <!-- DD20250712-1930 BEGIN - Row Expansion Demo Section -->
+                                <div v-if="rowExpansionDataTable" class="mb-8">
+                                    <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
+                                        🆕 Row Expansion Feature Demo - LATEST NEW FEATURE!
+                                    </h4>
+                                    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                        <div class="mb-4 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 p-4 text-sm dark:from-blue-900/20 dark:to-purple-900/20">
+                                            <div class="mb-3 text-lg font-semibold text-gray-800 dark:text-gray-200">
+                                                🚀 Row Expansion with Nested DataTables
+                                            </div>
+                                            <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-1">
+                                                <div class="space-y-2">
+                                                    <div class="text-blue-800 dark:text-blue-200">
+                                                        <strong>✨ New Features:</strong>
+                                                    </div>
+                                                    <ul class="list-inside list-disc space-y-1 text-sm text-blue-700 dark:text-blue-300">
+                                                        <li><strong>Expandable Rows:</strong> Click the expand icon (▶) to view nested order history</li>
+                                                        <li><strong>Nested DataTables:</strong> Full DataTableWidget with sorting, formatting, and styling</li>
+                                                        <li><strong>Expand/Collapse All:</strong> Header buttons to expand or collapse all rows at once</li>
+                                                        <li><strong>Dynamic Titles:</strong> Custom titles like "Order History for [Product Name]"</li>
+                                                        <li><strong>Event Handling:</strong> Row expand/collapse events (check console)</li>
+                                                        <li><strong>Conditional Styling:</strong> Color-coded rows based on inventory status</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="mt-3 text-xs text-gray-600 dark:text-gray-400">
+                                                💡 <strong>Implementation:</strong> Uses nested DataTableWidgets with full functionality - export, search, styling all work in nested tables too!
+                                            </div>
+                                            <div class="mt-2 text-xs text-gray-500 dark:text-gray-500">
+                                                🏆 <strong>Future-Proof:</strong> All future DataTableWidget features automatically work in expanded rows
+                                            </div>
+                                        </div>
+                                        <WidgetRenderer 
+                                            :widgets="[rowExpansionDataTable]" 
+                                            @action="handleCustomAction"
+                                            @crud-action="handleCrudAction"
+                                            @header-action="handleHeaderAction"
+                                            @row-expand="handleRowExpansion"
+                                            @row-collapse="handleRowCollapse"
+                                        />
+                                    </div>
+                                </div>
+                                <!-- DD20250712-1930 END -->
+
                                  <!-- DD20250710-1240 - Conditional Styling DataTable -->
                                  <div v-if="conditionalStylingDataTable" class="mb-8">
                                     <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
-                                        🎨 Conditional Row Styling Demo - NEW FEATURE!
+                                        🎨 Conditional Row Styling Demo
                                     </h4>
                                     <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                                         <div class="mb-4 rounded-lg bg-gradient-to-r from-green-50 to-blue-50 p-4 text-sm dark:from-green-900/20 dark:to-blue-900/20">
@@ -246,7 +326,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 </div>
 
                                 <!-- Auto Mode DataTables -->
-                                <div v-if="autoModeDataTables.length > 0" class="space-y-8">
+                                <div v-if="autoModeDataTables.length > 0" class="mb-8">
                                     <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
                                         Auto Mode DataTables - Intelligent Loading Strategy
                                     </h4>

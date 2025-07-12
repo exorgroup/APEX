@@ -96,6 +96,205 @@ class PrimeVueTestController extends Controller
                 'label' => 'Multiple Dates'
             ],
 
+            // DD20250712-1930 BEGIN - NEW: Row Expansion DataTable Demo (before existing tables)
+            [
+                'type' => 'datatable',
+                'header' => [
+                    'title' => 'Products with Order History - Row Expansion Demo',
+                    'subtitle' => '🆕 NEW FEATURE: Click the expand icon to view order details for each product',
+                    'actions' => [
+                        ['label' => 'Add Product', 'icon' => 'pi pi-plus', 'action' => 'add', 'severity' => 'success'],
+                        ['label' => 'Refresh', 'icon' => 'pi pi-refresh', 'action' => 'refresh', 'severity' => 'info']
+                    ]
+                ],
+                'footer' => [
+                    'showRecordCount' => true,
+                    'showSelectedCount' => true,
+                    'text' => 'Expand rows to see order history with nested DataTableWidget'
+                ],
+                'columns' => [
+                    [
+                        'field' => 'code',
+                        'header' => 'Product Code',
+                        'sortable' => true,
+                        'style' => 'width: 120px'
+                    ],
+                    [
+                        'field' => 'name',
+                        'header' => 'Product Name',
+                        'sortable' => true,
+                        'style' => 'min-width: 200px'
+                    ],
+                    [
+                        'field' => 'category',
+                        'header' => 'Category',
+                        'sortable' => true,
+                        'style' => 'width: 120px'
+                    ],
+                    [
+                        'field' => 'price',
+                        'header' => 'Price',
+                        'sortable' => true,
+                        'dataType' => 'currency',
+                        'format' => 2,
+                        'leadText' => '$',
+                        'bodyStyle' => 'text-align: right',
+                        'headerStyle' => 'text-align: right',
+                        'style' => 'width: 100px'
+                    ],
+                    [
+                        'field' => 'quantity',
+                        'header' => 'Stock',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: center',
+                        'headerStyle' => 'text-align: center',
+                        'style' => 'width: 80px'
+                    ],
+                    [
+                        'field' => 'inventoryStatus',
+                        'header' => 'Status',
+                        'sortable' => true,
+                        'style' => 'width: 120px'
+                    ]
+                ],
+                'dataSource' => [
+                    'url' => '/products/with-orders',
+                    'method' => 'GET',
+                    'lazy' => false // Client-side for demo
+                ],
+                'rowExpansion' => [
+                    'enabled' => true,
+                    'expanderColumn' => [
+                        'style' => 'width: 5rem',
+                        'frozen' => false
+                    ],
+                    'expandControls' => [
+                        'showExpandAll' => true,
+                        'showCollapseAll' => true,
+                        'expandAllLabel' => 'Expand All Products',
+                        'collapseAllLabel' => 'Collapse All Products',
+                        'position' => 'header'
+                    ],
+                    'expandedContent' => [
+                        'type' => 'datatable',
+                        'title' => 'Current orders for',
+                        'titleField' => 'name',
+                        'dataField' => 'orders',
+                        'widget' => [
+                            'columns' => [
+                                [
+                                    'field' => 'id',
+                                    'header' => 'Order ID',
+                                    'sortable' => true,
+                                    'style' => 'width: 120px'
+                                ],
+                                [
+                                    'field' => 'customer',
+                                    'header' => 'Customer',
+                                    'sortable' => true,
+                                    'style' => 'min-width: 150px'
+                                ],
+                                [
+                                    'field' => 'date',
+                                    'header' => 'Order Date',
+                                    'sortable' => true,
+                                    'dataType' => 'shortdate',
+                                    'style' => 'width: 120px'
+                                ],
+                                [
+                                    'field' => 'quantity',
+                                    'header' => 'Qty',
+                                    'sortable' => true,
+                                    'bodyStyle' => 'text-align: center',
+                                    'headerStyle' => 'text-align: center',
+                                    'style' => 'width: 60px'
+                                ],
+                                [
+                                    'field' => 'amount',
+                                    'header' => 'Amount',
+                                    'sortable' => true,
+                                    'dataType' => 'currency',
+                                    'format' => 2,
+                                    'leadText' => '$',
+                                    'bodyStyle' => 'text-align: right',
+                                    'headerStyle' => 'text-align: right',
+                                    'style' => 'width: 100px'
+                                ],
+                                [
+                                    'field' => 'status',
+                                    'header' => 'Status',
+                                    'sortable' => true,
+                                    'style' => 'width: 120px'
+                                ]
+                            ],
+                            'paginator' => false,
+                            'size' => 'small',
+                            'stripedRows' => false,
+                            'showGridlines' => true,
+                            'emptyMessage' => 'No orders found for this product',
+                            'tableStyle' => 'min-width: 700px'
+                        ]
+                    ],
+                    'events' => [
+                        'onExpand' => true,
+                        'onCollapse' => true
+                    ]
+                ],
+                'gridLines' => 'both',
+                'stripedRows' => true,
+                'showGridlines' => true,
+                'size' => 'normal',
+                'paginator' => true,
+                'paginatorPosition' => 'bottom',
+                'rows' => 5,
+                'rowsPerPageOptions' => [3, 5, 10],
+                'currentPageReportTemplate' => 'Showing {first} to {last} of {totalRecords} products',
+                'sortMode' => 'single',
+                'removableSort' => true,
+                'selectionMode' => 'single',
+                'globalFilter' => true,
+                'exportable' => true,
+                'exportFormats' => ['csv'],
+                'exportFilename' => 'products-with-orders-' . date('Y-m-d'),
+                'responsiveLayout' => 'scroll',
+                'tableStyle' => 'min-width: 80rem',
+                'emptyMessage' => 'No products found',
+                // Add conditional styling for inventory status
+                'conditionalStyles' => [
+                    [
+                        'column' => 'inventoryStatus',
+                        'value' => 'LOWSTOCK',
+                        'operator' => 'eq',
+                        'priority' => 1,
+                        'styleObject' => [
+                            'backgroundColor' => '#fefce8',
+                            'color' => '#a16207'
+                        ]
+                    ],
+                    [
+                        'column' => 'inventoryStatus',
+                        'value' => 'OUTOFSTOCK',
+                        'operator' => 'eq',
+                        'priority' => 1,
+                        'styleObject' => [
+                            'backgroundColor' => '#fef2f2',
+                            'color' => '#dc2626'
+                        ]
+                    ],
+                    [
+                        'column' => 'inventoryStatus',
+                        'value' => 'INSTOCK',
+                        'operator' => 'eq',
+                        'priority' => 2,
+                        'styleObject' => [
+                            'backgroundColor' => '#f0fdf4',
+                            'color' => '#166534'
+                        ]
+                    ]
+                ]
+            ],
+            // DD20250712-1930 END
+
             // COMPREHENSIVE DataTable with all features
             [
                 'type' => 'datatable',

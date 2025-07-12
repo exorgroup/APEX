@@ -72,5 +72,8 @@ Route::middleware([
         Route::get('/small', [ProductController::class, 'small']);
         Route::get('/all', [ProductController::class, 'all']);
         Route::get('/datatypes', [ProductController::class, 'datatypes']);
+        // DD20250712-1930 BEGIN - Add route for products with orders (row expansion demo)
+        Route::get('/with-orders', [ProductController::class, 'withOrders']);
+        // DD20250712-1930 END
     });
 });

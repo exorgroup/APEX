@@ -62,6 +62,16 @@ class ProductController extends Controller
         return response()->json($this->getProductsData());
     }
 
+    // DD20250712-1930 BEGIN - Add products with orders for row expansion demo
+    /**
+     * Get products with nested orders data for row expansion demo
+     */
+    public function withOrders(): JsonResponse
+    {
+        return response()->json($this->getProductsWithOrdersData());
+    }
+    // DD20250712-1930 END
+
     /**
      * Get products with various data types for demo
      */
@@ -72,79 +82,237 @@ class ProductController extends Controller
                 'id' => '1',
                 'name' => 'Premium Wireless Headphones with Noise Cancellation',
                 'price' => 299.99,
-                'cost' => 150.50,
+                'cost' => 150.75,
                 'discount' => 15.5,
-                'quantity' => 125,
-                'createdDate' => '2024-01-15T10:30:00',
-                'lastUpdate' => '2024-12-20T14:45:30',
-                'nextReview' => '2025-02-15T09:00:00',
-                'openTime' => '09:00:00',
-                'image' => 'https://via.placeholder.com/150x150/3B82F6/FFFFFF?text=Headphones',
-                'rating' => 4.5
+                'stock' => 45,
+                'rating' => 4.8,
+                'releaseDate' => '2023-01-15',
+                'lastUpdated' => '2024-01-15 14:30:00',
+                'featured' => true,
+                'category' => 'Electronics'
             ],
             [
                 'id' => '2',
-                'name' => 'Smart Watch Series X',
-                'price' => 399.00,
-                'cost' => 200.00,
+                'name' => 'Ergonomic Office Chair',
+                'price' => 549.00,
+                'cost' => 275.50,
                 'discount' => 10.0,
-                'quantity' => 89,
-                'createdDate' => '2024-02-20T11:15:00',
-                'lastUpdate' => '2024-12-21T16:30:00',
-                'nextReview' => '2025-03-01T10:00:00',
-                'openTime' => '08:30:00',
-                'image' => 'https://via.placeholder.com/150x150/10B981/FFFFFF?text=Watch',
-                'rating' => 4.8
+                'stock' => 12,
+                'rating' => 4.6,
+                'releaseDate' => '2023-03-20',
+                'lastUpdated' => '2024-01-10 09:15:00',
+                'featured' => false,
+                'category' => 'Furniture'
             ],
             [
                 'id' => '3',
-                'name' => 'Portable Bluetooth Speaker',
-                'price' => 79.99,
-                'cost' => 35.75,
-                'discount' => 25.0,
-                'quantity' => 250,
-                'createdDate' => '2024-03-10T09:00:00',
-                'lastUpdate' => '2024-12-19T13:20:00',
-                'nextReview' => '2025-01-30T14:00:00',
-                'openTime' => '10:00:00',
-                'image' => 'https://via.placeholder.com/150x150/F59E0B/FFFFFF?text=Speaker',
-                'rating' => 4.2
-            ],
-            [
-                'id' => '4',
-                'name' => 'Laptop Stand',
-                'price' => 49.99,
-                'cost' => 20.00,
-                'discount' => 5.5,
-                'quantity' => 500,
-                'createdDate' => '2024-04-05T12:00:00',
-                'lastUpdate' => '2024-12-18T10:15:00',
-                'nextReview' => '2025-02-10T11:30:00',
-                'openTime' => '09:30:00',
-                'image' => 'https://via.placeholder.com/150x150/EF4444/FFFFFF?text=Stand',
-                'rating' => 3.9
-            ],
-            [
-                'id' => '5',
-                'name' => 'USB-C Hub Multiport Adapter with HDMI and Ethernet',
-                'price' => 89.99,
-                'cost' => 40.00,
+                'name' => 'Smart Fitness Tracker',
+                'price' => 199.99,
+                'cost' => 89.25,
                 'discount' => 20.0,
-                'quantity' => 175,
-                'createdDate' => '2024-05-12T14:30:00',
-                'lastUpdate' => '2024-12-22T09:45:00',
-                'nextReview' => '2025-03-15T15:00:00',
-                'openTime' => '08:00:00',
-                'image' => 'https://www.icentre.com.mt/wp-content/uploads/2025/01/EPICO-Spello-USB-C-Hub-9in1-space-grey-.jpg',
-                'rating' => 4.6
+                'stock' => 78,
+                'rating' => 4.4,
+                'releaseDate' => '2023-05-10',
+                'lastUpdated' => '2024-01-12 16:45:00',
+                'featured' => true,
+                'category' => 'Electronics'
             ]
         ];
 
         return response()->json($products);
     }
 
+    // DD20250712-1930 BEGIN - Add products with orders data structure
     /**
-     * Product data array
+     * Get products with nested orders for row expansion
+     */
+    private function getProductsWithOrdersData(): array
+    {
+        return [
+            [
+                'id' => '1000',
+                'code' => 'f230fh0g3',
+                'name' => 'Bamboo Watch',
+                'description' => 'Premium bamboo watch with eco-friendly design',
+                'image' => 'bamboo-watch.jpg',
+                'price' => 65,
+                'category' => 'Accessories',
+                'quantity' => 24,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 5,
+                'orders' => [
+                    [
+                        'id' => '1000-0',
+                        'productCode' => 'f230fh0g3',
+                        'date' => '2020-09-13',
+                        'amount' => 65,
+                        'quantity' => 1,
+                        'customer' => 'David James',
+                        'status' => 'PENDING'
+                    ],
+                    [
+                        'id' => '1000-1',
+                        'productCode' => 'f230fh0g3',
+                        'date' => '2020-05-14',
+                        'amount' => 130,
+                        'quantity' => 2,
+                        'customer' => 'Leon Rodrigues',
+                        'status' => 'DELIVERED'
+                    ],
+                    [
+                        'id' => '1000-2',
+                        'productCode' => 'f230fh0g3',
+                        'date' => '2021-02-08',
+                        'amount' => 195,
+                        'quantity' => 3,
+                        'customer' => 'Anna Chen',
+                        'status' => 'CANCELLED'
+                    ]
+                ]
+            ],
+            [
+                'id' => '1001',
+                'code' => 'nvklal433',
+                'name' => 'Black Watch',
+                'description' => 'Sleek black watch with modern design',
+                'image' => 'black-watch.jpg',
+                'price' => 72,
+                'category' => 'Accessories',
+                'quantity' => 61,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 4,
+                'orders' => [
+                    [
+                        'id' => '1001-0',
+                        'productCode' => 'nvklal433',
+                        'date' => '2021-01-20',
+                        'amount' => 144,
+                        'quantity' => 2,
+                        'customer' => 'Maria Garcia',
+                        'status' => 'DELIVERED'
+                    ],
+                    [
+                        'id' => '1001-1',
+                        'productCode' => 'nvklal433',
+                        'date' => '2021-03-15',
+                        'amount' => 72,
+                        'quantity' => 1,
+                        'customer' => 'John Smith',
+                        'status' => 'PENDING'
+                    ]
+                ]
+            ],
+            [
+                'id' => '1002',
+                'code' => 'zz21cz3c1',
+                'name' => 'Blue Band',
+                'description' => 'Comfortable blue fitness band',
+                'image' => 'blue-band.jpg',
+                'price' => 79,
+                'category' => 'Fitness',
+                'quantity' => 2,
+                'inventoryStatus' => 'LOWSTOCK',
+                'rating' => 3,
+                'orders' => [
+                    [
+                        'id' => '1002-0',
+                        'productCode' => 'zz21cz3c1',
+                        'date' => '2021-04-10',
+                        'amount' => 158,
+                        'quantity' => 2,
+                        'customer' => 'Sarah Wilson',
+                        'status' => 'DELIVERED'
+                    ]
+                ]
+            ],
+            [
+                'id' => '1003',
+                'code' => '244wgerg2',
+                'name' => 'Blue T-Shirt',
+                'description' => 'Comfortable cotton blue t-shirt',
+                'image' => 'blue-t-shirt.jpg',
+                'price' => 29,
+                'category' => 'Clothing',
+                'quantity' => 25,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 5,
+                'orders' => [
+                    [
+                        'id' => '1003-0',
+                        'productCode' => '244wgerg2',
+                        'date' => '2021-05-22',
+                        'amount' => 87,
+                        'quantity' => 3,
+                        'customer' => 'Michael Brown',
+                        'status' => 'DELIVERED'
+                    ],
+                    [
+                        'id' => '1003-1',
+                        'productCode' => '244wgerg2',
+                        'date' => '2021-06-05',
+                        'amount' => 58,
+                        'quantity' => 2,
+                        'customer' => 'Emma Davis',
+                        'status' => 'PENDING'
+                    ],
+                    [
+                        'id' => '1003-2',
+                        'productCode' => '244wgerg2',
+                        'date' => '2021-06-18',
+                        'amount' => 29,
+                        'quantity' => 1,
+                        'customer' => 'Robert Taylor',
+                        'status' => 'DELIVERED'
+                    ],
+                    [
+                        'id' => '1003-3',
+                        'productCode' => '244wgerg2',
+                        'date' => '2021-07-02',
+                        'amount' => 116,
+                        'quantity' => 4,
+                        'customer' => 'Lisa Anderson',
+                        'status' => 'CANCELLED'
+                    ]
+                ]
+            ],
+            [
+                'id' => '1004',
+                'code' => 'h456wer53',
+                'name' => 'Bracelet',
+                'description' => 'Elegant silver bracelet',
+                'image' => 'bracelet.jpg',
+                'price' => 15,
+                'category' => 'Accessories',
+                'quantity' => 73,
+                'inventoryStatus' => 'INSTOCK',
+                'rating' => 4,
+                'orders' => [
+                    [
+                        'id' => '1004-0',
+                        'productCode' => 'h456wer53',
+                        'date' => '2021-08-12',
+                        'amount' => 45,
+                        'quantity' => 3,
+                        'customer' => 'Jennifer White',
+                        'status' => 'DELIVERED'
+                    ],
+                    [
+                        'id' => '1004-1',
+                        'productCode' => 'h456wer53',
+                        'date' => '2021-09-01',
+                        'amount' => 30,
+                        'quantity' => 2,
+                        'customer' => 'Kevin Johnson',
+                        'status' => 'PENDING'
+                    ]
+                ]
+            ]
+        ];
+    }
+    // DD20250712-1930 END
+
+    /**
+     * Get basic product data
      */
     private function getProductsData(): array
     {
@@ -211,7 +379,7 @@ class ProductController extends Controller
             ],
             [
                 'id' => '1005',
-                'code' => 'av2231fwg',
+                'code' => '356fgerg3',
                 'name' => 'Brown Purse',
                 'description' => 'Product Description',
                 'image' => 'brown-purse.jpg',
@@ -268,9 +436,7 @@ class ProductController extends Controller
                 'quantity' => 63,
                 'inventoryStatus' => 'INSTOCK',
                 'rating' => 3
-            ],
-            // ... Add the rest of the products from your data file here
-            // I'm truncating for brevity, but you should include all 30 products
+            ]
         ];
     }
 }
