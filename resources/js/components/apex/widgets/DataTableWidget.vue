@@ -7,9 +7,6 @@ import PButton from 'primevue/button';
 import PDataTable from 'primevue/datatable';
 import PColumn from 'primevue/column';
 import PInputText from 'primevue/inputtext';
-import PInputNumber from 'primevue/inputnumber';
-import PCalendar from 'primevue/calendar';
-import PDropdown from 'primevue/dropdown';
 import PDivider from 'primevue/divider';
 import vTooltip from 'primevue/tooltip';
 
@@ -17,9 +14,6 @@ interface Column {
     field: string;
     header: string;
     sortable?: boolean;
-    filter?: boolean;
-    filterType?: 'text' | 'numeric' | 'date' | 'dropdown' | 'multiselect';
-    filterOptions?: Array<{ label: string; value: string }>;
     style?: string;
     bodyStyle?: string;
     headerStyle?: string;
@@ -113,12 +107,9 @@ interface Props {
     selectAll?: boolean;
     // Group Actions
     groupActions?: GroupAction[];
-    // Filters
-    filters?: any;
-    filterDisplay?: 'menu' | 'row';
+    // Global Filter
     globalFilter?: boolean;
     globalFilterFields?: string[];
-    filterMatchModeOptions?: any;
     // Scroll
     scrollable?: boolean;
     scrollHeight?: string;
@@ -193,7 +184,6 @@ const props = withDefaults(defineProps<Props>(), {
     metaKeySelection: true,
     selectAll: false,
     groupActions: () => [],
-    filterDisplay: 'row',
     globalFilter: false,
     scrollable: false,
     scrollHeight: 'flex',
@@ -452,7 +442,6 @@ const actionColumns = computed(() => {
             field: '_action_view',
             header: '',
             sortable: false,
-            filter: false,
             exportable: false,
             reorderable: false,
             resizable: false,
@@ -466,7 +455,6 @@ const actionColumns = computed(() => {
             field: '_action_edit',
             header: '',
             sortable: false,
-            filter: false,
             exportable: false,
             reorderable: false,
             resizable: false,
@@ -480,7 +468,6 @@ const actionColumns = computed(() => {
             field: '_action_delete',
             header: '',
             sortable: false,
-            filter: false,
             exportable: false,
             reorderable: false,
             resizable: false,
@@ -494,7 +481,6 @@ const actionColumns = computed(() => {
             field: '_action_history',
             header: '',
             sortable: false,
-            filter: false,
             exportable: false,
             reorderable: false,
             resizable: false,
@@ -508,7 +494,6 @@ const actionColumns = computed(() => {
             field: '_action_print',
             header: '',
             sortable: false,
-            filter: false,
             exportable: false,
             reorderable: false,
             resizable: false,
@@ -570,37 +555,6 @@ const filteredData = computed(() => {
         });
     }
     
-    // Apply column filters for client-side mode
-    if (filters.value && Object.keys(filters.value).length > 0) {
-        Object.keys(filters.value).forEach(field => {
-            const filterMeta = filters.value[field];
-            if (filterMeta && filterMeta.constraints) {
-                filterMeta.constraints.forEach((constraint: any) => {
-                    if (constraint.value !== null && constraint.value !== undefined) {
-                        filtered = filtered.filter(item => {
-                            const itemValue = item[field];
-                            const filterValue = constraint.value;
-                            const matchMode = constraint.matchMode || 'contains';
-                            
-                            switch (matchMode) {
-                                case 'contains':
-                                    return String(itemValue).toLowerCase().includes(String(filterValue).toLowerCase());
-                                case 'equals':
-                                    return itemValue === filterValue;
-                                case 'notEquals':
-                                    return itemValue !== filterValue;
-                                case 'in':
-                                    return Array.isArray(filterValue) && filterValue.includes(itemValue);
-                                default:
-                                    return true;
-                            }
-                        });
-                    }
-                });
-            }
-        });
-    }
-    
     return filtered;
 });
 
@@ -611,11 +565,7 @@ const clientSideTotalRecords = computed(() => {
 
 // Initialize filters
 const initFilters = () => {
-    if (!props.filters) {
-        filters.value = {};
-    } else {
-        filters.value = props.filters;
-    }
+    // No column filters to initialize
 };
 
 // Determine lazy mode for auto
@@ -691,7 +641,6 @@ const loadData = async (event: any = null) => {
                 sortField: event?.sortField || sortField.value,
                 sortOrder: event?.sortOrder || sortOrder.value,
                 multiSortMeta: props.sortMode === 'multiple' ? multiSortMeta.value : undefined,
-                filters: event?.filters ?? filters.value,
                 globalFilter: globalFilterValue.value,
                 columns: props.columns  // Send column configuration
             };
@@ -737,13 +686,8 @@ const onSort = (event: any) => {
 };
 
 const onFilter = (event: any) => {
-    lazyParams.value = event;
-    filters.value = event.filters;
-    first.value = 0; // Reset to first page on filter
-    // Only reload data if using lazy loading
-    if (isLazyMode.value) {
-        loadData(event);
-    }
+    // Column filters removed - only global filter supported
+    console.log('Column filters not supported');
 };
 
 const onGlobalFilter = () => {
@@ -1103,7 +1047,6 @@ watch(() => props.selection, (newVal) => {
             :loading="loading"
             :dataKey="dataKey"
             v-model:selection="selectedItems"
-            v-model:filters="filters"
             :paginator="paginator"
             :paginatorPosition="paginatorPosition"
             :rows="rows"
@@ -1120,7 +1063,6 @@ watch(() => props.selection, (newVal) => {
             :sortOrder="sortOrder"
             :selectionMode="selectionMode === 'checkbox' ? undefined : selectionMode"
             :metaKeySelection="metaKeySelection"
-            :filterDisplay="filterDisplay"
             :globalFilterFields="globalFilterFields || columns.map(col => col.field)"
             :scrollable="scrollable"
             :scrollHeight="scrollHeight"
@@ -1140,7 +1082,6 @@ watch(() => props.selection, (newVal) => {
             :rowStyle="getRowStyle"
             @page="onPage"
             @sort="onSort"
-            @filter="onFilter"
             @row-reorder="onRowReorder"
             @col-reorder="onColReorder"
         >
@@ -1198,10 +1139,6 @@ watch(() => props.selection, (newVal) => {
                 :key="col.field"
                 :field="col.field"
                 :sortable="col.sortable"
-                :filter="col.filter"
-                :filterField="col.field"
-                :filterMatchMode="col.filterType === 'text' ? 'contains' : 'equals'"
-                :showFilterMatchModes="filterDisplay === 'menu'"
                 :style="col.style"
                 :bodyStyle="col.bodyStyle"
                 :headerStyle="col.headerStyle"
@@ -1312,59 +1249,6 @@ watch(() => props.selection, (newVal) => {
                             {{ formatCellValue(slotProps.data[col.field], col) }}
                         </span>
                     </template>
-                </template>
-
-                <!-- Column Filter Template -->
-                <template v-if="col.filter" #filter="{ filterModel }">
-                    <!-- Text Filter -->
-                    <PInputText
-                        v-if="!col.filterType || col.filterType === 'text'"
-                        v-model="filterModel.value"
-                        type="text"
-                        class="p-column-filter"
-                        :placeholder="`Search ${col.header}...`"
-                    />
-                    
-                    <!-- Numeric Filter -->
-                    <PInputNumber
-                        v-else-if="col.filterType === 'numeric'"
-                        v-model="filterModel.value"
-                        class="p-column-filter"
-                        :placeholder="`Filter ${col.header}...`"
-                    />
-                    
-                    <!-- Date Filter -->
-                    <PCalendar
-                        v-else-if="col.filterType === 'date'"
-                        v-model="filterModel.value"
-                        dateFormat="mm/dd/yy"
-                        class="p-column-filter"
-                        :placeholder="`Filter ${col.header}...`"
-                    />
-                    
-                    <!-- Dropdown Filter -->
-                    <PDropdown
-                        v-else-if="col.filterType === 'dropdown'"
-                        v-model="filterModel.value"
-                        :options="col.filterOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        :placeholder="`Select ${col.header}...`"
-                        class="p-column-filter w-full"
-                        :showClear="true"
-                    />
-                    
-                    <!-- MultiSelect Filter -->
-                    <PMultiSelect
-                        v-else-if="col.filterType === 'multiselect'"
-                        v-model="filterModel.value"
-                        :options="col.filterOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        :placeholder="`Select ${col.header}...`"
-                        class="p-column-filter w-full"
-                        :maxSelectedLabels="1"
-                    />
                 </template>
             </PColumn>
         </PDataTable>

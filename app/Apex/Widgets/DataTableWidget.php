@@ -73,28 +73,6 @@ class DataTableWidget extends BaseWidget
                                 'default' => true,
                                 'description' => 'Enable sorting'
                             ],
-                            'filter' => [
-                                'type' => 'boolean',
-                                'default' => false,
-                                'description' => 'Enable filtering'
-                            ],
-                            'filterType' => [
-                                'type' => 'string',
-                                'enum' => ['text', 'numeric', 'date', 'dropdown', 'multiselect'],
-                                'default' => 'text',
-                                'description' => 'Filter type'
-                            ],
-                            'filterOptions' => [
-                                'type' => 'array',
-                                'description' => 'Options for dropdown/multiselect filters',
-                                'items' => [
-                                    'type' => 'object',
-                                    'properties' => [
-                                        'label' => ['type' => 'string'],
-                                        'value' => ['type' => 'string']
-                                    ]
-                                ]
-                            ],
                             'style' => [
                                 'type' => 'string',
                                 'description' => 'Column style'
@@ -328,17 +306,7 @@ class DataTableWidget extends BaseWidget
                         ]
                     ]
                 ],
-                // Filter Configuration
-                'filters' => [
-                    'type' => 'object',
-                    'description' => 'Initial filter values'
-                ],
-                'filterDisplay' => [
-                    'type' => 'string',
-                    'enum' => ['menu', 'row'],
-                    'default' => 'row',
-                    'description' => 'Filter display mode'
-                ],
+                // Global Filter Configuration
                 'globalFilter' => [
                     'type' => 'boolean',
                     'default' => false,
@@ -348,10 +316,6 @@ class DataTableWidget extends BaseWidget
                     'type' => 'array',
                     'items' => ['type' => 'string'],
                     'description' => 'Fields to include in global filter'
-                ],
-                'filterMatchModeOptions' => [
-                    'type' => 'object',
-                    'description' => 'Available filter match modes per column'
                 ],
                 // Scroll Configuration
                 'scrollable' => [
@@ -580,9 +544,6 @@ class DataTableWidget extends BaseWidget
                 'field' => $column['field'],
                 'header' => $column['header'],
                 'sortable' => $column['sortable'] ?? true,
-                'filter' => $column['filter'] ?? false,
-                'filterType' => $column['filterType'] ?? 'text',
-                'filterOptions' => $column['filterOptions'] ?? null,
                 'style' => $column['style'] ?? null,
                 'bodyStyle' => $column['bodyStyle'] ?? null,
                 'headerStyle' => $column['headerStyle'] ?? null,
@@ -642,12 +603,9 @@ class DataTableWidget extends BaseWidget
                 'selectAll' => $config['selectAll'] ?? false,
                 // Group Actions
                 'groupActions' => $config['groupActions'] ?? [],
-                // Filters
-                'filters' => $config['filters'] ?? [],
-                'filterDisplay' => $config['filterDisplay'] ?? 'row',
+                // Global Filter
                 'globalFilter' => $config['globalFilter'] ?? false,
                 'globalFilterFields' => $config['globalFilterFields'] ?? [],
-                'filterMatchModeOptions' => $config['filterMatchModeOptions'] ?? [],
                 // Scroll
                 'scrollable' => $config['scrollable'] ?? false,
                 'scrollHeight' => $config['scrollHeight'] ?? 'flex',
