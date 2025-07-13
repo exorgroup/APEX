@@ -42,6 +42,12 @@ const dataTableWidgets = computed(() =>
     props.widgets.filter(w => w.type === 'datatable')
 );
 
+//DD 20250713:2021 - BEGIN - Add row locking demo widget
+const rowLockingDataTable = computed(() => 
+    dataTableWidgets.value.find(w => w.props.header?.title === 'Products with Row Locking - Latest Feature Demo')
+);
+//DD 20250713:2021 - END
+
 // DD20250712-1930 BEGIN - Add row expansion demo widget
 const rowExpansionDataTable = computed(() => 
     dataTableWidgets.value.find(w => w.props.header?.title === 'Products with Order History - Row Expansion Demo')
@@ -110,6 +116,20 @@ const handleCrudAction = (payload: any) => {
     }
 };
 
+//DD 20250713:2021 - BEGIN - Handle row locking events
+const handleRowLock = (payload: any) => {
+    console.log('Row Locked:', payload);
+    // Optional: Show toast notification
+    // toast.add({ severity: 'info', summary: 'Row Locked', detail: `Locked row with ID: ${payload.row.id}`, life: 3000 });
+};
+
+const handleRowUnlock = (payload: any) => {
+    console.log('Row Unlocked:', payload);
+    // Optional: Show toast notification
+    // toast.add({ severity: 'success', summary: 'Row Unlocked', detail: `Unlocked row with ID: ${payload.row.id}`, life: 3000 });
+};
+//DD 20250713:2021 - END
+
 // DD20250712-1930 BEGIN - Handle row expansion events
 const handleRowExpansion = (event: any) => {
     console.log('Row Expanded:', event);
@@ -134,6 +154,11 @@ const handleHeaderAction = (action: string) => {
         case 'refresh':
             alert('Refresh data clicked');
             break;
+        //DD 20250713:2021 - BEGIN
+        case 'lock-all':
+            alert('Lock All Available clicked - this would lock the maximum allowed rows');
+            break;
+        //DD 20250713:2021 - END
         default:
             alert(`Header action: ${action}`);
     }
@@ -213,6 +238,51 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
                                     Server-side data tables with sorting, filtering, and pagination:
                                 </p>
+
+                                <!--DD 20250713:2021 - BEGIN - Row Locking Demo Section -->
+                                <div v-if="rowLockingDataTable" class="mb-8">
+                                    <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
+                                        🆕 Row Locking Feature Demo - BRAND NEW FEATURE!
+                                    </h4>
+                                    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                        <div class="mb-4 rounded-lg bg-gradient-to-r from-indigo-50 to-purple-50 p-4 text-sm dark:from-indigo-900/20 dark:to-purple-900/20">
+                                            <div class="mb-3 text-lg font-semibold text-gray-800 dark:text-gray-200">
+                                                🔒 Row Locking with Vertical Scroll Prevention
+                                            </div>
+                                            <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-1">
+                                                <div class="space-y-2">
+                                                    <div class="text-indigo-800 dark:text-indigo-200">
+                                                        <strong>✨ Latest Features:</strong>
+                                                    </div>
+                                                    <ul class="list-inside list-disc space-y-1 text-sm text-indigo-700 dark:text-indigo-300">
+                                                        <li><strong>Lock Rows:</strong> Click the lock icon (🔒) to lock up to 3 rows from vertical scrolling</li>
+                                                        <li><strong>Unlock Rows:</strong> Click the unlock icon (🔓) to release locked rows back to normal scrolling</li>
+                                                        <li><strong>Limit Control:</strong> Maximum of 3 rows can be locked simultaneously (configurable)</li>
+                                                        <li><strong>Visual Feedback:</strong> Locked rows have blue styling and appear frozen at top</li>
+                                                        <li><strong>Status Display:</strong> Current locked count vs maximum shown in toolbar and footer</li>
+                                                        <li><strong>Smart Disable:</strong> Lock button disabled when maximum limit reached</li>
+                                                        <li><strong>Event Handling:</strong> Row lock/unlock events (check console for details)</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="mt-3 text-xs text-gray-600 dark:text-gray-400">
+                                                💡 <strong>Use Case:</strong> Perfect for keeping important rows visible while browsing through large datasets. Great for comparison, reference data, or priority items.
+                                            </div>
+                                            <div class="mt-2 text-xs text-gray-500 dark:text-gray-500">
+                                                🏆 <strong>Try It:</strong> Lock some expensive products, then scroll down to compare with others!
+                                            </div>
+                                        </div>
+                                        <WidgetRenderer 
+                                            :widgets="[rowLockingDataTable]" 
+                                            @action="handleCustomAction"
+                                            @crud-action="handleCrudAction"
+                                            @header-action="handleHeaderAction"
+                                            @row-lock="handleRowLock"
+                                            @row-unlock="handleRowUnlock"
+                                        />
+                                    </div>
+                                </div>
+                                <!--DD 20250713:2021 - END -->
 
                                 <!-- DD20250712-1930 BEGIN - Row Expansion Demo Section -->
                                 <div v-if="rowExpansionDataTable" class="mb-8">
@@ -447,6 +517,100 @@ const breadcrumbs: BreadcrumbItem[] = [
                         </div>
                     </template>
                 </PCard>
+
+                <!--DD 20250713:2021 - BEGIN - Add Documentation Section for Row Locking -->
+                <PCard class="mt-8 shadow-lg">
+                    <template #header>
+                        <div class="bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-4">
+                            <h2 class="text-xl font-semibold text-white">🔒 Row Locking Documentation</h2>
+                        </div>
+                    </template>
+                    
+                    <template #content>
+                        <div class="space-y-6 p-6">
+                            <div>
+                                <h3 class="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-300">
+                                    Implementation Guide
+                                </h3>
+                                <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                                    The DataTable widget now supports row locking to prevent selected rows from scrolling. Configure this feature using the <code class="rounded bg-gray-100 px-1 py-0.5 text-xs dark:bg-gray-800">rowLocking</code> property:
+                                </p>
+                                
+                                <div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+                                    <h4 class="mb-2 font-semibold text-gray-700 dark:text-gray-300">Configuration Example:</h4>
+                                    <pre class="overflow-x-auto text-xs text-gray-700 dark:text-gray-300"><code>{
+  "rowLocking": {
+    "enabled": true,
+    "maxLockedRows": 3,
+    "lockColumn": {
+      "style": "width: 4rem",
+      "frozen": true,
+      "header": "Lock"
+    },
+    "lockedRowClasses": "font-bold bg-blue-50",
+    "lockedRowStyles": {
+      "backgroundColor": "#eff6ff",
+      "borderLeft": "4px solid #3b82f6"
+    }
+  }
+}</code></pre>
+                                </div>
+
+                                <div class="mt-4 grid gap-4 md:grid-cols-3">
+                                    <div class="rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
+                                        <h4 class="mb-2 font-semibold text-blue-800 dark:text-blue-200">Core Features:</h4>
+                                        <ul class="list-inside list-disc text-sm text-blue-700 dark:text-blue-300">
+                                            <li><code>enabled: true</code> - Activates row locking</li>
+                                            <li><code>maxLockedRows: 3</code> - Maximum lockable rows</li>
+                                            <li>Lock button automatically disabled at limit</li>
+                                            <li>Locked rows appear at top (frozen)</li>
+                                            <li>Locked rows don't scroll vertically</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
+                                        <h4 class="mb-2 font-semibold text-green-800 dark:text-green-200">Visual Customization:</h4>
+                                        <ul class="list-inside list-disc text-sm text-green-700 dark:text-green-300">
+                                            <li><code>lockColumn</code> - Lock button column styling</li>
+                                            <li><code>lockedRowClasses</code> - CSS classes for locked rows</li>
+                                            <li><code>lockedRowStyles</code> - Inline styles object</li>
+                                            <li>Frozen column support for lock button</li>
+                                            <li>Custom header text for lock column</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="rounded-lg bg-purple-50 p-4 dark:bg-purple-900/20">
+                                        <h4 class="mb-2 font-semibold text-purple-800 dark:text-purple-200">Event Handling:</h4>
+                                        <ul class="list-inside list-disc text-sm text-purple-700 dark:text-purple-300">
+                                            <li><code>@row-lock</code> - Fired when row is locked</li>
+                                            <li><code>@row-unlock</code> - Fired when row is unlocked</li>
+                                            <li>Events include row data and index</li>
+                                            <li>Perfect for toast notifications</li>
+                                            <li>Integrate with state management</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4 rounded-lg bg-yellow-50 p-4 dark:bg-yellow-900/20">
+                                    <h4 class="mb-2 font-semibold text-yellow-800 dark:text-yellow-200">Use Cases & Benefits:</h4>
+                                    <div class="grid gap-3 md:grid-cols-2">
+                                        <ul class="list-inside list-disc text-sm text-yellow-700 dark:text-yellow-300">
+                                            <li><strong>Data Comparison:</strong> Lock reference rows while browsing</li>
+                                            <li><strong>Priority Items:</strong> Keep important data visible</li>
+                                            <li><strong>Shopping Lists:</strong> Lock selected items for review</li>
+                                        </ul>
+                                        <ul class="list-inside list-disc text-sm text-yellow-700 dark:text-yellow-300">
+                                            <li><strong>Financial Analysis:</strong> Lock baseline data for comparison</li>
+                                            <li><strong>Inventory Management:</strong> Keep critical stock visible</li>
+                                            <li><strong>User Experience:</strong> Reduce scrolling and improve workflow</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </PCard>
+                <!--DD 20250713:2021 - END -->
 
                 <!-- DD20250710-1240 - Add Documentation Section for Conditional Styling -->
                 <PCard class="mt-8 shadow-lg">

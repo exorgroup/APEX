@@ -430,7 +430,6 @@ class DataTableWidget extends BaseWidget
                     'default' => false,
                     'description' => 'Enable row reordering'
                 ],
-                // DD20250707-2330 BEGIN - Enhanced Export Configuration
                 'exportable' => [
                     'type' => 'boolean',
                     'default' => false,
@@ -450,8 +449,6 @@ class DataTableWidget extends BaseWidget
                     'default' => 'data-export',
                     'description' => 'Base filename for exported files (extension will be added automatically)'
                 ],
-                // DD20250707-2330 END
-                // DD20250710-1240 BEGIN - Conditional Styling Configuration
                 'conditionalStyles' => [
                     'type' => 'array',
                     'description' => 'Conditional row styling rules',
@@ -494,7 +491,55 @@ class DataTableWidget extends BaseWidget
                         ]
                     ]
                 ],
-                // DD20250710-1240 END
+                //DD 20250713:2021 - BEGIN
+                // Row Locking Configuration
+                'rowLocking' => [
+                    'type' => 'object',
+                    'description' => 'Row locking configuration',
+                    'properties' => [
+                        'enabled' => [
+                            'type' => 'boolean',
+                            'default' => false,
+                            'description' => 'Enable row locking functionality'
+                        ],
+                        'maxLockedRows' => [
+                            'type' => 'integer',
+                            'default' => 5,
+                            'description' => 'Maximum number of rows that can be locked simultaneously'
+                        ],
+                        'lockColumn' => [
+                            'type' => 'object',
+                            'description' => 'Lock column configuration',
+                            'properties' => [
+                                'style' => [
+                                    'type' => 'string',
+                                    'default' => 'width: 4rem',
+                                    'description' => 'CSS style for the lock column'
+                                ],
+                                'frozen' => [
+                                    'type' => 'boolean',
+                                    'default' => false,
+                                    'description' => 'Whether the lock column should be frozen'
+                                ],
+                                'header' => [
+                                    'type' => 'string',
+                                    'default' => '',
+                                    'description' => 'Header text for the lock column'
+                                ]
+                            ]
+                        ],
+                        'lockedRowClasses' => [
+                            'type' => 'string',
+                            'default' => 'font-bold',
+                            'description' => 'CSS classes to apply to locked rows'
+                        ],
+                        'lockedRowStyles' => [
+                            'type' => 'object',
+                            'description' => 'CSS style object to apply to locked rows'
+                        ]
+                    ]
+                ],
+                //DD 20250713:2021 - END
                 // Other Configuration
                 'loading' => [
                     'type' => 'boolean',
@@ -530,7 +575,6 @@ class DataTableWidget extends BaseWidget
                     'type' => 'string',
                     'description' => 'Unique key for state storage'
                 ],
-                // DD20250712-1830 BEGIN - Row Expansion Configuration
                 'rowExpansion' => [
                     'type' => 'object',
                     'description' => 'Row expansion configuration',
@@ -578,7 +622,6 @@ class DataTableWidget extends BaseWidget
                         ]
                     ]
                 ],
-                // DD20250712-1830 END
             ]
         ];
     }
@@ -685,14 +728,24 @@ class DataTableWidget extends BaseWidget
                 // Reorder
                 'reorderableColumns' => $config['reorderableColumns'] ?? false,
                 'reorderableRows' => $config['reorderableRows'] ?? false,
-                // DD20250707-2330 BEGIN - Export configuration
                 'exportable' => $config['exportable'] ?? false,
                 'exportFormats' => $config['exportFormats'] ?? ['csv', 'excel', 'pdf'],
                 'exportFilename' => $config['exportFilename'] ?? 'data-export',
-                // DD20250707-2330 END
-                // DD20250710-1240 BEGIN - Conditional styling
                 'conditionalStyles' => $config['conditionalStyles'] ?? [],
-                // DD20250710-1240 END
+                //DD 20250713:2021 - BEGIN
+                // Row Locking
+                'rowLocking' => $config['rowLocking'] ?? [
+                    'enabled' => false,
+                    'maxLockedRows' => 5,
+                    'lockColumn' => [
+                        'style' => 'width: 4rem',
+                        'frozen' => false,
+                        'header' => ''
+                    ],
+                    'lockedRowClasses' => 'font-bold',
+                    'lockedRowStyles' => []
+                ],
+                //DD 20250713:2021 - END
                 // Other
                 'loading' => $config['loading'] ?? false,
                 'emptyMessage' => $config['emptyMessage'] ?? 'No records found',
@@ -701,9 +754,7 @@ class DataTableWidget extends BaseWidget
                 'responsiveLayout' => $config['responsiveLayout'] ?? 'scroll',
                 'stateStorage' => $config['stateStorage'] ?? null,
                 'stateKey' => $config['stateKey'] ?? null,
-                // DD20250712-1830 BEGIN - Row expansion configuration
                 'rowExpansion' => $config['rowExpansion'] ?? ['enabled' => false],
-                // DD20250712-1830 END
             ]
         ]);
     }

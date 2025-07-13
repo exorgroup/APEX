@@ -9,9 +9,7 @@ import PColumn from 'primevue/column';
 import PInputText from 'primevue/inputtext';
 import PDivider from 'primevue/divider';
 import vTooltip from 'primevue/tooltip';
-// DD20250712-1830 BEGIN - Import WidgetRenderer for nested tables
 import WidgetRenderer from '../WidgetRenderer.vue';
-// DD20250712-1830 END
 
 interface Column {
     field: string;
@@ -85,7 +83,7 @@ interface RowExpansion {
         onCollapse?: boolean;
     };
 }
-// DD20250710-1240 - Add conditional styling interfaces
+
 interface ConditionalStyle {
     column: string;
     value: any;
@@ -95,6 +93,20 @@ interface ConditionalStyle {
     inlineStyles?: string;
     styleObject?: Record<string, any>;
 }
+
+//DD 20250713:2021 - BEGIN
+interface RowLocking {
+    enabled: boolean;
+    maxLockedRows?: number;
+    lockColumn?: {
+        style?: string;
+        frozen?: boolean;
+        header?: string;
+    };
+    lockedRowClasses?: string;
+    lockedRowStyles?: Record<string, any>;
+}
+//DD 20250713:2021 - END
 
 interface Props {
     widgetId: string;
@@ -189,14 +201,12 @@ interface Props {
     responsiveLayout?: 'scroll' | 'stack';
     stateStorage?: 'session' | 'local' | undefined;
     stateKey?: string;
-    // DD20250712-1830 BEGIN - Add static data support for nested tables
     staticData?: any[];
-    // DD20250712-1830 END
-    // DD20250712-1830 BEGIN - Add row expansion configuration
     rowExpansion?: RowExpansion;
-    // DD20250712-1830 END
-    // DD20250710-1240 - Add conditional styling props
     conditionalStyles?: ConditionalStyle[];
+    //DD 20250713:2021 - BEGIN
+    rowLocking?: RowLocking;
+    //DD 20250713:2021 - END
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -236,14 +246,23 @@ const props = withDefaults(defineProps<Props>(), {
     responsiveLayout: 'scroll',
     stateStorage: undefined,
    // stateKey: undefined,
-    // DD20250712-1830 BEGIN - Add row expansion defaults
     rowExpansion: () => ({ enabled: false, expandedContent: undefined }),
-    // DD20250712-1830 END
-    // DD20250710-1240 - Add conditional styling defaults
-    conditionalStyles: () => []
+    conditionalStyles: () => [],
+    //DD 20250713:2021 - BEGIN
+    rowLocking: () => ({ 
+        enabled: false, 
+        maxLockedRows: 5,
+        lockColumn: {
+            style: 'width: 4rem',
+            frozen: false,
+            header: ''
+        },
+        lockedRowClasses: 'font-bold',
+        lockedRowStyles: {}
+    })
+    //DD 20250713:2021 - END
 });
 
-// DD20250707-2330 BEGIN - Add DataTable ref for export functionality
 const dt = ref();
 const loading = ref(props.loading);
 const data = ref<any[]>([]);
@@ -259,27 +278,29 @@ const first = ref(0);
 const isLazyMode = ref<boolean>(false); // Determined at runtime
 const visibleColumns = ref<Column[]>([]); // Track visible columns as objects
 
-// DD20250707-2330 BEGIN - Add DataTable ref for export functionality
 //const dt = ref();
 
-// DD20250712-1830 BEGIN - Add row expansion state
 const expandedRows = ref<Record<string, boolean>>({});
-// DD20250712-1830 END
+
+//DD 20250713:2021 - BEGIN
+// Row locking state
+const lockedRows = ref<any[]>([]);
+//DD 20250713:2021 - END
 
 // Initialize visible columns based on hidden property
 const initVisibleColumns = () => {
     // Include all data columns that are not marked as hidden
     const dataColumns = props.columns.filter(col => !col.hidden);
     // Always include action columns in visible columns
-    visibleColumns.value = [...dataColumns, ...actionColumns.value];
+    visibleColumns.value = [...dataColumns, ...actionColumns.value, ...lockActionColumn.value];
 };
 
 // Handle column toggle
 const onColumnToggle = (val: Column[]) => {
     // Filter to only data columns (exclude action columns from toggle)
-    const selectedDataColumns = val.filter(col => !col.field.startsWith('_action_'));
+    const selectedDataColumns = val.filter(col => !col.field.startsWith('_action_') && !col.field.startsWith('_lock_'));
     // Always keep action columns visible
-    visibleColumns.value = [...selectedDataColumns, ...actionColumns.value];
+    visibleColumns.value = [...selectedDataColumns, ...actionColumns.value, ...lockActionColumn.value];
 };
 
 // Handle cell click
@@ -320,6 +341,67 @@ const handleCrudAction = (action: string, data: any) => {
         });
     }
 };
+
+//DD 20250713:2021 - BEGIN
+// Handle row locking toggle
+const toggleRowLock = (rowData: any, isLocked: boolean, index: number) => {
+    if (!props.rowLocking?.enabled) return;
+    
+    const dataKey = props.dataKey;
+    const maxLocked = props.rowLocking.maxLockedRows || 5;
+    
+    if (isLocked) {
+        // Unlock the row - remove from lockedRows and add back to main data
+        const lockedIndex = lockedRows.value.findIndex(row => row[dataKey] === rowData[dataKey]);
+        if (lockedIndex !== -1) {
+            const unlockedRow = lockedRows.value.splice(lockedIndex, 1)[0];
+            
+            // Add back to main data array and sort by ID for consistency
+            if (isLazyMode.value) {
+                data.value.push(unlockedRow);
+                data.value.sort((a, b) => a[dataKey] < b[dataKey] ? -1 : 1);
+            } else {
+                const allData = [...data.value, unlockedRow];
+                allData.sort((a, b) => a[dataKey] < b[dataKey] ? -1 : 1);
+                data.value = allData;
+            }
+            
+            emit('row-unlock', { row: unlockedRow, index: lockedIndex });
+        }
+    } else {
+        // Lock the row - check limit first
+        if (lockedRows.value.length >= maxLocked) {
+            console.warn(`Maximum ${maxLocked} rows can be locked`);
+            return;
+        }
+        
+        // Remove from main data and add to lockedRows
+        const mainDataIndex = (isLazyMode.value ? data.value : filteredData.value)
+            .findIndex(row => row[dataKey] === rowData[dataKey]);
+            
+        if (mainDataIndex !== -1) {
+            const lockedRow = data.value.splice(mainDataIndex, 1)[0];
+            lockedRows.value.push(lockedRow);
+            
+            emit('row-lock', { row: lockedRow, index: mainDataIndex });
+        }
+    }
+};
+
+// Check if a row is locked
+const isRowLocked = (rowData: any): boolean => {
+    if (!props.rowLocking?.enabled) return false;
+    const dataKey = props.dataKey;
+    return lockedRows.value.some(row => row[dataKey] === rowData[dataKey]);
+};
+
+// Check if max locked rows reached
+const isMaxLockedRowsReached = computed(() => {
+    if (!props.rowLocking?.enabled) return false;
+    const maxLocked = props.rowLocking.maxLockedRows || 5;
+    return lockedRows.value.length >= maxLocked;
+});
+//DD 20250713:2021 - END
 
 // Format cell value based on data type
 const formatCellValue = (value: any, column: Column): string => {
@@ -454,15 +536,17 @@ const formatDateTime = (value: any, dateStyle: 'short' | 'long1' | 'long2', form
     return `${dateStr} ${timeStr}`;
 };
 
-// DD20250712-1830 BEGIN - Add row expansion emits
 const emit = defineEmits<{
     action: [payload: { action: string; data: any; value: any }];
     'crud-action': [payload: { action: string; id: any; data: any }];
     headerAction: [action: string];
     'row-expand': [event: any];
     'row-collapse': [event: any];
+    //DD 20250713:2021 - BEGIN
+    'row-lock': [payload: { row: any; index: number }];
+    'row-unlock': [payload: { row: any; index: number }];
+    //DD 20250713:2021 - END
 }>();
-// DD20250712-1830 END 
 
 // Initialize lazy mode
 if (props.dataSource?.lazy === true) {
@@ -480,6 +564,28 @@ const selectedCount = computed(() => selectedItems.value.length);
 
 // Computed property for all columns (visible and hidden)
 const allColumns = computed(() => props.columns);
+
+//DD 20250713:2021 - BEGIN
+// Lock action column based on row locking configuration
+const lockActionColumn = computed(() => {
+    const lockColumns: Column[] = [];
+    
+    if (props.rowLocking?.enabled) {
+        lockColumns.push({
+            field: '_lock_action',
+            header: props.rowLocking.lockColumn?.header || '',
+            sortable: false,
+            exportable: false,
+            reorderable: false,
+            resizable: false,
+            style: props.rowLocking.lockColumn?.style || 'width: 4rem',
+            frozen: props.rowLocking.lockColumn?.frozen || false
+        });
+    }
+    
+    return lockColumns;
+});
+//DD 20250713:2021 - END
 
 // Action columns based on permissions and configuration
 const actionColumns = computed(() => {
@@ -555,7 +661,9 @@ const actionColumns = computed(() => {
 });
 
 // Combined columns with action columns at the end
-const columnsWithActions = computed(() => [...allColumns.value, ...actionColumns.value]);
+//DD 20250713:2021 - BEGIN
+const columnsWithActions = computed(() => [...allColumns.value, ...lockActionColumn.value, ...actionColumns.value]);
+//DD 20250713:2021 - END
 
 // Get widget component for ApexWidget type
 const getWidgetComponent = (type: string) => {
@@ -573,7 +681,6 @@ const getWidgetComponent = (type: string) => {
     return widgetMap[type] || null;
 };
 
-// DD20250712-1830 BEGIN - Add row expansion functionality
 const hasRowExpansion = computed(() => props.rowExpansion?.enabled || false);
 
 const showExpandControls = computed(() => 
@@ -591,6 +698,15 @@ const collapseAllLabel = computed(() =>
 const expandControlsPosition = computed(() => 
     props.rowExpansion?.expandControls?.position || 'header'
 );
+
+//DD 20250713:2021 - BEGIN
+// Row locking computed properties
+const hasRowLocking = computed(() => props.rowLocking?.enabled || false);
+
+const lockedRowsCount = computed(() => lockedRows.value.length);
+
+const maxLockedRows = computed(() => props.rowLocking?.maxLockedRows || 5);
+//DD 20250713:2021 - END
 
 // Row expansion methods
 const onRowExpand = (event: any) => {
@@ -637,7 +753,6 @@ const getExpansionTitle = (rowData: any): string => {
     return '';
 };
 
-// DD20250712-1830 BEGIN - Add GUID generation for nested widgets
 const generateGUID = (): string => {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         const r = Math.random() * 16 | 0;
@@ -675,8 +790,7 @@ const getNestedWidgetConfig = (rowData: any) => {
         props: nestedWidgetProps
     };
 };
-// DD20250712-1830 END
-// DD20250712-1830 END
+
 const columnOptions = computed(() => {
     return props.columns.filter(col => !col.frozen && !col.hidden);
 });
@@ -884,7 +998,6 @@ const performGroupAction = (action: GroupAction) => {
     // Emit event for parent to handle
 };
 
-// DD20250707-2330 BEGIN - Replace export functionality with PrimeVue native export
 const exportData = (format: 'csv' | 'excel' | 'pdf') => {
     if (!dt.value) {
         console.error('DataTable ref not available for export');
@@ -894,7 +1007,7 @@ const exportData = (format: 'csv' | 'excel' | 'pdf') => {
     try {
         // Get visible and exportable columns
         const exportableColumns = visibleColumns.value.filter(col => 
-            col.exportable !== false && !col.field.startsWith('_action_')
+            col.exportable !== false && !col.field.startsWith('_action_') && !col.field.startsWith('_lock_')
         );
         
         // Use PrimeVue's built-in export methods
@@ -934,7 +1047,6 @@ const exportData = (format: 'csv' | 'excel' | 'pdf') => {
         console.error(`Error exporting ${format}:`, error);
     }
 };
-// DD20250707-2330 END
 
 // Computed table classes
 const tableClasses = computed(() => {
@@ -948,7 +1060,6 @@ const tableClasses = computed(() => {
     return classes.join(' ');
 });
 
-// DD20250710-1240 - Add conditional styling functionality
 const evaluateCondition = (rowData: any, style: ConditionalStyle): boolean => {
     const columnValue = rowData[style.column];
     const testValue = style.value;
@@ -983,64 +1094,83 @@ const evaluateCondition = (rowData: any, style: ConditionalStyle): boolean => {
 };
 
 const getRowClass = (rowData: any): string | string[] | Record<string, boolean> => {
-    if (!props.conditionalStyles || props.conditionalStyles.length === 0) {
-        return '';
-    }
-    
-    // Sort styles by priority (1 = highest priority, 9999 = default)
-    const sortedStyles = [...props.conditionalStyles].sort((a, b) => {
-        const priorityA = a.priority || 9999;
-        const priorityB = b.priority || 9999;
-        return priorityA - priorityB; // Ascending order (1 first, 9999 last)
-    });
-    
     const classes: Record<string, boolean> = {};
     
-    // Apply styles in priority order (lowest priority first, highest priority last to override)
-    for (let i = sortedStyles.length - 1; i >= 0; i--) {
-        const style = sortedStyles[i];
-        if (evaluateCondition(rowData, style) && style.cssClasses) {
-            // Split multiple classes and add them to the classes object
-            const classNames = style.cssClasses.split(' ').filter(cls => cls.trim());
-            classNames.forEach(className => {
+    // Apply conditional styles
+    if (props.conditionalStyles && props.conditionalStyles.length > 0) {
+        // Sort styles by priority (1 = highest priority, 9999 = default)
+        const sortedStyles = [...props.conditionalStyles].sort((a, b) => {
+            const priorityA = a.priority || 9999;
+            const priorityB = b.priority || 9999;
+            return priorityA - priorityB; // Ascending order (1 first, 9999 last)
+        });
+        
+        // Apply styles in priority order (lowest priority first, highest priority last to override)
+        for (let i = sortedStyles.length - 1; i >= 0; i--) {
+            const style = sortedStyles[i];
+            if (evaluateCondition(rowData, style) && style.cssClasses) {
+                // Split multiple classes and add them to the classes object
+                const classNames = style.cssClasses.split(' ').filter(cls => cls.trim());
+                classNames.forEach(className => {
+                    classes[className.trim()] = true;
+                });
+            }
+        }
+    }
+    
+    //DD 20250713:2021 - BEGIN
+    // Apply locked row styling
+    if (props.rowLocking?.enabled && isRowLocked(rowData)) {
+        if (props.rowLocking.lockedRowClasses) {
+            const lockedClasses = props.rowLocking.lockedRowClasses.split(' ').filter(cls => cls.trim());
+            lockedClasses.forEach(className => {
                 classes[className.trim()] = true;
             });
         }
     }
+    //DD 20250713:2021 - END
     
     return classes;
 };
 
 const getRowStyle = (rowData: any): Record<string, any> => {
-    if (!props.conditionalStyles || props.conditionalStyles.length === 0) {
-        return {};
-    }
-    
-    // Sort styles by priority (1 = highest priority, 9999 = default)
-    const sortedStyles = [...props.conditionalStyles].sort((a, b) => {
-        const priorityA = a.priority || 9999;
-        const priorityB = b.priority || 9999;
-        return priorityA - priorityB; // Ascending order (1 first, 9999 last)
-    });
-    
     let styleObject = {};
     
-    // Apply styles in priority order (lowest priority first, highest priority last to override)
-    for (let i = sortedStyles.length - 1; i >= 0; i--) {
-        const style = sortedStyles[i];
-        if (evaluateCondition(rowData, style)) {
-            // Apply styleObject if provided
-            if (style.styleObject) {
-                styleObject = { ...styleObject, ...style.styleObject };
-            }
-            
-            // Parse inline styles if provided
-            if (style.inlineStyles) {
-                const parsedStyles = parseInlineStyles(style.inlineStyles);
-                styleObject = { ...styleObject, ...parsedStyles };
+    // Apply conditional styles
+    if (props.conditionalStyles && props.conditionalStyles.length > 0) {
+        // Sort styles by priority (1 = highest priority, 9999 = default)
+        const sortedStyles = [...props.conditionalStyles].sort((a, b) => {
+            const priorityA = a.priority || 9999;
+            const priorityB = b.priority || 9999;
+            return priorityA - priorityB; // Ascending order (1 first, 9999 last)
+        });
+        
+        // Apply styles in priority order (lowest priority first, highest priority last to override)
+        for (let i = sortedStyles.length - 1; i >= 0; i--) {
+            const style = sortedStyles[i];
+            if (evaluateCondition(rowData, style)) {
+                // Apply styleObject if provided
+                if (style.styleObject) {
+                    styleObject = { ...styleObject, ...style.styleObject };
+                }
+                
+                // Parse inline styles if provided
+                if (style.inlineStyles) {
+                    const parsedStyles = parseInlineStyles(style.inlineStyles);
+                    styleObject = { ...styleObject, ...parsedStyles };
+                }
             }
         }
     }
+    
+    //DD 20250713:2021 - BEGIN
+    // Apply locked row styling
+    if (props.rowLocking?.enabled && isRowLocked(rowData)) {
+        if (props.rowLocking.lockedRowStyles) {
+            styleObject = { ...styleObject, ...props.rowLocking.lockedRowStyles };
+        }
+    }
+    //DD 20250713:2021 - END
     
     return styleObject;
 };
@@ -1076,14 +1206,12 @@ onMounted(async () => {
     // Initialize visible columns
     initVisibleColumns();
     
-    // DD20250712-1830 BEGIN - Handle static data for nested tables
     if (props.staticData) {
         data.value = props.staticData;
         totalRecords.value = props.staticData.length;
         loading.value = false;
         return;
     }
-    // DD20250712-1830 END
     
     // Skip loading if no data source
     if (!props.dataSource?.url) {
@@ -1155,7 +1283,7 @@ watch(() => props.selection, (newVal) => {
         </div>
 
         <!-- Toolbar -->
-        <div v-if="globalFilter || exportable || (hasSelectedItems && groupActions.length > 0) || (showExpandControls && expandControlsPosition === 'toolbar')" 
+        <div v-if="globalFilter || exportable || (hasSelectedItems && groupActions.length > 0) || (showExpandControls && expandControlsPosition === 'toolbar') || hasRowLocking" 
              class="mb-4 flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center gap-2">
                 <!-- Global Filter -->
@@ -1186,7 +1314,6 @@ watch(() => props.selection, (newVal) => {
                     />
                 </template>
 
-                <!-- DD20250712-1830 BEGIN - Row expansion controls in toolbar -->
                 <template v-if="showExpandControls && expandControlsPosition === 'toolbar'">
                     <PDivider layout="vertical" />
                     <PButton
@@ -1204,7 +1331,16 @@ watch(() => props.selection, (newVal) => {
                         @click="collapseAll"
                     />
                 </template>
-                <!-- DD20250712-1830 END -->
+
+                <!--DD 20250713:2021 - BEGIN-->
+                <!-- Row Locking Info -->
+                <template v-if="hasRowLocking">
+                    <PDivider layout="vertical" />
+                    <span class="text-sm text-gray-600 dark:text-gray-400">
+                        Locked: {{ lockedRowsCount }}/{{ maxLockedRows }}
+                    </span>
+                </template>
+                <!--DD 20250713:2021 - END-->
             </div>
 
             <!-- Export Buttons -->
@@ -1225,6 +1361,7 @@ watch(() => props.selection, (newVal) => {
         <PDataTable
             ref="dt"
             :value="isLazyMode ? data : filteredData"
+            :frozenValue="lockedRows"
             :loading="loading"
             :dataKey="dataKey"
             v-model:selection="selectedItems"
@@ -1268,8 +1405,12 @@ watch(() => props.selection, (newVal) => {
             @col-reorder="onColReorder"
             @row-expand="onRowExpand"
             @row-collapse="onRowCollapse"
+            :pt="{
+                bodyrow: ({ props }: { props: any }) => ({
+                    class: [{ 'font-bold': props.frozenRow }]
+                })
+            }"
         >
-            <!-- DD20250712-1830 BEGIN - Row expansion controls in header -->
             <template v-if="showExpandControls && expandControlsPosition === 'header'" #header>
                 <div class="flex justify-end gap-2">
                     <PButton
@@ -1288,7 +1429,6 @@ watch(() => props.selection, (newVal) => {
                     />
                 </div>
             </template>
-            <!-- DD20250712-1830 END -->
 
             <!-- Column Toggle in Header -->
             <template v-if="columnToggle && (!showExpandControls || expandControlsPosition !== 'header')" #header>
@@ -1319,7 +1459,6 @@ watch(() => props.selection, (newVal) => {
                 </div>
             </template>
 
-            <!-- DD20250712-1830 BEGIN - Row expander column -->
             <PColumn 
                 v-if="hasRowExpansion"
                 expander
@@ -1329,7 +1468,6 @@ watch(() => props.selection, (newVal) => {
                 :reorderableColumn="false"
                 :resizeable="false"
             />
-            <!-- DD20250712-1830 END -->
 
             <!-- Selection Column -->
             <PColumn
@@ -1379,8 +1517,23 @@ watch(() => props.selection, (newVal) => {
 
                 <!-- Column Body Template -->
                 <template #body="slotProps">
+                    <!--DD 20250713:2021 - BEGIN-->
+                    <!-- Row Lock Button -->
+                    <template v-if="col.field === '_lock_action'">
+                        <PButton 
+                            type="button" 
+                            :icon="isRowLocked(slotProps.data) ? 'pi pi-lock-open' : 'pi pi-lock'" 
+                            :disabled="isRowLocked(slotProps.data) ? false : isMaxLockedRowsReached" 
+                            text 
+                            size="small" 
+                            @click="toggleRowLock(slotProps.data, isRowLocked(slotProps.data), slotProps.index)"
+                            v-tooltip="isRowLocked(slotProps.data) ? 'Unlock Row' : 'Lock Row'"
+                        />
+                    </template>
+                    <!--DD 20250713:2021 - END-->
+                    
                     <!-- Action Buttons -->
-                    <template v-if="col.field.startsWith('_action_')">
+                    <template v-else-if="col.field.startsWith('_action_')">
                         <PButton
                             v-if="col.field === '_action_view'"
                             icon="pi pi-eye"
@@ -1469,7 +1622,6 @@ watch(() => props.selection, (newVal) => {
                 </template>
             </PColumn>
 
-            <!-- DD20250712-1830 BEGIN - Row expansion template -->
             <template v-if="hasRowExpansion" #expansion="slotProps">
                 <div class="p-4">
                     <!-- Expansion title -->
@@ -1494,7 +1646,6 @@ watch(() => props.selection, (newVal) => {
                     </template>
                 </div>
             </template>
-            <!-- DD20250712-1830 END -->
         </PDataTable>
 
         <!-- Footer -->
@@ -1509,6 +1660,12 @@ watch(() => props.selection, (newVal) => {
                     <span v-if="footer.showSelectedCount && hasSelectedItems">
                         Selected: {{ selectedCount }}
                     </span>
+                    <!--DD 20250713:2021 - BEGIN-->
+                    <span v-if="hasRowLocking && lockedRowsCount > 0" class="mx-2">|</span>
+                    <span v-if="hasRowLocking && lockedRowsCount > 0">
+                        Locked: {{ lockedRowsCount }}
+                    </span>
+                    <!--DD 20250713:2021 - END-->
                 </div>
                 <div v-if="footer.text">
                     {{ footer.text }}

@@ -96,6 +96,163 @@ class PrimeVueTestController extends Controller
                 'label' => 'Multiple Dates'
             ],
 
+            //DD 20250713:2021 - BEGIN - NEW: Row Locking DataTable Demo (at the top)
+            [
+                'type' => 'datatable',
+                'header' => [
+                    'title' => 'Products with Row Locking - Latest Feature Demo',
+                    'subtitle' => '🆕 NEW FEATURE: Lock up to 3 rows to prevent them from scrolling',
+                    'actions' => [
+                        ['label' => 'Add Product', 'icon' => 'pi pi-plus', 'action' => 'add', 'severity' => 'success'],
+                        ['label' => 'Refresh', 'icon' => 'pi pi-refresh', 'action' => 'refresh', 'severity' => 'info'],
+                        ['label' => 'Lock All Available', 'icon' => 'pi pi-lock', 'action' => 'lock-all', 'severity' => 'warning']
+                    ]
+                ],
+                'footer' => [
+                    'showRecordCount' => true,
+                    'showSelectedCount' => true,
+                    'text' => 'Lock rows to keep them visible while scrolling through other data'
+                ],
+                'columns' => [
+                    [
+                        'field' => 'code',
+                        'header' => 'Product Code',
+                        'sortable' => true,
+                        'style' => 'width: 120px'
+                    ],
+                    [
+                        'field' => 'name',
+                        'header' => 'Product Name',
+                        'sortable' => true,
+                        'style' => 'min-width: 200px'
+                    ],
+                    [
+                        'field' => 'category',
+                        'header' => 'Category',
+                        'sortable' => true,
+                        'style' => 'width: 120px'
+                    ],
+                    [
+                        'field' => 'price',
+                        'header' => 'Price',
+                        'sortable' => true,
+                        'dataType' => 'currency',
+                        'format' => 2,
+                        'leadText' => '$',
+                        'bodyStyle' => 'text-align: right',
+                        'headerStyle' => 'text-align: right',
+                        'style' => 'width: 100px'
+                    ],
+                    [
+                        'field' => 'quantity',
+                        'header' => 'Stock',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: center',
+                        'headerStyle' => 'text-align: center',
+                        'style' => 'width: 80px'
+                    ],
+                    [
+                        'field' => 'inventoryStatus',
+                        'header' => 'Status',
+                        'sortable' => true,
+                        'style' => 'width: 120px'
+                    ],
+                    [
+                        'field' => 'rating',
+                        'header' => 'Rating',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: center',
+                        'headerStyle' => 'text-align: center',
+                        'style' => 'width: 80px'
+                    ]
+                ],
+                'dataSource' => [
+                    'url' => '/products',
+                    'method' => 'GET',
+                    'lazy' => false // Client-side for demo to show more interaction
+                ],
+                // NEW: Row Locking Configuration
+                'rowLocking' => [
+                    'enabled' => true,
+                    'maxLockedRows' => 3,
+                    'lockColumn' => [
+                        'style' => 'width: 4rem',
+                        'frozen' => true,
+                        'header' => 'Lock'
+                    ],
+                    'lockedRowClasses' => 'font-bold bg-blue-50 border-l-4 border-blue-500',
+                    'lockedRowStyles' => [
+                        'backgroundColor' => '#eff6ff',
+                        'borderLeft' => '4px solid #3b82f6'
+                    ]
+                ],
+                'gridLines' => 'both',
+                'stripedRows' => true,
+                'showGridlines' => true,
+                'size' => 'normal',
+                'paginator' => true,
+                'paginatorPosition' => 'bottom',
+                'rows' => 8,
+                'rowsPerPageOptions' => [5, 8, 10, 15],
+                'currentPageReportTemplate' => 'Showing {first} to {last} of {totalRecords} products',
+                'sortMode' => 'single',
+                'removableSort' => true,
+                'selectionMode' => 'single',
+                'globalFilter' => true,
+                'scrollable' => true,
+                'scrollHeight' => '400px',
+                'exportable' => true,
+                'exportFormats' => ['csv'],
+                'exportFilename' => 'locked-products-' . date('Y-m-d'),
+                'responsiveLayout' => 'scroll',
+                'tableStyle' => 'min-width: 80rem',
+                'emptyMessage' => 'No products found',
+                // Enhanced conditional styling for locked row demonstration
+                'conditionalStyles' => [
+                    [
+                        'column' => 'inventoryStatus',
+                        'value' => 'LOWSTOCK',
+                        'operator' => 'eq',
+                        'priority' => 2,
+                        'styleObject' => [
+                            'backgroundColor' => '#fefce8',
+                            'color' => '#a16207'
+                        ]
+                    ],
+                    [
+                        'column' => 'inventoryStatus',
+                        'value' => 'OUTOFSTOCK',
+                        'operator' => 'eq',
+                        'priority' => 1,
+                        'styleObject' => [
+                            'backgroundColor' => '#fef2f2',
+                            'color' => '#dc2626'
+                        ]
+                    ],
+                    [
+                        'column' => 'inventoryStatus',
+                        'value' => 'INSTOCK',
+                        'operator' => 'eq',
+                        'priority' => 3,
+                        'styleObject' => [
+                            'backgroundColor' => '#f0fdf4',
+                            'color' => '#166534'
+                        ]
+                    ],
+                    [
+                        'column' => 'price',
+                        'value' => 200,
+                        'operator' => 'gt',
+                        'priority' => 4,
+                        'styleObject' => [
+                            'fontWeight' => 'bold',
+                            'textDecoration' => 'underline'
+                        ]
+                    ]
+                ]
+            ],
+            //DD 20250713:2021 - END
+
             // DD20250712-1930 BEGIN - NEW: Row Expansion DataTable Demo (before existing tables)
             [
                 'type' => 'datatable',
