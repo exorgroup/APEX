@@ -166,8 +166,20 @@ class DataTableWidget extends BaseWidget
                             'frozen' => [
                                 'type' => 'boolean',
                                 'default' => false,
-                                'description' => 'Freeze column'
+                                'description' => 'Freeze column (always frozen)'
+                            ],
+                            //DD 20250714:1400 - BEGIN (Column Locking)
+                            'lockColumn' => [
+                                'type' => 'boolean',
+                                'default' => false,
+                                'description' => 'Whether column should be locked/frozen when lockColumn is true'
+                            ],
+                            'lockButton' => [
+                                'type' => 'boolean',
+                                'default' => false,
+                                'description' => 'Whether to show lock/unlock button for this column (requires lockColumn to be true)'
                             ]
+                            //DD 20250714:1400 - END
                         ]
                     ]
                 ],
@@ -540,6 +552,36 @@ class DataTableWidget extends BaseWidget
                     ]
                 ],
                 //DD 20250713:2021 - END
+                //DD 20250714:1400 - BEGIN (Column Locking)
+                // Column Locking Configuration
+                'columnLocking' => [
+                    'type' => 'object',
+                    'description' => 'Column locking configuration',
+                    'properties' => [
+                        'enabled' => [
+                            'type' => 'boolean',
+                            'default' => false,
+                            'description' => 'Enable column locking functionality'
+                        ],
+                        'buttonPosition' => [
+                            'type' => 'string',
+                            'enum' => ['header', 'toolbar'],
+                            'default' => 'toolbar',
+                            'description' => 'Position of column lock buttons'
+                        ],
+                        'buttonStyle' => [
+                            'type' => 'string',
+                            'default' => '',
+                            'description' => 'CSS style for column lock buttons'
+                        ],
+                        'buttonClass' => [
+                            'type' => 'string',
+                            'default' => '',
+                            'description' => 'CSS classes for column lock buttons'
+                        ]
+                    ]
+                ],
+                //DD 20250714:1400 - END
                 // Other Configuration
                 'loading' => [
                     'type' => 'boolean',
@@ -657,6 +699,10 @@ class DataTableWidget extends BaseWidget
                 'exportable' => $column['exportable'] ?? true,
                 'reorderable' => $column['reorderable'] ?? true,
                 'frozen' => $column['frozen'] ?? false,
+                //DD 20250714:1400 - BEGIN (Column Locking)
+                'lockColumn' => $column['lockColumn'] ?? false,
+                'lockButton' => $column['lockButton'] ?? false,
+                //DD 20250714:1400 - END
             ];
         }, $columns);
 
@@ -746,6 +792,15 @@ class DataTableWidget extends BaseWidget
                     'lockedRowStyles' => []
                 ],
                 //DD 20250713:2021 - END
+                //DD 20250714:1400 - BEGIN (Column Locking)
+                // Column Locking
+                'columnLocking' => $config['columnLocking'] ?? [
+                    'enabled' => false,
+                    'buttonPosition' => 'toolbar',
+                    'buttonStyle' => '',
+                    'buttonClass' => ''
+                ],
+                //DD 20250714:1400 - END
                 // Other
                 'loading' => $config['loading'] ?? false,
                 'emptyMessage' => $config['emptyMessage'] ?? 'No records found',

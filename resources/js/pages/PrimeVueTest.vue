@@ -42,6 +42,12 @@ const dataTableWidgets = computed(() =>
     props.widgets.filter(w => w.type === 'datatable')
 );
 
+//DD 20250714:1400 - BEGIN - Add column locking demo widget
+const columnLockingDataTable = computed(() => 
+    dataTableWidgets.value.find(w => w.props.header?.title === 'Products with Column Locking - NEWEST FEATURE DEMO')
+);
+//DD 20250714:1400 - END
+
 //DD 20250713:2021 - BEGIN - Add row locking demo widget
 const rowLockingDataTable = computed(() => 
     dataTableWidgets.value.find(w => w.props.header?.title === 'Products with Row Locking - Latest Feature Demo')
@@ -116,6 +122,22 @@ const handleCrudAction = (payload: any) => {
     }
 };
 
+//DD 20250714:1400 - BEGIN - Handle column locking events
+const handleColumnLockChange = (payload: any) => {
+    console.log('Column Lock Changed:', payload);
+    const action = payload.locked ? 'locked' : 'unlocked';
+    const message = `Column "${payload.field}" has been ${action}. Total locked columns: ${payload.allLockedFields.length}`;
+    
+    // Optional: Show toast notification
+    // toast.add({ 
+    //     severity: payload.locked ? 'info' : 'success', 
+    //     summary: `Column ${payload.locked ? 'Locked' : 'Unlocked'}`, 
+    //     detail: message, 
+    //     life: 3000 
+    // });
+};
+//DD 20250714:1400 - END
+
 //DD 20250713:2021 - BEGIN - Handle row locking events
 const handleRowLock = (payload: any) => {
     console.log('Row Locked:', payload);
@@ -154,6 +176,11 @@ const handleHeaderAction = (action: string) => {
         case 'refresh':
             alert('Refresh data clicked');
             break;
+        //DD 20250714:1400 - BEGIN
+        case 'lock-important':
+            alert('Lock Important Columns clicked - this would lock key columns for analysis');
+            break;
+        //DD 20250714:1400 - END
         //DD 20250713:2021 - BEGIN
         case 'lock-all':
             alert('Lock All Available clicked - this would lock the maximum allowed rows');
@@ -238,6 +265,51 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
                                     Server-side data tables with sorting, filtering, and pagination:
                                 </p>
+
+                                <!--DD 20250714:1400 - BEGIN - Column Locking Demo Section -->
+                                <div v-if="columnLockingDataTable" class="mb-8">
+                                    <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
+                                        🆕 Column Locking Feature Demo - NEWEST FEATURE!
+                                    </h4>
+                                    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                        <div class="mb-4 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 p-4 text-sm dark:from-emerald-900/20 dark:to-teal-900/20">
+                                            <div class="mb-3 text-lg font-semibold text-gray-800 dark:text-gray-200">
+                                                🔒 Column Locking with Horizontal Scroll Prevention
+                                            </div>
+                                            <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-1">
+                                                <div class="space-y-2">
+                                                    <div class="text-emerald-800 dark:text-emerald-200">
+                                                        <strong>✨ Newest Features:</strong>
+                                                    </div>
+                                                    <ul class="list-inside list-disc space-y-1 text-sm text-emerald-700 dark:text-emerald-300">
+                                                        <li><strong>Lock Columns:</strong> Click column lock buttons (🔒) in toolbar to freeze columns from horizontal scrolling</li>
+                                                        <li><strong>Unlock Columns:</strong> Click unlock buttons (🔓) to release locked columns back to normal scrolling</li>
+                                                        <li><strong>Initial State:</strong> "Product Code" and "Price" columns start locked (configurable)</li>
+                                                        <li><strong>User Control:</strong> Users can lock/unlock "Product Name", "Category", "Stock", and "Rating" columns</li>
+                                                        <li><strong>Visual Feedback:</strong> Lock buttons show current state with different icons and colors</li>
+                                                        <li><strong>Selective Control:</strong> Some columns (like "Status") have no lock button (developer controlled)</li>
+                                                        <li><strong>Wide Tables:</strong> Essential for tables with many columns that extend beyond viewport</li>
+                                                        <li><strong>Status Display:</strong> Footer shows count of currently locked columns</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="mt-3 text-xs text-gray-600 dark:text-gray-400">
+                                                💡 <strong>Use Case:</strong> Perfect for financial dashboards, spreadsheet-like data, or any wide table where key columns need to stay visible while exploring other data horizontally.
+                                            </div>
+                                            <div class="mt-2 text-xs text-gray-500 dark:text-gray-500">
+                                                🏆 <strong>Try It:</strong> Lock "Product Name" column, then scroll horizontally to see how it stays visible with "Product Code" and "Price"!
+                                            </div>
+                                        </div>
+                                        <WidgetRenderer 
+                                            :widgets="[columnLockingDataTable]" 
+                                            @action="handleCustomAction"
+                                            @crud-action="handleCrudAction"
+                                            @header-action="handleHeaderAction"
+                                            @column-lock-change="handleColumnLockChange"
+                                        />
+                                    </div>
+                                </div>
+                                <!--DD 20250714:1400 - END -->
 
                                 <!--DD 20250713:2021 - BEGIN - Row Locking Demo Section -->
                                 <div v-if="rowLockingDataTable" class="mb-8">
@@ -517,6 +589,111 @@ const breadcrumbs: BreadcrumbItem[] = [
                         </div>
                     </template>
                 </PCard>
+
+                <!--DD 20250714:1400 - BEGIN - Add Documentation Section for Column Locking -->
+                <PCard class="mt-8 shadow-lg">
+                    <template #header>
+                        <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-4">
+                            <h2 class="text-xl font-semibold text-white">🔒 Column Locking Documentation</h2>
+                        </div>
+                    </template>
+                    
+                    <template #content>
+                        <div class="space-y-6 p-6">
+                            <div>
+                                <h3 class="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-300">
+                                    Implementation Guide
+                                </h3>
+                                <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                                    The DataTable widget now supports column locking to prevent selected columns from horizontal scrolling. Configure this feature using individual column properties and the <code class="rounded bg-gray-100 px-1 py-0.5 text-xs dark:bg-gray-800">columnLocking</code> configuration:
+                                </p>
+                                
+                                <div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+                                    <h4 class="mb-2 font-semibold text-gray-700 dark:text-gray-300">Configuration Example:</h4>
+                                    <pre class="overflow-x-auto text-xs text-gray-700 dark:text-gray-300"><code>{
+  "columns": [
+    {
+      "field": "code",
+      "header": "Product Code", 
+      "lockColumn": true,     // Initially locked
+      "lockButton": true      // Show lock/unlock button
+    },
+    {
+      "field": "name",
+      "header": "Product Name",
+      "lockColumn": false,    // Not initially locked
+      "lockButton": true      // But user can lock it
+    },
+    {
+      "field": "status", 
+      "header": "Status"
+      // No locking functionality for this column
+    }
+  ],
+  "columnLocking": {
+    "enabled": true,
+    "buttonPosition": "toolbar",  // or "header"
+    "buttonStyle": "margin: 0 2px;",
+    "buttonClass": "custom-lock-btn"
+  }
+}</code></pre>
+                                </div>
+
+                                <div class="mt-4 grid gap-4 md:grid-cols-3">
+                                    <div class="rounded-lg bg-emerald-50 p-4 dark:bg-emerald-900/20">
+                                        <h4 class="mb-2 font-semibold text-emerald-800 dark:text-emerald-200">Column Properties:</h4>
+                                        <ul class="list-inside list-disc text-sm text-emerald-700 dark:text-emerald-300">
+                                            <li><code>lockColumn: true</code> - Column is initially locked</li>
+                                            <li><code>lockButton: true</code> - Show lock/unlock button</li>
+                                            <li>Lock buttons show column header text</li>
+                                            <li>Padlock icon changes with state</li>
+                                            <li>Tooltips indicate current action</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="rounded-lg bg-teal-50 p-4 dark:bg-teal-900/20">
+                                        <h4 class="mb-2 font-semibold text-teal-800 dark:text-teal-200">Global Configuration:</h4>
+                                        <ul class="list-inside list-disc text-sm text-teal-700 dark:text-teal-300">
+                                            <li><code>columnLocking.enabled</code> - Master switch</li>
+                                            <li><code>buttonPosition</code> - "toolbar" or "header"</li>
+                                            <li><code>buttonStyle</code> - Custom CSS styles</li>
+                                            <li><code>buttonClass</code> - Custom CSS classes</li>
+                                            <li>Works with scrollable tables</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="rounded-lg bg-cyan-50 p-4 dark:bg-cyan-900/20">
+                                        <h4 class="mb-2 font-semibold text-cyan-800 dark:text-cyan-200">Event Handling:</h4>
+                                        <ul class="list-inside list-disc text-sm text-cyan-700 dark:text-cyan-300">
+                                            <li><code>@column-lock-change</code> - Fired on lock/unlock</li>
+                                            <li>Event includes field name and locked state</li>
+                                            <li>Array of all currently locked fields</li>
+                                            <li>Perfect for analytics or state persistence</li>
+                                            <li>Console logging for debugging</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4 rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
+                                    <h4 class="mb-2 font-semibold text-blue-800 dark:text-blue-200">Use Cases & Benefits:</h4>
+                                    <div class="grid gap-3 md:grid-cols-2">
+                                        <ul class="list-inside list-disc text-sm text-blue-700 dark:text-blue-300">
+                                            <li><strong>Financial Dashboards:</strong> Lock key metrics while exploring data</li>
+                                            <li><strong>Spreadsheet Views:</strong> Keep identifier columns visible</li>
+                                            <li><strong>Comparison Tables:</strong> Lock reference data for analysis</li>
+                                        </ul>
+                                        <ul class="list-inside list-disc text-sm text-blue-700 dark:text-blue-300">
+                                            <li><strong>Wide Data Sets:</strong> Navigate horizontally without losing context</li>
+                                            <li><strong>User Experience:</strong> Customizable column visibility</li>
+                                            <li><strong>Responsive Design:</strong> Essential columns always accessible</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </PCard>
+                <!--DD 20250714:1400 - END -->
 
                 <!--DD 20250713:2021 - BEGIN - Add Documentation Section for Row Locking -->
                 <PCard class="mt-8 shadow-lg">

@@ -96,6 +96,195 @@ class PrimeVueTestController extends Controller
                 'label' => 'Multiple Dates'
             ],
 
+            //DD 20250714:1400 - BEGIN - NEW: Column Locking DataTable Demo (NEWEST FEATURE)
+            [
+                'type' => 'datatable',
+                'header' => [
+                    'title' => 'Products with Column Locking - NEWEST FEATURE DEMO',
+                    'subtitle' => '🆕 LATEST FEATURE: Lock/unlock columns to prevent horizontal scrolling',
+                    'actions' => [
+                        ['label' => 'Add Product', 'icon' => 'pi pi-plus', 'action' => 'add', 'severity' => 'success'],
+                        ['label' => 'Refresh', 'icon' => 'pi pi-refresh', 'action' => 'refresh', 'severity' => 'info'],
+                        ['label' => 'Lock Important Columns', 'icon' => 'pi pi-lock', 'action' => 'lock-important', 'severity' => 'warning']
+                    ]
+                ],
+                'footer' => [
+                    'showRecordCount' => true,
+                    'showSelectedCount' => true,
+                    'text' => 'Lock columns to keep them visible while scrolling horizontally through wide data sets'
+                ],
+                'columns' => [
+                    [
+                        'field' => 'code',
+                        'header' => 'Product Code',
+                        'sortable' => true,
+                        'style' => 'width: 120px',
+                        'lockColumn' => true,    // Initially locked
+                        'lockButton' => false     // Show lock/unlock button
+                    ],
+                    [
+                        'field' => 'name',
+                        'header' => 'Product Name',
+                        'sortable' => true,
+                        'style' => 'min-width: 200px',
+                        'lockColumn' => true,   // Not initially locked
+                        'lockButton' => true     // But user can lock it
+                    ],
+                    [
+                        'field' => 'category',
+                        'header' => 'Category',
+                        'sortable' => true,
+                        'style' => 'width: 120px',
+                        'lockColumn' => true,
+                        'lockButton' => true
+                    ],
+                    [
+                        'field' => 'price',
+                        'header' => 'Price',
+                        'sortable' => true,
+                        'dataType' => 'currency',
+                        'format' => 2,
+                        'leadText' => '$',
+                        'bodyStyle' => 'text-align: right',
+                        'headerStyle' => 'text-align: right',
+                        'style' => 'width: 100px',
+                        'lockColumn' => true,    // Initially locked (important price data)
+                        'lockButton' => true
+                    ],
+                    [
+                        'field' => 'quantity',
+                        'header' => 'Stock',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: center',
+                        'headerStyle' => 'text-align: center',
+                        'style' => 'width: 80px',
+                        'lockColumn' => true,
+                        'lockButton' => true
+                    ],
+                    [
+                        'field' => 'inventoryStatus',
+                        'header' => 'Status',
+                        'sortable' => true,
+                        'style' => 'width: 120px',
+                        'lockColumn' => false,
+                        'lockButton' => false    // No lock button for this column
+                    ],
+                    [
+                        'field' => 'rating',
+                        'header' => 'Rating',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: center',
+                        'headerStyle' => 'text-align: center',
+                        'style' => 'width: 80px',
+                        'lockColumn' => true,
+                        'lockButton' => true
+                    ],
+                    [
+                        'field' => 'supplier',
+                        'header' => 'Supplier',
+                        'sortable' => true,
+                        'style' => 'width: 150px',
+                        'lockColumn' => false,
+                        'lockButton' => false
+                    ],
+                    [
+                        'field' => 'description',
+                        'header' => 'Description',
+                        'sortable' => true,
+                        'style' => 'min-width: 300px',
+                        'lockColumn' => false,
+                        'lockButton' => false
+                    ],
+                    [
+                        'field' => 'lastUpdated',
+                        'header' => 'Last Updated',
+                        'sortable' => true,
+                        'dataType' => 'shortdatetime',
+                        'format' => 'US-12',
+                        'style' => 'width: 140px',
+                        'lockColumn' => false,
+                        'lockButton' => false
+                    ]
+                ],
+                'dataSource' => [
+                    'url' => '/products',
+                    'method' => 'GET',
+                    'lazy' => false // Client-side for demo to show more interaction
+                ],
+                // NEW: Column Locking Configuration
+                'columnLocking' => [
+                    'enabled' => true,
+                    'buttonPosition' => 'toolbar',    // Show buttons in toolbar
+                    'buttonStyle' => 'margin: 0 2px;',
+                    'buttonClass' => 'column-lock-btn'
+                ],
+                'gridLines' => 'both',
+                'stripedRows' => true,
+                'showGridlines' => true,
+                'size' => 'normal',
+                'paginator' => true,
+                'paginatorPosition' => 'bottom',
+                'rows' => 8,
+                'rowsPerPageOptions' => [5, 8, 10, 15],
+                'currentPageReportTemplate' => 'Showing {first} to {last} of {totalRecords} products',
+                'sortMode' => 'single',
+                'removableSort' => true,
+                'selectionMode' => 'single',
+                'globalFilter' => true,
+                'scrollable' => true,
+                'scrollHeight' => '400px',
+                'exportable' => true,
+                'exportFormats' => ['csv'],
+                'exportFilename' => 'column-locked-products-' . date('Y-m-d'),
+                'responsiveLayout' => 'scroll',
+                'tableStyle' => 'min-width: 120rem', // Wide table to demonstrate horizontal scrolling
+                'emptyMessage' => 'No products found',
+                // Enhanced conditional styling for demonstration
+                'conditionalStyles' => [
+                    [
+                        'column' => 'inventoryStatus',
+                        'value' => 'LOWSTOCK',
+                        'operator' => 'eq',
+                        'priority' => 2,
+                        'styleObject' => [
+                            'backgroundColor' => '#fefce8',
+                            'color' => '#a16207'
+                        ]
+                    ],
+                    [
+                        'column' => 'inventoryStatus',
+                        'value' => 'OUTOFSTOCK',
+                        'operator' => 'eq',
+                        'priority' => 1,
+                        'styleObject' => [
+                            'backgroundColor' => '#fef2f2',
+                            'color' => '#dc2626'
+                        ]
+                    ],
+                    [
+                        'column' => 'inventoryStatus',
+                        'value' => 'INSTOCK',
+                        'operator' => 'eq',
+                        'priority' => 3,
+                        'styleObject' => [
+                            'backgroundColor' => '#f0fdf4',
+                            'color' => '#166534'
+                        ]
+                    ],
+                    [
+                        'column' => 'price',
+                        'value' => 200,
+                        'operator' => 'gt',
+                        'priority' => 4,
+                        'styleObject' => [
+                            'fontWeight' => 'bold',
+                            'textDecoration' => 'underline'
+                        ]
+                    ]
+                ]
+            ],
+            //DD 20250714:1400 - END
+
             //DD 20250713:2021 - BEGIN - NEW: Row Locking DataTable Demo (at the top)
             [
                 'type' => 'datatable',

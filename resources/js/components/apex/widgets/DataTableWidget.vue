@@ -36,6 +36,8 @@ interface Column {
     exportable?: boolean;
     reorderable?: boolean;
     frozen?: boolean;
+    lockColumn?: boolean;  // New: Whether column should be frozen/locked
+    lockButton?: boolean;  // New: Whether to show lock/unlock button for this column
 }
 
 interface DataSource {
@@ -107,6 +109,15 @@ interface RowLocking {
     lockedRowStyles?: Record<string, any>;
 }
 //DD 20250713:2021 - END
+
+//DD 20250714:1400 - BEGIN (Column Locking)
+interface ColumnLocking {
+    enabled: boolean;
+    buttonPosition?: 'header' | 'toolbar';
+    buttonStyle?: string;
+    buttonClass?: string;
+}
+//DD 20250714:1400 - END
 
 interface Props {
     widgetId: string;
@@ -207,6 +218,9 @@ interface Props {
     //DD 20250713:2021 - BEGIN
     rowLocking?: RowLocking;
     //DD 20250713:2021 - END
+    //DD 20250714:1400 - BEGIN (Column Locking)
+    columnLocking?: ColumnLocking;
+    //DD 20250714:1400 - END
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -259,8 +273,16 @@ const props = withDefaults(defineProps<Props>(), {
         },
         lockedRowClasses: 'font-bold',
         lockedRowStyles: {}
-    })
+    }),
     //DD 20250713:2021 - END
+    //DD 20250714:1400 - BEGIN (Column Locking)
+    columnLocking: () => ({
+        enabled: false,
+        buttonPosition: 'toolbar',
+        buttonStyle: '',
+        buttonClass: ''
+    })
+    //DD 20250714:1400 - END
 });
 
 const dt = ref();
@@ -286,6 +308,62 @@ const expandedRows = ref<Record<string, boolean>>({});
 // Row locking state
 const lockedRows = ref<any[]>([]);
 //DD 20250713:2021 - END
+
+//DD 20250714:1400 - BEGIN (Column Locking)
+// Column locking state - track which columns are currently locked
+const lockedColumnFields = ref<Set<string>>(new Set());
+
+// Initialize locked columns based on lockColumn property
+const initializeLockedColumns = () => {
+    const initialLockedFields = new Set<string>();
+    props.columns.forEach(col => {
+        if (col.lockColumn) {
+            initialLockedFields.add(col.field);
+        }
+    });
+    lockedColumnFields.value = initialLockedFields;
+};
+
+// Check if a column is currently locked
+const isColumnLocked = (field: string): boolean => {
+    return lockedColumnFields.value.has(field);
+};
+
+// Toggle column lock state
+const toggleColumnLock = (field: string) => {
+    const newLockedFields = new Set(lockedColumnFields.value);
+    
+    if (newLockedFields.has(field)) {
+        newLockedFields.delete(field);
+    } else {
+        newLockedFields.add(field);
+    }
+    
+    lockedColumnFields.value = newLockedFields;
+    
+    // Emit event for parent to handle
+    emit('column-lock-change', {
+        field: field,
+        locked: newLockedFields.has(field),
+        allLockedFields: Array.from(newLockedFields)
+    });
+};
+
+// Get columns that have lockButton enabled
+const lockableColumns = computed(() => {
+    return props.columns.filter(col => col.lockButton);
+});
+
+// Check if column locking is enabled and has lockable columns
+const hasColumnLocking = computed(() => {
+    return props.columnLocking?.enabled && lockableColumns.value.length > 0;
+});
+
+// Get column lock button position
+const columnLockButtonPosition = computed(() => {
+    return props.columnLocking?.buttonPosition || 'toolbar';
+});
+//DD 20250714:1400 - END
 
 // Initialize visible columns based on hidden property
 const initVisibleColumns = () => {
@@ -546,6 +624,9 @@ const emit = defineEmits<{
     'row-lock': [payload: { row: any; index: number }];
     'row-unlock': [payload: { row: any; index: number }];
     //DD 20250713:2021 - END
+    //DD 20250714:1400 - BEGIN (Column Locking)
+    'column-lock-change': [payload: { field: string; locked: boolean; allLockedFields: string[] }];
+    //DD 20250714:1400 - END
 }>();
 
 // Initialize lazy mode
@@ -1206,6 +1287,11 @@ onMounted(async () => {
     // Initialize visible columns
     initVisibleColumns();
     
+    //DD 20250714:1400 - BEGIN (Column Locking)
+    // Initialize locked columns
+    initializeLockedColumns();
+    //DD 20250714:1400 - END
+    
     if (props.staticData) {
         data.value = props.staticData;
         totalRecords.value = props.staticData.length;
@@ -1283,7 +1369,7 @@ watch(() => props.selection, (newVal) => {
         </div>
 
         <!-- Toolbar -->
-        <div v-if="globalFilter || exportable || (hasSelectedItems && groupActions.length > 0) || (showExpandControls && expandControlsPosition === 'toolbar') || hasRowLocking" 
+        <div v-if="globalFilter || exportable || (hasSelectedItems && groupActions.length > 0) || (showExpandControls && expandControlsPosition === 'toolbar') || hasRowLocking || (hasColumnLocking && columnLockButtonPosition === 'toolbar')" 
              class="mb-4 flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center gap-2">
                 <!-- Global Filter -->
@@ -1341,6 +1427,29 @@ watch(() => props.selection, (newVal) => {
                     </span>
                 </template>
                 <!--DD 20250713:2021 - END-->
+
+                <!--DD 20250714:1400 - BEGIN (Column Locking)-->
+                <!-- Column Lock Buttons -->
+                <template v-if="hasColumnLocking && columnLockButtonPosition === 'toolbar'">
+                    <PDivider layout="vertical" />
+                    <PButton
+                        v-for="column in lockableColumns"
+                        :key="`column-lock-${column.field}`"
+                        :label="column.header"
+                        :icon="isColumnLocked(column.field) ? 'pi pi-lock' : 'pi pi-lock-open'"
+                        :severity="isColumnLocked(column.field) ? 'info' : 'secondary'"
+                        size="small"
+                        text
+                        @click="toggleColumnLock(column.field)"
+                        :class="[
+                            'flex items-center gap-1',
+                            props.columnLocking?.buttonClass || ''
+                        ]"
+                        :style="props.columnLocking?.buttonStyle || ''"
+                        v-tooltip="`${isColumnLocked(column.field) ? 'Unlock' : 'Lock'} ${column.header} column`"
+                    />
+                </template>
+                <!--DD 20250714:1400 - END-->
             </div>
 
             <!-- Export Buttons -->
@@ -1411,27 +1520,52 @@ watch(() => props.selection, (newVal) => {
                 })
             }"
         >
-            <template v-if="showExpandControls && expandControlsPosition === 'header'" #header>
-                <div class="flex justify-end gap-2">
-                    <PButton
-                        :label="expandAllLabel"
-                        icon="pi pi-plus"
-                        text
-                        size="small"
-                        @click="expandAll"
-                    />
-                    <PButton
-                        :label="collapseAllLabel"
-                        icon="pi pi-minus"
-                        text
-                        size="small"
-                        @click="collapseAll"
-                    />
+            <!--DD 20250714:1400 - BEGIN (Column Locking)-->
+            <template v-if="(showExpandControls && expandControlsPosition === 'header') || (hasColumnLocking && columnLockButtonPosition === 'header')" #header>
+                <div class="flex items-center justify-between">
+                    <!-- Expand Controls -->
+                    <div v-if="showExpandControls && expandControlsPosition === 'header'" class="flex gap-2">
+                        <PButton
+                            :label="expandAllLabel"
+                            icon="pi pi-plus"
+                            text
+                            size="small"
+                            @click="expandAll"
+                        />
+                        <PButton
+                            :label="collapseAllLabel"
+                            icon="pi pi-minus"
+                            text
+                            size="small"
+                            @click="collapseAll"
+                        />
+                    </div>
+                    
+                    <!-- Column Lock Buttons -->
+                    <div v-if="hasColumnLocking && columnLockButtonPosition === 'header'" class="flex gap-2">
+                        <PButton
+                            v-for="column in lockableColumns"
+                            :key="`column-lock-${column.field}`"
+                            :label="column.header"
+                            :icon="isColumnLocked(column.field) ? 'pi pi-lock' : 'pi pi-lock-open'"
+                            :severity="isColumnLocked(column.field) ? 'info' : 'secondary'"
+                            size="small"
+                            text
+                            @click="toggleColumnLock(column.field)"
+                            :class="[
+                                'flex items-center gap-1',
+                                props.columnLocking?.buttonClass || ''
+                            ]"
+                            :style="props.columnLocking?.buttonStyle || ''"
+                            v-tooltip="`${isColumnLocked(column.field) ? 'Unlock' : 'Lock'} ${column.header} column`"
+                        />
+                    </div>
                 </div>
             </template>
+            <!--DD 20250714:1400 - END-->
 
-            <!-- Column Toggle in Header -->
-            <template v-if="columnToggle && (!showExpandControls || expandControlsPosition !== 'header')" #header>
+            <!-- Column Toggle in Header (fallback if no other header content) -->
+            <template v-else-if="columnToggle" #header>
                 <div :class="columnTogglePosition === 'left' ? 'text-left' : 'text-right'">
                     <PMultiSelect 
                         :modelValue="visibleColumns" 
@@ -1499,7 +1633,7 @@ watch(() => props.selection, (newVal) => {
                 :headerStyle="col.headerStyle"
                 :exportable="col.exportable !== false"
                 :reorderableColumn="col.reorderable !== false && reorderableColumns"
-                :frozen="col.frozen"
+                :frozen="col.frozen || (col.lockColumn && isColumnLocked(col.field))"
                 :resizeable="col.resizable !== false && resizableColumns"
                 :pt="{
                     headerCell: { 
@@ -1666,6 +1800,12 @@ watch(() => props.selection, (newVal) => {
                         Locked: {{ lockedRowsCount }}
                     </span>
                     <!--DD 20250713:2021 - END-->
+                    <!--DD 20250714:1400 - BEGIN (Column Locking)-->
+                    <span v-if="hasColumnLocking && lockedColumnFields.size > 0" class="mx-2">|</span>
+                    <span v-if="hasColumnLocking && lockedColumnFields.size > 0">
+                        Locked Columns: {{ lockedColumnFields.size }}
+                    </span>
+                    <!--DD 20250714:1400 - END-->
                 </div>
                 <div v-if="footer.text">
                     {{ footer.text }}
