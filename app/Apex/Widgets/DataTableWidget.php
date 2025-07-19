@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Apex\Widgets;
-
+//works
 use App\Apex\Core\Widget\BaseWidget;
 
 class DataTableWidget extends BaseWidget
@@ -582,6 +582,113 @@ class DataTableWidget extends BaseWidget
                     ]
                 ],
                 //DD 20250714:1400 - END
+                //DD 20250715:1600 - BEGIN (Row Grouping)
+                // Row Grouping Configuration
+                'rowGrouping' => [
+                    'type' => 'object',
+                    'description' => 'Row grouping configuration',
+                    'properties' => [
+                        'enabled' => [
+                            'type' => 'boolean',
+                            'default' => false,
+                            'description' => 'Enable row grouping functionality'
+                        ],
+                        'rowGroupMode' => [
+                            'type' => 'string',
+                            'enum' => ['subheader', 'rowspan'],
+                            'default' => 'rowspan',
+                            'description' => 'Row grouping mode - rowspan or subheader'
+                        ],
+                        'groupRowsBy' => [
+                            'type' => 'array',
+                            'items' => ['type' => 'string'],
+                            'description' => 'Array of field names to group by (only first field is used currently)'
+                        ],
+                        'sortField' => [
+                            'type' => 'string',
+                            'description' => 'Field to sort by for grouping (usually same as groupRowsBy field)'
+                        ],
+                        'sortOrder' => [
+                            'type' => 'integer',
+                            'enum' => [1, -1],
+                            'default' => 1,
+                            'description' => 'Sort order for grouping (1 for ascending, -1 for descending)'
+                        ],
+                        // Subheader specific properties
+                        'groupRowsTotals' => [
+                            'type' => 'array',
+                            'items' => ['type' => 'string'],
+                            'description' => 'Array of field names to calculate totals for in group footer'
+                        ],
+                        'showHeaderTotal' => [
+                            'type' => 'boolean',
+                            'default' => false,
+                            'description' => 'Show totals in group header'
+                        ],
+                        'showHeaderRowCount' => [
+                            'type' => 'boolean',
+                            'default' => false,
+                            'description' => 'Show row count in group header'
+                        ],
+                        'headerRowCountText' => [
+                            'type' => 'string',
+                            'default' => 'Items in this group: ',
+                            'description' => 'Text to display before row count in header'
+                        ],
+                        'headerText' => [
+                            'type' => 'string',
+                            'default' => '',
+                            'description' => 'Static text to display in group header'
+                        ],
+                        'headerTemplate' => [
+                            'type' => 'string',
+                            'default' => '',
+                            'description' => 'Template for group header with {fieldName} placeholders'
+                        ],
+                        'headerImageField' => [
+                            'type' => 'string',
+                            'default' => '',
+                            'description' => 'Field name containing image URL for group header'
+                        ],
+                        'headerImageUrl' => [
+                            'type' => 'string',
+                            'default' => '',
+                            'description' => 'Static image URL for group header'
+                        ],
+                        'headerImagePosition' => [
+                            'type' => 'string',
+                            'enum' => ['before', 'after'],
+                            'default' => 'before',
+                            'description' => 'Position of image relative to text in group header'
+                        ],
+                        'showFooterTotal' => [
+                            'type' => 'boolean',
+                            'default' => false,
+                            'description' => 'Show totals in group footer'
+                        ],
+                        'showFooterRowCount' => [
+                            'type' => 'boolean',
+                            'default' => true,
+                            'description' => 'Show row count in group footer'
+                        ],
+                        'footerRowCountText' => [
+                            'type' => 'string',
+                            'default' => 'Total items: ',
+                            'description' => 'Text to display before row count in footer'
+                        ],
+                        'footerText' => [
+                            'type' => 'string',
+                            'default' => '',
+                            'description' => 'Static text to display in group footer'
+                        ],
+                        'footerTemplate' => [
+                            'type' => 'string',
+                            'default' => 'Total items: {rowCount}',
+                            'description' => 'Template for group footer with {rowCount} and other placeholders'
+                        ]
+                    ]
+                ],
+                //DD 20250715:1600 - END
                 // Other Configuration
                 'loading' => [
                     'type' => 'boolean',
@@ -801,6 +908,31 @@ class DataTableWidget extends BaseWidget
                     'buttonClass' => ''
                 ],
                 //DD 20250714:1400 - END
+                //DD 20250715:1600 - BEGIN (Row Grouping)
+                // Row Grouping
+                'rowGrouping' => $config['rowGrouping'] ?? [
+                    'enabled' => false,
+                    'rowGroupMode' => 'rowspan',
+                    'groupRowsBy' => [],
+                    'sortField' => null,
+                    'sortOrder' => 1,
+                    // Subheader properties
+                    'groupRowsTotals' => [],
+                    'showHeaderTotal' => false,
+                    'showHeaderRowCount' => false,
+                    'headerRowCountText' => 'Items in this group: ',
+                    'headerText' => '',
+                    'headerTemplate' => '',
+                    'headerImageField' => '',
+                    'headerImageUrl' => '',
+                    'headerImagePosition' => 'before',
+                    'showFooterTotal' => false,
+                    'showFooterRowCount' => true,
+                    'footerRowCountText' => 'Total items: ',
+                    'footerText' => '',
+                    'footerTemplate' => 'Total items: {rowCount}'
+                ],
+                //DD 20250715:1600 - END
                 // Other
                 'loading' => $config['loading'] ?? false,
                 'emptyMessage' => $config['emptyMessage'] ?? 'No records found',

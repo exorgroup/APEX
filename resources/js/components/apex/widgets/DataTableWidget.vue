@@ -1,6 +1,7 @@
 // resources/js/components/apex/widgets/DataTableWidget.vue
+//works
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, defineAsyncComponent } from 'vue';
+import { ref, onMounted, computed, watch, defineAsyncComponent, nextTick, onUnmounted } from 'vue';
 import axios from 'axios';
 import PMultiSelect from 'primevue/multiselect';
 import PButton from 'primevue/button';
@@ -119,6 +120,31 @@ interface ColumnLocking {
 }
 //DD 20250714:1400 - END
 
+//DD 20250715:1600 - BEGIN (Row Grouping)
+interface RowGrouping {
+    enabled: boolean;
+    rowGroupMode?: 'subheader' | 'rowspan';
+    groupRowsBy?: string[];
+    sortField?: string;
+    sortOrder?: 1 | -1;
+    // Subheader specific properties
+    groupRowsTotals?: string[]; // Fields to calculate totals for
+    showHeaderTotal?: boolean;
+    showHeaderRowCount?: boolean;
+    headerRowCountText?: string;
+    headerText?: string;
+    headerTemplate?: string; // Template with {fieldName} placeholders
+    headerImageField?: string; // Field containing image URL
+    headerImageUrl?: string; // Static image URL
+    headerImagePosition?: 'before' | 'after'; // Position relative to text
+    showFooterTotal?: boolean;
+    showFooterRowCount?: boolean;
+    footerRowCountText?: string;
+    footerText?: string;
+    footerTemplate?: string; // Template with {rowCount} and other placeholders
+}
+//DD 20250715:1600 - END
+
 interface Props {
     widgetId: string;
     // Header/Footer
@@ -221,6 +247,9 @@ interface Props {
     //DD 20250714:1400 - BEGIN (Column Locking)
     columnLocking?: ColumnLocking;
     //DD 20250714:1400 - END
+    //DD 20250715:1600 - BEGIN (Row Grouping)
+    rowGrouping?: RowGrouping;
+    //DD 20250715:1600 - END
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -281,8 +310,32 @@ const props = withDefaults(defineProps<Props>(), {
         buttonPosition: 'toolbar',
         buttonStyle: '',
         buttonClass: ''
-    })
+    }),
     //DD 20250714:1400 - END
+    //DD 20250715:1600 - BEGIN (Row Grouping)
+    rowGrouping: () => ({
+        enabled: false,
+        rowGroupMode: 'rowspan',
+        groupRowsBy: [],
+        sortField: undefined,
+        sortOrder: 1,
+        // Subheader defaults
+        groupRowsTotals: [],
+        showHeaderTotal: false,
+        showHeaderRowCount: false,
+        headerRowCountText: 'Items in this group: ',
+        headerText: '',
+        headerTemplate: '',
+        headerImageField: '',
+        headerImageUrl: '',
+        headerImagePosition: 'before',
+        showFooterTotal: false,
+        showFooterRowCount: true,
+        footerRowCountText: 'Total items: ',
+        footerText: '',
+        footerTemplate: 'Total items: {rowCount}'
+    })
+    //DD 20250715:1600 - END
 });
 
 const dt = ref();
@@ -364,6 +417,212 @@ const columnLockButtonPosition = computed(() => {
     return props.columnLocking?.buttonPosition || 'toolbar';
 });
 //DD 20250714:1400 - END
+
+//DD 20250715:1600 - BEGIN (Row Grouping)
+// Row grouping computed properties and methods
+const hasRowGrouping = computed(() => props.rowGrouping?.enabled || false);
+
+const groupingField = computed(() => {
+    if (!hasRowGrouping.value || !props.rowGrouping?.groupRowsBy?.length) {
+        return undefined;
+    }
+    // For both rowspan and subheader mode, use the first grouping field
+    return props.rowGrouping.groupRowsBy[0];
+});
+
+const groupingSortField = computed(() => {
+    if (!hasRowGrouping.value) return undefined;
+    return props.rowGrouping?.sortField || groupingField.value;
+});
+
+const groupingSortOrder = computed(() => {
+    if (!hasRowGrouping.value) return undefined;
+    return props.rowGrouping?.sortOrder || 1;
+});
+
+// Apply automatic sorting for row grouping
+const applySortingForGrouping = () => {
+    if (!hasRowGrouping.value || !groupingSortField.value) return;
+    
+    const sortOrderValue = groupingSortOrder.value || 1;
+    
+    sortField.value = groupingSortField.value;
+    sortOrder.value = sortOrderValue;
+    
+    // Update multiSortMeta for consistency
+    multiSortMeta.value = [{
+        field: groupingSortField.value,
+        order: sortOrderValue
+    }];
+};
+
+// Subheader specific methods
+const processTemplate = (template: string, data: any, extraParams: Record<string, any> = {}): string => {
+    if (!template) return '';
+    
+    // Replace {fieldName} placeholders with actual values
+    return template.replace(/{(\w+(?:\.\w+)*)}/g, (match, fieldPath) => {
+        // Handle special parameters like rowCount
+        if (extraParams[fieldPath] !== undefined) {
+            return String(extraParams[fieldPath]);
+        }
+        
+        // Handle nested field paths like 'representative.name'
+        const value = fieldPath.split('.').reduce((obj: any, key: string) => {
+            return obj && obj[key] !== undefined ? obj[key] : '';
+        }, data);
+        
+        return String(value || '');
+    });
+};
+
+const getGroupHeaderContent = (slotProps: any): { 
+    imageUrl: string; 
+    text: string; 
+    imagePosition: string;
+    showRowCount: boolean;
+    rowCountText: string;
+    customText: string;
+    rowCount: number;
+} => {
+    if (!props.rowGrouping || props.rowGrouping.rowGroupMode !== 'subheader') {
+        return { 
+            imageUrl: '', 
+            text: '', 
+            imagePosition: 'before',
+            showRowCount: false,
+            rowCountText: '',
+            customText: '',
+            rowCount: 0
+        };
+    }
+    
+    const data = slotProps.data;
+    let imageUrl = '';
+    let text = '';
+    
+    // Determine image URL
+    if (props.rowGrouping.headerImageField) {
+        // Get image URL from a field in the data
+        const imageFieldValue = props.rowGrouping.headerImageField.split('.').reduce((obj: any, key: string) => {
+            return obj && obj[key] !== undefined ? obj[key] : '';
+        }, data);
+        imageUrl = imageFieldValue || '';
+    } else if (props.rowGrouping.headerImageUrl) {
+        // Use static image URL
+        imageUrl = props.rowGrouping.headerImageUrl;
+    }
+    
+    // Determine text content
+    if (props.rowGrouping.headerTemplate) {
+        // Use template with placeholders
+        text = processTemplate(props.rowGrouping.headerTemplate, data);
+    } else if (groupingField.value) {
+        // Default to the grouping field value
+        const fieldValue = groupingField.value.split('.').reduce((obj: any, key: string) => {
+            return obj && obj[key] !== undefined ? obj[key] : '';
+        }, data);
+        text = String(fieldValue || '');
+    }
+    
+    // Calculate row count for this group
+    const groupValue = groupingField.value ? 
+        groupingField.value.split('.').reduce((obj: any, key: string) => {
+            return obj && obj[key] !== undefined ? obj[key] : '';
+        }, data) : '';
+    const rowCount = calculateGroupRowCount(groupValue);
+    
+    return {
+        imageUrl,
+        text,
+        imagePosition: props.rowGrouping.headerImagePosition || 'before',
+        showRowCount: props.rowGrouping.showHeaderRowCount || false,
+        rowCountText: props.rowGrouping.headerRowCountText || 'Items in this group: ',
+        customText: props.rowGrouping.headerText || '',
+        rowCount
+    };
+};
+
+const getGroupFooterContent = (slotProps: any): {
+    showRowCount: boolean;
+    rowCountText: string;
+    customText: string;
+    rowCount: number;
+} => {
+    if (!props.rowGrouping || props.rowGrouping.rowGroupMode !== 'subheader') {
+        return {
+            showRowCount: false,
+            rowCountText: '',
+            customText: '',
+            rowCount: 0
+        };
+    }
+    
+    const data = slotProps.data;
+    const groupValue = groupingField.value ? 
+        groupingField.value.split('.').reduce((obj: any, key: string) => {
+            return obj && obj[key] !== undefined ? obj[key] : '';
+        }, data) : '';
+    
+    // Calculate row count for this group
+    const rowCount = calculateGroupRowCount(groupValue);
+    
+    // Calculate totals if specified
+    const totals: Record<string, number> = {};
+    if (props.rowGrouping.groupRowsTotals?.length) {
+        props.rowGrouping.groupRowsTotals.forEach(field => {
+            totals[field] = calculateGroupTotal(groupValue, field);
+        });
+    }
+    
+    // Process footer template if provided
+    let processedFooterText = '';
+    if (props.rowGrouping.footerTemplate) {
+        processedFooterText = processTemplate(props.rowGrouping.footerTemplate, data, { 
+            rowCount, 
+            ...totals 
+        });
+    }
+    
+    return {
+        showRowCount: props.rowGrouping.showFooterRowCount !== false,
+        rowCountText: props.rowGrouping.footerRowCountText || 'Total items: ',
+        customText: processedFooterText || props.rowGrouping.footerText || '',
+        rowCount
+    };
+};
+
+const calculateGroupRowCount = (groupValue: any): number => {
+    if (!groupingField.value) return 0;
+    
+    const currentData = isLazyMode.value ? data.value : filteredData.value;
+    return currentData.filter(item => {
+        const itemGroupValue = groupingField.value!.split('.').reduce((obj: any, key: string) => {
+            return obj && obj[key] !== undefined ? obj[key] : '';
+        }, item);
+        return itemGroupValue === groupValue;
+    }).length;
+};
+
+const calculateGroupTotal = (groupValue: any, field: string): number => {
+    if (!groupingField.value) return 0;
+    
+    const currentData = isLazyMode.value ? data.value : filteredData.value;
+    return currentData
+        .filter(item => {
+            const itemGroupValue = groupingField.value!.split('.').reduce((obj: any, key: string) => {
+                return obj && obj[key] !== undefined ? obj[key] : '';
+            }, item);
+            return itemGroupValue === groupValue;
+        })
+        .reduce((sum, item) => {
+            const fieldValue = field.split('.').reduce((obj: any, key: string) => {
+                return obj && obj[key] !== undefined ? obj[key] : 0;
+            }, item);
+            return sum + (parseFloat(fieldValue) || 0);
+        }, 0);
+};
+//DD 20250715:1600 - END
 
 // Initialize visible columns based on hidden property
 const initVisibleColumns = () => {
@@ -1278,7 +1537,6 @@ const parseInlineStyles = (inlineStyles: string): Record<string, any> => {
     return styles;
 };
 
-
 // Initialize
 onMounted(async () => {
     // Initialize filters first
@@ -1291,6 +1549,22 @@ onMounted(async () => {
     // Initialize locked columns
     initializeLockedColumns();
     //DD 20250714:1400 - END
+    
+    //DD 20250715:1600 - BEGIN (Row Grouping)
+    // Apply automatic sorting for row grouping if enabled
+    if (hasRowGrouping.value) {
+        applySortingForGrouping();
+    }
+    
+    // Fix group header positioning for subheader mode with robust calculation
+    if (hasRowGrouping.value && props.rowGrouping?.rowGroupMode === 'subheader') {
+        // Use the robust calculation method
+        ensureHeaderHeightCalculation();
+        
+        // Also set up resize listener for window resize events
+        window.addEventListener('resize', calculateHeaderHeight);
+    }
+    //DD 20250715:1600 - END
     
     if (props.staticData) {
         data.value = props.staticData;
@@ -1335,10 +1609,189 @@ onMounted(async () => {
     }
 });
 
+//DD 20250715:1600 - BEGIN (Row Grouping Header Height Fix)
+// Store observer references for cleanup
+const headerResizeObserver = ref<ResizeObserver | null>(null);
+const headerMutationObserver = ref<MutationObserver | null>(null);
+
+// Calculate and set the correct header height for group header positioning
+const calculateHeaderHeight = () => {
+    if (!dt.value?.$el) return;
+    
+    const tableEl = dt.value.$el;
+    const headerEl = tableEl.querySelector('.p-datatable-thead');
+    
+    if (headerEl) {
+        const headerHeight = headerEl.offsetHeight;
+        if (headerHeight > 0) {
+            tableEl.style.setProperty('--table-header-height', `${headerHeight}px`);
+            
+            // Also update any existing group headers
+            const groupHeaders = tableEl.querySelectorAll('.p-datatable-row-group-header');
+            groupHeaders.forEach((header: HTMLElement) => {
+                header.style.top = `${headerHeight}px`;
+            });
+            
+            console.log(`Header height set to: ${headerHeight}px (${groupHeaders.length} group headers updated)`);
+        }
+    }
+};
+
+// Set up persistent observers that don't disconnect
+const setupPersistentObservers = () => {
+    if (!dt.value?.$el || !hasRowGrouping.value || props.rowGrouping?.rowGroupMode !== 'subheader') {
+        return;
+    }
+    
+    const tableEl = dt.value.$el;
+    const headerEl = tableEl.querySelector('.p-datatable-thead');
+    
+    // Set up ResizeObserver for header size changes (don't disconnect)
+    if (headerEl && window.ResizeObserver && !headerResizeObserver.value) {
+        headerResizeObserver.value = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                if (entry.contentRect.height > 0) {
+                    calculateHeaderHeight();
+                }
+            }
+        });
+        
+        headerResizeObserver.value.observe(headerEl);
+    }
+    
+    // Set up MutationObserver for DOM changes (don't disconnect)
+    if (window.MutationObserver && !headerMutationObserver.value) {
+        headerMutationObserver.value = new MutationObserver((mutations) => {
+            let shouldRecalculate = false;
+            
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            const element = node as HTMLElement;
+                            if (element.classList?.contains('p-datatable-row-group-header') ||
+                                element.querySelector?.('.p-datatable-row-group-header')) {
+                                shouldRecalculate = true;
+                            }
+                        }
+                    });
+                }
+            });
+            
+            if (shouldRecalculate) {
+                // Small delay to ensure the new elements are rendered
+                setTimeout(calculateHeaderHeight, 50);
+            }
+        });
+        
+        headerMutationObserver.value.observe(tableEl, {
+            childList: true,
+            subtree: true
+        });
+    }
+};
+
+// More robust header height calculation with multiple fallbacks
+const ensureHeaderHeightCalculation = async () => {
+    if (!hasRowGrouping.value || props.rowGrouping?.rowGroupMode !== 'subheader') {
+        return;
+    }
+    
+    // Method 1: Immediate calculation after nextTick
+    await nextTick();
+    calculateHeaderHeight();
+    
+    // Method 2: Use setTimeout to ensure DOM is fully painted
+    setTimeout(() => {
+        calculateHeaderHeight();
+    }, 100);
+    
+    // Method 3: Use requestAnimationFrame for after paint
+    requestAnimationFrame(() => {
+        calculateHeaderHeight();
+    });
+    
+    // Method 4: Set up persistent observers
+    setTimeout(() => {
+        setupPersistentObservers();
+    }, 200);
+};
+
+// Clean up observers and event listeners
+const cleanupObservers = () => {
+    if (headerResizeObserver.value) {
+        headerResizeObserver.value.disconnect();
+        headerResizeObserver.value = null;
+    }
+    
+    if (headerMutationObserver.value) {
+        headerMutationObserver.value.disconnect();
+        headerMutationObserver.value = null;
+    }
+    
+    window.removeEventListener('resize', calculateHeaderHeight);
+};
+
+// Clean up event listener
+onUnmounted(() => {
+    cleanupObservers();
+});
+//DD 20250715:1600 - END
+
 // Watch for external selection changes
 watch(() => props.selection, (newVal) => {
     selectedItems.value = [...newVal];
 });
+
+//DD 20250715:1600 - BEGIN (Row Grouping Data Watch)
+// Watch for data changes to recalculate header height when group headers are rendered
+watch(() => data.value, async () => {
+    if (hasRowGrouping.value && props.rowGrouping?.rowGroupMode === 'subheader' && data.value.length > 0) {
+        // Wait a bit for the DataTable to render the new data and group headers
+        await nextTick();
+        setTimeout(calculateHeaderHeight, 100);
+    }
+}, { deep: true });
+
+// Watch for lazy mode changes
+watch(() => isLazyMode.value, async () => {
+    if (hasRowGrouping.value && props.rowGrouping?.rowGroupMode === 'subheader') {
+        await nextTick();
+        setTimeout(calculateHeaderHeight, 100);
+    }
+});
+
+// Watch for pagination changes (rows per page, current page)
+watch(() => props.rows, async () => {
+    if (hasRowGrouping.value && props.rowGrouping?.rowGroupMode === 'subheader') {
+        await nextTick();
+        setTimeout(calculateHeaderHeight, 150);
+    }
+});
+
+watch(() => first.value, async () => {
+    if (hasRowGrouping.value && props.rowGrouping?.rowGroupMode === 'subheader') {
+        await nextTick();
+        setTimeout(calculateHeaderHeight, 100);
+    }
+});
+
+// Watch for global filter changes
+watch(() => globalFilterValue.value, async () => {
+    if (hasRowGrouping.value && props.rowGrouping?.rowGroupMode === 'subheader') {
+        await nextTick();
+        setTimeout(calculateHeaderHeight, 150);
+    }
+});
+
+// Watch for sorting changes
+watch(() => [sortField.value, sortOrder.value], async () => {
+    if (hasRowGrouping.value && props.rowGrouping?.rowGroupMode === 'subheader') {
+        await nextTick();
+        setTimeout(calculateHeaderHeight, 100);
+    }
+});
+//DD 20250715:1600 - END
 </script>
 
 <template>
@@ -1508,6 +1961,8 @@ watch(() => props.selection, (newVal) => {
             :class="tableClasses"
             :rowClass="getRowClass"
             :rowStyle="getRowStyle"
+            :rowGroupMode="hasRowGrouping ? rowGrouping?.rowGroupMode : undefined"
+            :groupRowsBy="hasRowGrouping ? groupingField : undefined"
             @page="onPage"
             @sort="onSort"
             @row-reorder="onRowReorder"
@@ -1756,6 +2211,76 @@ watch(() => props.selection, (newVal) => {
                 </template>
             </PColumn>
 
+            <!-- Group Header Template for Subheader Mode -->
+            <template v-if="hasRowGrouping && rowGrouping?.rowGroupMode === 'subheader'" #groupheader="slotProps">
+                <div class="space-y-2">
+                    <!-- Main header row with image and grouping value -->
+                    <div class="flex items-center gap-2">
+                        <!-- Image before text -->
+                        <img 
+                            v-if="getGroupHeaderContent(slotProps).imageUrl && getGroupHeaderContent(slotProps).imagePosition === 'before'"
+                            :src="getGroupHeaderContent(slotProps).imageUrl"
+                            :alt="getGroupHeaderContent(slotProps).text"
+                            width="32" 
+                            style="vertical-align: middle"
+                            class="rounded"
+                        />
+                        
+                        <!-- Text content -->
+                        <span class="font-semibold text-lg">{{ getGroupHeaderContent(slotProps).text }}</span>
+                        
+                        <!-- Image after text -->
+                        <img 
+                            v-if="getGroupHeaderContent(slotProps).imageUrl && getGroupHeaderContent(slotProps).imagePosition === 'after'"
+                            :src="getGroupHeaderContent(slotProps).imageUrl"
+                            :alt="getGroupHeaderContent(slotProps).text"
+                            width="32" 
+                            style="vertical-align: middle"
+                            class="rounded"
+                        />
+                    </div>
+                    
+                    <!-- Custom header text row (if headerText is provided) -->
+                    <div 
+                        v-if="getGroupHeaderContent(slotProps).customText"
+                        class="text-sm text-gray-600 dark:text-gray-400"
+                    >
+                        {{ getGroupHeaderContent(slotProps).customText }}
+                    </div>
+                    
+                    <!-- Row count row (if showHeaderRowCount is true) -->
+                    <div 
+                        v-if="getGroupHeaderContent(slotProps).showRowCount"
+                        class="text-sm text-gray-500 dark:text-gray-500"
+                    >
+                        {{ getGroupHeaderContent(slotProps).rowCountText }}{{ getGroupHeaderContent(slotProps).rowCount }}
+                    </div>
+                </div>
+            </template>
+
+            <!-- Group Footer Template for Subheader Mode -->
+            <template v-if="hasRowGrouping && rowGrouping?.rowGroupMode === 'subheader'" #groupfooter="slotProps">
+                <div class="flex justify-end w-full">
+                    <div class="space-y-1 text-right">
+                        <!-- Row count row (if showFooterRowCount is true) -->
+                        <div 
+                            v-if="getGroupFooterContent(slotProps).showRowCount"
+                            class="font-bold text-sm"
+                        >
+                            {{ getGroupFooterContent(slotProps).rowCountText }}{{ getGroupFooterContent(slotProps).rowCount }}
+                        </div>
+                        
+                        <!-- Custom footer text row (if footerText is provided) -->
+                        <div 
+                            v-if="getGroupFooterContent(slotProps).customText"
+                            class="text-sm text-gray-600 dark:text-gray-400"
+                        >
+                            {{ getGroupFooterContent(slotProps).customText }}
+                        </div>
+                    </div>
+                </div>
+            </template>
+
             <template v-if="hasRowExpansion" #expansion="slotProps">
                 <div class="p-4">
                     <!-- Expansion title -->
@@ -1806,6 +2331,12 @@ watch(() => props.selection, (newVal) => {
                         Locked Columns: {{ lockedColumnFields.size }}
                     </span>
                     <!--DD 20250714:1400 - END-->
+                    <!--DD 20250715:1600 - BEGIN (Row Grouping)-->
+                    <span v-if="hasRowGrouping" class="mx-2">|</span>
+                    <span v-if="hasRowGrouping">
+                        Grouped by: {{ groupingField }}
+                    </span>
+                    <!--DD 20250715:1600 - END-->
                 </div>
                 <div v-if="footer.text">
                     {{ footer.text }}
@@ -1853,4 +2384,51 @@ watch(() => props.selection, (newVal) => {
 .apex-datatable :deep(.p-column-filter) {
     width: 100%;
 }
+
+/* DD 20250715:1600 - BEGIN (Row Grouping Styles) */
+/* Enhanced styling for rowspan mode */
+.apex-datatable :deep(.p-datatable-rowspan) .p-datatable-tbody > tr > td {
+    vertical-align: top;
+}
+
+/* Subtle styling for grouped cells */
+.apex-datatable :deep(.p-datatable-tbody > tr > td[rowspan]) {
+    background-color: rgba(59, 130, 246, 0.05);
+    border-right: 2px solid rgba(59, 130, 246, 0.2);
+}
+
+/* Dark mode support for grouped cells */
+.dark .apex-datatable :deep(.p-datatable-tbody > tr > td[rowspan]) {
+    background-color: rgba(59, 130, 246, 0.1);
+    border-right: 2px solid rgba(59, 130, 246, 0.3);
+}
+
+/* FIX: Ensure group headers position correctly below table headers */
+.apex-datatable :deep(.p-datatable-scrollable .p-datatable-thead) {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+/* Force recalculation of group header positioning for subheader mode */
+.apex-datatable :deep(.p-datatable-row-group-header) {
+    position: sticky;
+    z-index: 1;
+    background: white;
+}
+
+.dark .apex-datatable :deep(.p-datatable-row-group-header) {
+    background: rgb(31 41 55); /* dark:bg-gray-800 equivalent */
+}
+
+/* Ensure group headers don't overlap with table headers */
+.apex-datatable :deep(.p-datatable-scrollable .p-datatable-row-group-header) {
+    top: var(--table-header-height, 56px) !important;
+}
+
+/* Calculate and set header height dynamically */
+.apex-datatable :deep(.p-datatable-scrollable) {
+    --table-header-height: 56px; /* Default height, will be overridden by JS */
+}
+/* DD 20250715:1600 - END */
 </style>

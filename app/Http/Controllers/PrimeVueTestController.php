@@ -96,6 +96,348 @@ class PrimeVueTestController extends Controller
                 'label' => 'Multiple Dates'
             ],
 
+
+
+            //DD1 - Begin: Subheader Row Grouping DataTable Demo
+            [
+                'type' => 'datatable',
+                'header' => [
+                    'title' => 'Row Grouping Demo - Subheader Mode',
+                    'subtitle' => '🆕 NEW FEATURE: Group rows with headers and footers showing totals and counts',
+                    'actions' => [
+                        ['label' => 'Add Product', 'icon' => 'pi pi-plus', 'action' => 'add', 'severity' => 'success'],
+                        ['label' => 'Export Grouped Data', 'icon' => 'pi pi-download', 'action' => 'export-grouped', 'severity' => 'info']
+                    ]
+                ],
+                'footer' => [
+                    'showRecordCount' => true,
+                    'showSelectedCount' => true,
+                    'text' => 'Products grouped by Category and Inventory Status with totals'
+                ],
+                'columns' => [
+                    [
+                        'field' => 'category',
+                        'header' => 'Category',
+                        'sortable' => true,
+                        'style' => 'width: 150px'
+                    ],
+                    [
+                        'field' => 'inventoryStatus',
+                        'header' => 'Status',
+                        'sortable' => true,
+                        'style' => 'width: 120px'
+                    ],
+                    [
+                        'field' => 'code',
+                        'header' => 'Product Code',
+                        'sortable' => true,
+                        'style' => 'width: 120px'
+                    ],
+                    [
+                        'field' => 'name',
+                        'header' => 'Product Name',
+                        'sortable' => true,
+                        'style' => 'min-width: 200px'
+                    ],
+                    [
+                        'field' => 'price',
+                        'header' => 'Price',
+                        'sortable' => true,
+                        'dataType' => 'currency',
+                        'format' => 2,
+                        'leadText' => '$',
+                        'bodyStyle' => 'text-align: right',
+                        'headerStyle' => 'text-align: right',
+                        'style' => 'width: 100px'
+                    ],
+                    [
+                        'field' => 'quantity',
+                        'header' => 'Stock',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: center',
+                        'headerStyle' => 'text-align: center',
+                        'style' => 'width: 80px'
+                    ],
+                    [
+                        'field' => 'rating',
+                        'header' => 'Rating',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: center',
+                        'headerStyle' => 'text-align: center',
+                        'style' => 'width: 80px'
+                    ]
+                ],
+                'dataSource' => [
+                    'url' => '/products',
+                    'method' => 'GET',
+                    'lazy' => false // Client-side for demo
+                ],
+                // Row Grouping Configuration - Subheader Mode
+                'rowGrouping' => [
+                    'enabled' => true,
+                    'rowGroupMode' => 'subheader',
+                    'groupRowsBy' => ['category'],
+                    'groupRowsTotals' => ['price', 'quantity'], // Calculate totals for these fields
+                    // Header configuration
+                    'showHeaderTotal' => true,
+                    'showHeaderRowCount' => true,
+                    'headerRowCountText' => 'Products in this group: ',
+                    'headerText' => 'Group Summary Information',
+                    'headerTemplate' => 'Products in category {category}',
+                    'headerImageUrl' => 'https://img.icons8.com/?size=100&id=73&format=png',
+                    'headerImagePosition' => 'after',
+
+                    // Footer configuration
+                    'showFooterTotal' => true,
+                    'showFooterRowCount' => true,
+                    'footerRowCountText' => 'Total items: ',
+                    'footerText' => 'End of group data'
+                ],
+                'gridLines' => 'both',
+                'stripedRows' => true,
+                'showGridlines' => true,
+                'size' => 'normal',
+                'paginator' => true,
+                'paginatorPosition' => 'bottom',
+                'rows' => 5,
+                'rowsPerPageOptions' => [5, 10, 15, 25, 50],
+                'currentPageReportTemplate' => 'Showing {first} to {last} of {totalRecords} products',
+                'sortMode' => 'single',
+                'removableSort' => true,
+                'globalFilter' => true,
+                'scrollable' => true,
+                'scrollHeight' => '500px',
+                'exportable' => true,
+                'exportFormats' => ['csv'],
+                'exportFilename' => 'grouped-products-subheader-' . date('Y-m-d'),
+                'responsiveLayout' => 'scroll',
+                'tableStyle' => 'min-width: 80rem',
+                'emptyMessage' => 'No products found'
+            ],
+            //DD1 - End
+
+            //DD2 - Begin: Expandable Row Grouping DataTable Demo
+            [
+                'type' => 'datatable',
+                'header' => [
+                    'title' => 'Row Grouping Demo - Expandable Mode',
+                    'subtitle' => '🆕 NEW FEATURE: Collapsible groups with expand/collapse all functionality',
+                    'actions' => [
+                        ['label' => 'Add Product', 'icon' => 'pi pi-plus', 'action' => 'add', 'severity' => 'success'],
+                        ['label' => 'Group Analysis', 'icon' => 'pi pi-chart-bar', 'action' => 'analyze-groups', 'severity' => 'info']
+                    ]
+                ],
+                'footer' => [
+                    'showRecordCount' => true,
+                    'showSelectedCount' => true,
+                    'text' => 'Click group headers to expand/collapse or use the controls above'
+                ],
+                'columns' => [
+                    [
+                        'field' => 'category',
+                        'header' => 'Category',
+                        'sortable' => true,
+                        'style' => 'width: 150px'
+                    ],
+                    [
+                        'field' => 'inventoryStatus',
+                        'header' => 'Status',
+                        'sortable' => true,
+                        'style' => 'width: 120px'
+                    ],
+                    [
+                        'field' => 'code',
+                        'header' => 'Product Code',
+                        'sortable' => true,
+                        'style' => 'width: 120px'
+                    ],
+                    [
+                        'field' => 'name',
+                        'header' => 'Product Name',
+                        'sortable' => true,
+                        'style' => 'min-width: 200px'
+                    ],
+                    [
+                        'field' => 'price',
+                        'header' => 'Price',
+                        'sortable' => true,
+                        'dataType' => 'currency',
+                        'format' => 2,
+                        'leadText' => '$',
+                        'bodyStyle' => 'text-align: right',
+                        'headerStyle' => 'text-align: right',
+                        'style' => 'width: 100px'
+                    ],
+                    [
+                        'field' => 'quantity',
+                        'header' => 'Stock',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: center',
+                        'headerStyle' => 'text-align: center',
+                        'style' => 'width: 80px'
+                    ],
+                    [
+                        'field' => 'rating',
+                        'header' => 'Rating',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: center',
+                        'headerStyle' => 'text-align: center',
+                        'style' => 'width: 80px'
+                    ]
+                ],
+                'dataSource' => [
+                    'url' => '/products',
+                    'method' => 'GET',
+                    'lazy' => false // Client-side for demo
+                ],
+                // Row Grouping Configuration - Expandable Mode
+                'rowGrouping' => [
+                    'enabled' => true,
+                    'rowGroupMode' => 'expandable',
+                    'groupRowsBy' => ['category'],
+                    'groupRowsTotals' => ['price', 'quantity'], // Calculate totals for these fields
+                    // Header configuration
+                    'showHeaderTotal' => true,
+                    'showHeaderRowCount' => true,
+                    'headerRowCountText' => 'Items count: ',
+                    'headerText' => 'Expandable Group Details',
+                    // Footer configuration
+                    'showFooterTotal' => true,
+                    'showFooterRowCount' => true,
+                    'footerRowCountText' => 'Group total: ',
+                    'footerText' => 'Group footer information',
+                    // Expandable mode specific
+                    'showExpandCollapseAllButton' => true,
+                    'expandAllLabel' => 'Expand All Categories',
+                    'collapseAllLabel' => 'Collapse All Categories',
+                    'expandCollapsePosition' => 'header'
+                ],
+                'gridLines' => 'both',
+                'stripedRows' => true,
+                'showGridlines' => true,
+                'size' => 'normal',
+                'paginator' => true,
+                'paginatorPosition' => 'bottom',
+                'rows' => 15,
+                'rowsPerPageOptions' => [10, 15, 25, 50],
+                'currentPageReportTemplate' => 'Showing {first} to {last} of {totalRecords} products',
+                'sortMode' => 'single',
+                'removableSort' => true,
+                'globalFilter' => true,
+                'scrollable' => true,
+                'scrollHeight' => '500px',
+                'exportable' => true,
+                'exportFormats' => ['csv'],
+                'exportFilename' => 'grouped-products-expandable-' . date('Y-m-d'),
+                'responsiveLayout' => 'scroll',
+                'tableStyle' => 'min-width: 80rem',
+                'emptyMessage' => 'No products found'
+            ],
+            //DD2 - End
+
+            //DD3 - Begin: Rowspan Row Grouping DataTable Demo
+            [
+                'type' => 'datatable',
+                'header' => [
+                    'title' => 'Row Grouping Demo - Rowspan Mode',
+                    'subtitle' => '🆕 NEW FEATURE: Grouped rows with spanning cells for clean visual grouping',
+                    'actions' => [
+                        ['label' => 'Add Product', 'icon' => 'pi pi-plus', 'action' => 'add', 'severity' => 'success'],
+                        ['label' => 'Print Grouped View', 'icon' => 'pi pi-print', 'action' => 'print-groups', 'severity' => 'secondary']
+                    ]
+                ],
+                'footer' => [
+                    'showRecordCount' => true,
+                    'showSelectedCount' => true,
+                    'text' => 'Grouped data with spanning cells for visual organization'
+                ],
+                'columns' => [
+                    [
+                        'field' => 'category',
+                        'header' => 'Category',
+                        'sortable' => true,
+                        'style' => 'width: 150px; vertical-align: top'
+                    ],
+                    [
+                        'field' => 'inventoryStatus',
+                        'header' => 'Status',
+                        'sortable' => true,
+                        'style' => 'width: 120px; vertical-align: top'
+                    ],
+                    [
+                        'field' => 'code',
+                        'header' => 'Product Code',
+                        'sortable' => true,
+                        'style' => 'width: 120px'
+                    ],
+                    [
+                        'field' => 'name',
+                        'header' => 'Product Name',
+                        'sortable' => true,
+                        'style' => 'min-width: 200px'
+                    ],
+                    [
+                        'field' => 'price',
+                        'header' => 'Price',
+                        'sortable' => true,
+                        'dataType' => 'currency',
+                        'format' => 2,
+                        'leadText' => '$',
+                        'bodyStyle' => 'text-align: right',
+                        'headerStyle' => 'text-align: right',
+                        'style' => 'width: 100px'
+                    ],
+                    [
+                        'field' => 'quantity',
+                        'header' => 'Stock',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: center',
+                        'headerStyle' => 'text-align: center',
+                        'style' => 'width: 80px'
+                    ],
+                    [
+                        'field' => 'rating',
+                        'header' => 'Rating',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: center',
+                        'headerStyle' => 'text-align: center',
+                        'style' => 'width: 80px'
+                    ]
+                ],
+                'dataSource' => [
+                    'url' => '/products',
+                    'method' => 'GET',
+                    'lazy' => false // Client-side for demo
+                ],
+                // Row Grouping Configuration - Rowspan Mode
+                'rowGrouping' => [
+                    'enabled' => true,
+                    'rowGroupMode' => 'rowspan',
+                    'groupRowsBy' => ['category']
+                ],
+                'gridLines' => 'both',
+                'stripedRows' => false, // Disabled for better rowspan visibility
+                'showGridlines' => true,
+                'size' => 'normal',
+                'paginator' => true,
+                'paginatorPosition' => 'bottom',
+                'rows' => 15,
+                'rowsPerPageOptions' => [5, 10, 15, 25, 50],
+                'currentPageReportTemplate' => 'Showing {first} to {last} of {totalRecords} products',
+                'sortMode' => 'single',
+                'removableSort' => true,
+                'globalFilter' => true,
+                'scrollable' => true,
+                'scrollHeight' => '500px',
+                'exportable' => true,
+                'exportFormats' => ['csv'],
+                'exportFilename' => 'grouped-products-rowspan-' . date('Y-m-d'),
+                'responsiveLayout' => 'scroll',
+                'tableStyle' => 'min-width: 80rem',
+                'emptyMessage' => 'No products found'
+            ],
+            //DD3 - End
+
             //DD 20250714:1400 - BEGIN - NEW: Column Locking DataTable Demo (NEWEST FEATURE)
             [
                 'type' => 'datatable',

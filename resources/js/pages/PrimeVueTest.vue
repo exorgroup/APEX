@@ -42,6 +42,21 @@ const dataTableWidgets = computed(() =>
     props.widgets.filter(w => w.type === 'datatable')
 );
 
+//DD1 - Row Grouping DataTable - Subheader Mode
+const subheaderRowGroupingDataTable = computed(() => 
+    dataTableWidgets.value.find(w => w.props.header?.title === 'Row Grouping Demo - Subheader Mode')
+);
+
+//DD2 - Row Grouping DataTable - Expandable Mode  
+const expandableRowGroupingDataTable = computed(() => 
+    dataTableWidgets.value.find(w => w.props.header?.title === 'Row Grouping Demo - Expandable Mode')
+);
+
+//DD3 - Row Grouping DataTable - Rowspan Mode
+const rowspanRowGroupingDataTable = computed(() => 
+    dataTableWidgets.value.find(w => w.props.header?.title === 'Row Grouping Demo - Rowspan Mode')
+);
+
 //DD 20250714:1400 - BEGIN - Add column locking demo widget
 const columnLockingDataTable = computed(() => 
     dataTableWidgets.value.find(w => w.props.header?.title === 'Products with Column Locking - NEWEST FEATURE DEMO')
@@ -265,6 +280,139 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
                                     Server-side data tables with sorting, filtering, and pagination:
                                 </p>
+
+                                <!--DD1 - BEGIN - Subheader Row Grouping Demo Section -->
+                                <div v-if="subheaderRowGroupingDataTable" class="mb-8">
+                                    <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
+                                        🆕 Row Grouping Feature Demo - Subheader Mode
+                                    </h4>
+                                    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                        <div class="mb-4 rounded-lg bg-gradient-to-r from-violet-50 to-purple-50 p-4 text-sm dark:from-violet-900/20 dark:to-purple-900/20">
+                                            <div class="mb-3 text-lg font-semibold text-gray-800 dark:text-gray-200">
+                                                📊 Row Grouping with Subheader Mode
+                                            </div>
+                                            <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-1">
+                                                <div class="space-y-2">
+                                                    <div class="text-violet-800 dark:text-violet-200">
+                                                        <strong>✨ Subheader Features:</strong>
+                                                    </div>
+                                                    <ul class="list-inside list-disc space-y-1 text-sm text-violet-700 dark:text-violet-300">
+                                                        <li><strong>Group Headers:</strong> Clear visual grouping with dedicated header rows</li>
+                                                        <li><strong>Group Footers:</strong> Summary information at the end of each group</li>
+                                                        <li><strong>Multi-level Grouping:</strong> Group by Category and then by Inventory Status</li>
+                                                        <li><strong>Total Calculations:</strong> Automatic totals for Price and Quantity columns</li>
+                                                        <li><strong>Group Counts:</strong> Display count of items in each group</li>
+                                                        <li><strong>Customizable Text:</strong> Configure header and footer text templates</li>
+                                                        <li><strong>Visual Hierarchy:</strong> Clear separation between groups and data</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="mt-3 text-xs text-gray-600 dark:text-gray-400">
+                                                💡 <strong>Use Case:</strong> Perfect for financial reports, inventory summaries, and any data that needs clear group separation with totals.
+                                            </div>
+                                            <div class="mt-2 text-xs text-gray-500 dark:text-gray-500">
+                                                🏆 <strong>Best For:</strong> Reports that need to show group totals and clear visual separation between categories!
+                                            </div>
+                                        </div>
+                                        <WidgetRenderer 
+                                            :widgets="[subheaderRowGroupingDataTable]" 
+                                            @action="handleCustomAction"
+                                            @crud-action="handleCrudAction"
+                                            @header-action="handleHeaderAction"
+                                        />
+                                    </div>
+                                </div>
+                                <!--DD1 - END -->
+
+                                <!--DD2 - BEGIN - Expandable Row Grouping Demo Section -->
+                                <div v-if="expandableRowGroupingDataTable" class="mb-8">
+                                    <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
+                                        🆕 Row Grouping Feature Demo - Expandable Mode
+                                    </h4>
+                                    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                        <div class="mb-4 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 p-4 text-sm dark:from-amber-900/20 dark:to-orange-900/20">
+                                            <div class="mb-3 text-lg font-semibold text-gray-800 dark:text-gray-200">
+                                                🔽 Row Grouping with Expandable Mode
+                                            </div>
+                                            <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-1">
+                                                <div class="space-y-2">
+                                                    <div class="text-amber-800 dark:text-amber-200">
+                                                        <strong>✨ Expandable Features:</strong>
+                                                    </div>
+                                                    <ul class="list-inside list-disc space-y-1 text-sm text-amber-700 dark:text-amber-300">
+                                                        <li><strong>Collapsible Groups:</strong> Click group headers to expand/collapse groups</li>
+                                                        <li><strong>Expand/Collapse All:</strong> Master controls to expand or collapse all groups</li>
+                                                        <li><strong>Space Efficient:</strong> Shows only headers until expanded, saving screen space</li>
+                                                        <li><strong>Interactive Navigation:</strong> Easy exploration of large grouped datasets</li>
+                                                        <li><strong>Group Summaries:</strong> View totals without expanding full group details</li>
+                                                        <li><strong>Custom Labels:</strong> Configurable expand/collapse button text</li>
+                                                        <li><strong>Header Position:</strong> Control buttons can be placed in header or toolbar</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="mt-3 text-xs text-gray-600 dark:text-gray-400">
+                                                💡 <strong>Use Case:</strong> Ideal for exploring large datasets where users need to drill down into specific categories selectively.
+                                            </div>
+                                            <div class="mt-2 text-xs text-gray-500 dark:text-gray-500">
+                                                🏆 <strong>Best For:</strong> Large datasets where space is limited and users need selective group exploration!
+                                            </div>
+                                        </div>
+                                        <WidgetRenderer 
+                                            :widgets="[expandableRowGroupingDataTable]" 
+                                            @action="handleCustomAction"
+                                            @crud-action="handleCrudAction"
+                                            @header-action="handleHeaderAction"
+                                        />
+                                    </div>
+                                </div>
+                                <!--DD2 - END -->
+
+                                <!--DD3 - BEGIN - Rowspan Row Grouping Demo Section -->
+                                <div v-if="rowspanRowGroupingDataTable" class="mb-8">
+                                    <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
+                                        🆕 Row Grouping Feature Demo - Rowspan Mode
+                                    </h4>
+                                    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                        <div class="mb-4 rounded-lg bg-gradient-to-r from-teal-50 to-cyan-50 p-4 text-sm dark:from-teal-900/20 dark:to-cyan-900/20">
+                                            <div class="mb-3 text-lg font-semibold text-gray-800 dark:text-gray-200">
+                                                📋 Row Grouping with Rowspan Mode
+                                            </div>
+                                            <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-1">
+                                                <div class="space-y-2">
+                                                    <div class="text-teal-800 dark:text-teal-200">
+                                                        <strong>✨ Rowspan Features:</strong>
+                                                    </div>
+                                                    <ul class="list-inside list-disc space-y-1 text-sm text-teal-700 dark:text-teal-300">
+                                                        <li><strong>Spanning Cells:</strong> Group cells span multiple rows for clean visual grouping</li>
+                                                        <li><strong>Excel-like Appearance:</strong> Familiar spreadsheet-style grouped display</li>
+                                                        <li><strong>Vertical Alignment:</strong> Group cells aligned at top for better readability</li>
+                                                        <li><strong>Reduced Repetition:</strong> Group values shown once instead of repeated</li>
+                                                        <li><strong>Print Friendly:</strong> Great for printed reports and documentation</li>
+                                                        <li><strong>Visual Grouping:</strong> Clear visual association between related rows</li>
+                                                        <li><strong>No Extra Headers:</strong> Groups are defined by spanning cells, not additional rows</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="mt-3 text-xs text-gray-600 dark:text-gray-400">
+                                                💡 <strong>Use Case:</strong> Perfect for printed reports, export to Excel, and any interface where traditional spreadsheet-like grouping is preferred.
+                                            </div>
+                                            <div class="mt-2 text-xs text-gray-500 dark:text-gray-500">
+                                                🏆 <strong>Best For:</strong> Professional reports and traditional business applications that need familiar Excel-style grouping!
+                                            </div>
+                                        </div>
+                                        <WidgetRenderer 
+                                            :widgets="[rowspanRowGroupingDataTable]" 
+                                            @action="handleCustomAction"
+                                            @crud-action="handleCrudAction"
+                                            @header-action="handleHeaderAction"
+                                        />
+                                    </div>
+                                </div>
+                                <!--DD3 - END -->
+
+
+
+
 
                                 <!--DD 20250714:1400 - BEGIN - Column Locking Demo Section -->
                                 <div v-if="columnLockingDataTable" class="mb-8">
@@ -716,21 +864,22 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 <div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
                                     <h4 class="mb-2 font-semibold text-gray-700 dark:text-gray-300">Configuration Example:</h4>
                                     <pre class="overflow-x-auto text-xs text-gray-700 dark:text-gray-300"><code>{
-  "rowLocking": {
-    "enabled": true,
-    "maxLockedRows": 3,
-    "lockColumn": {
-      "style": "width: 4rem",
-      "frozen": true,
-      "header": "Lock"
-    },
-    "lockedRowClasses": "font-bold bg-blue-50",
-    "lockedRowStyles": {
-      "backgroundColor": "#eff6ff",
-      "borderLeft": "4px solid #3b82f6"
-    }
-  }
-}</code></pre>
+                                        "rowLocking": {
+                                            "enabled": true,
+                                            "maxLockedRows": 3,
+                                            "lockColumn": {
+                                            "style": "width: 4rem",
+                                            "frozen": true,
+                                            "header": "Lock"
+                                            },
+                                            "lockedRowClasses": "font-bold bg-blue-50",
+                                            "lockedRowStyles": {
+                                            "backgroundColor": "#eff6ff",
+                                            "borderLeft": "4px solid #3b82f6"
+                                            }
+                                        }
+                                        }</code>
+                                    </pre>
                                 </div>
 
                                 <div class="mt-4 grid gap-4 md:grid-cols-3">
@@ -810,30 +959,30 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 <div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
                                     <h4 class="mb-2 font-semibold text-gray-700 dark:text-gray-300">Configuration Example:</h4>
                                     <pre class="overflow-x-auto text-xs text-gray-700 dark:text-gray-300"><code>{
-  "conditionalStyles": [
-    {
-      "column": "inventoryStatus",
-      "value": "OUTOFSTOCK", 
-      "operator": "eq",
-      "priority": 1,
-      "styleObject": {
-        "backgroundColor": "#fee2e2",
-        "color": "#7f1d1d",
-        "fontWeight": "bold"
-      }
-    },
-    {
-      "column": "quantity",
-      "value": 5,
-      "operator": "lt",
-      "priority": 5,
-      "styleObject": {
-        "backgroundColor": "#fef3c7",
-        "color": "#92400e"
-      }
-    }
-  ]
-}</code></pre>
+                                        "conditionalStyles": [
+                                            {
+                                            "column": "inventoryStatus",
+                                            "value": "OUTOFSTOCK", 
+                                            "operator": "eq",
+                                            "priority": 1,
+                                            "styleObject": {
+                                                "backgroundColor": "#fee2e2",
+                                                "color": "#7f1d1d",
+                                                "fontWeight": "bold"
+                                            }
+                                            },
+                                            {
+                                            "column": "quantity",
+                                            "value": 5,
+                                            "operator": "lt",
+                                            "priority": 5,
+                                            "styleObject": {
+                                                "backgroundColor": "#fef3c7",
+                                                "color": "#92400e"
+                                            }
+                                            }
+                                        ]
+                                        }</code></pre>
                                 </div>
 
                                 <div class="mt-4 grid gap-4 md:grid-cols-3">
