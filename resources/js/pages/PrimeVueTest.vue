@@ -42,6 +42,12 @@ const dataTableWidgets = computed(() =>
     props.widgets.filter(w => w.type === 'datatable')
 );
 
+//DD 20250720:2115 - BEGIN - Add ReOrder demo widget
+const reOrderDataTable = computed(() => 
+    dataTableWidgets.value.find(w => w.props.header?.title === 'ReOrder Feature Demo - NEWEST FUNCTIONALITY!')
+);
+//DD 20250720:2115 - END
+
 //DD1 - Row Grouping DataTable - Subheader Mode
 const subheaderRowGroupingDataTable = computed(() => 
     dataTableWidgets.value.find(w => w.props.header?.title === 'Row Grouping Demo - Subheader Mode')
@@ -137,6 +143,30 @@ const handleCrudAction = (payload: any) => {
     }
 };
 
+//DD 20250720:2115 - BEGIN - Handle ReOrder events
+const handleColumnReorder = (payload: any) => {
+    console.log('Column Reordered:', payload);
+    // Optional: Show notification or perform analytics
+    // toast.add({ 
+    //     severity: 'info', 
+    //     summary: 'Column Reordered', 
+    //     detail: `Columns have been reordered`, 
+    //     life: 3000 
+    // });
+};
+
+const handleRowReorder = (payload: any) => {
+    console.log('Row Reordered:', payload);
+    // Optional: Show notification or save new order
+    // toast.add({ 
+    //     severity: 'info', 
+    //     summary: 'Row Reordered', 
+    //     detail: `Rows have been reordered`, 
+    //     life: 3000 
+    // });
+};
+//DD 20250720:2115 - END
+
 //DD 20250714:1400 - BEGIN - Handle column locking events
 const handleColumnLockChange = (payload: any) => {
     console.log('Column Lock Changed:', payload);
@@ -191,6 +221,14 @@ const handleHeaderAction = (action: string) => {
         case 'refresh':
             alert('Refresh data clicked');
             break;
+        //DD 20250720:2115 - BEGIN
+        case 'reset-order':
+            alert('Reset Order clicked - this would reset column and row order to defaults');
+            break;
+        case 'export-reordered':
+            alert('Export Reordered clicked - this would export data in current display order');
+            break;
+        //DD 20250720:2115 - END
         //DD2 - Column Grouping actions
         case 'export-analysis':
             alert('Export Analysis clicked - this would export the column grouped data with totals');
@@ -285,6 +323,51 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     Server-side data tables with sorting, filtering, and pagination:
                                 </p>
 
+                                <!--DD 20250720:2115 - BEGIN - ReOrder Feature Demo Section -->
+                                <div v-if="reOrderDataTable" class="mb-8">
+                                    <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
+                                        🆕 ReOrder Feature Demo - BRAND NEW FUNCTIONALITY!
+                                    </h4>
+                                    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                        <div class="mb-4 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 p-4 text-sm dark:from-amber-900/20 dark:to-orange-900/20">
+                                            <div class="mb-3 text-lg font-semibold text-gray-800 dark:text-gray-200">
+                                                🔄 Advanced Column & Row Reordering System
+                                            </div>
+                                            <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-1">
+                                                <div class="space-y-2">
+                                                    <div class="text-amber-800 dark:text-amber-200">
+                                                        <strong>✨ ReOrder Features:</strong>
+                                                    </div>
+                                                    <ul class="list-inside list-disc space-y-1 text-sm text-amber-700 dark:text-amber-300">
+                                                        <li><strong>Column Reordering:</strong> Drag column headers to reorder columns (Price and Rating excluded)</li>
+                                                        <li><strong>Row Reordering:</strong> Use drag handles (≡) to reorder rows by dragging them up or down</li>
+                                                        <li><strong>Exclusion Control:</strong> Specific columns can be excluded from reordering via configuration</li>
+                                                        <li><strong>Visual Feedback:</strong> Drag cursors and hover effects provide clear user guidance</li>
+                                                        <li><strong>Event Tracking:</strong> All reorder actions are logged and can trigger custom behaviors</li>
+                                                        <li><strong>Status Display:</strong> Toolbar and footer show current ReOrder configuration status</li>
+                                                        <li><strong>Smart Integration:</strong> Works seamlessly with sorting, filtering, and pagination</li>
+                                                        <li><strong>Export Support:</strong> Reordered data can be exported in the new display order</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="mt-3 text-xs text-gray-600 dark:text-gray-400">
+                                                💡 <strong>Use Case:</strong> Perfect for custom dashboards, personalized data views, and user-defined report layouts where column and row order matters.
+                                            </div>
+                                            <div class="mt-2 text-xs text-gray-500 dark:text-gray-500">
+                                                🏆 <strong>Try It:</strong> Drag "Category" column header to reorder columns, then use the ≡ handles to reorder rows!
+                                            </div>
+                                        </div>
+                                        <WidgetRenderer 
+                                            :widgets="[reOrderDataTable]" 
+                                            @action="handleCustomAction"
+                                            @crud-action="handleCrudAction"
+                                            @header-action="handleHeaderAction"
+                                            @column-reorder="handleColumnReorder"
+                                            @row-reorder="handleRowReorder"
+                                        />
+                                    </div>
+                                </div>
+                                <!--DD 20250720:2115 - END -->
                                 <!--DD1 - BEGIN - Subheader Row Grouping Demo Section -->
                                 <div v-if="subheaderRowGroupingDataTable" class="mb-8">
                                     <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
@@ -326,51 +409,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                         />
                                     </div>
                                 </div>
-                                <!--DD1 - END -->
-
-                                <!--DD2 - BEGIN - Column Grouping Demo Section -->
-                                <div v-if="columnGroupingDataTable" class="mb-8">
-                                    <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
-                                        🆕 Column Grouping Feature Demo - NEWEST FEATURE!
-                                    </h4>
-                                    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                                        <div class="mb-4 rounded-lg bg-gradient-to-r from-rose-50 to-pink-50 p-4 text-sm dark:from-rose-900/20 dark:to-pink-900/20">
-                                            <div class="mb-3 text-lg font-semibold text-gray-800 dark:text-gray-200">
-                                                📋 Advanced Column Grouping with Header & Footer Groups
-                                            </div>
-                                            <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-1">
-                                                <div class="space-y-2">
-                                                    <div class="text-rose-800 dark:text-rose-200">
-                                                        <strong>✨ Column Grouping Features:</strong>
-                                                    </div>
-                                                    <ul class="list-inside list-disc space-y-1 text-sm text-rose-700 dark:text-rose-300">
-                                                        <li><strong>Multi-level Headers:</strong> Complex table headers with spanning columns and multiple rows</li>
-                                                        <li><strong>Sortable Group Headers:</strong> Headers can be configured as sortable with field associations</li>
-                                                        <li><strong>Automatic Totals:</strong> Footer cells with calculated totals (sum, avg, count, min, max)</li>
-                                                        <li><strong>Format Control:</strong> Total values formatted as currency, percentage, or numbers</li>
-                                                        <li><strong>Multi-row Footers:</strong> Complex footer layouts with summary analytics</li>
-                                                        <li><strong>Visual Styling:</strong> Custom background colors and styling for each group level</li>
-                                                        <li><strong>Flexible Layout:</strong> Colspan and rowspan support for complex table structures</li>
-                                                        <li><strong>Template Support:</strong> Dynamic text with field placeholders in headers and footers</li>
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                            <div class="mt-3 text-xs text-gray-600 dark:text-gray-400">
-                                                💡 <strong>Use Case:</strong> Perfect for financial dashboards, complex reports, and any table that needs sophisticated header/footer layouts with automatic calculations.
-                                            </div>
-                                            <div class="mt-2 text-xs text-gray-500 dark:text-gray-500">
-                                                🏆 <strong>Best For:</strong> Professional reports, financial analysis, and complex data presentations that need Excel-like header structures!
-                                            </div>
-                                        </div>
-                                        <WidgetRenderer 
-                                            :widgets="[columnGroupingDataTable]" 
-                                            @action="handleCustomAction"
-                                            @crud-action="handleCrudAction"
-                                            @header-action="handleHeaderAction"
-                                        />
-                                    </div>
-                                </div>
-                                <!--DD2 - END -->
+                                <!--DD1 - END -->                                
 
                                 <!--DD3 - BEGIN - Rowspan Row Grouping Demo Section -->
                                 <div v-if="rowspanRowGroupingDataTable" class="mb-8">
@@ -414,6 +453,10 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     </div>
                                 </div>
                                 <!--DD3 - END -->
+
+
+
+
 
                                 <!--DD 20250714:1400 - BEGIN - Column Locking Demo Section -->
                                 <div v-if="columnLockingDataTable" class="mb-8">
@@ -739,125 +782,6 @@ const breadcrumbs: BreadcrumbItem[] = [
                     </template>
                 </PCard>
 
-                <!-- Documentation sections continue below... -->
-                <!-- Column Grouping Documentation -->
-                <PCard class="mt-8 shadow-lg">
-                    <template #header>
-                        <div class="bg-gradient-to-r from-rose-500 to-rose-600 px-6 py-4">
-                            <h2 class="text-xl font-semibold text-white">📋 Column Grouping Documentation</h2>
-                        </div>
-                    </template>
-                    
-                    <template #content>
-                        <div class="space-y-6 p-6">
-                            <div>
-                                <h3 class="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-300">
-                                    Implementation Guide
-                                </h3>
-                                <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                                    The DataTable widget now supports advanced column grouping with spanning headers and footers. Configure this feature using the <code class="rounded bg-gray-100 px-1 py-0.5 text-xs dark:bg-gray-800">columnGrouping</code> configuration:
-                                </p>
-                                
-                                <div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
-                                    <h4 class="mb-2 font-semibold text-gray-700 dark:text-gray-300">Configuration Example:</h4>
-                                    <pre class="overflow-x-auto text-xs text-gray-700 dark:text-gray-300"><code>{
-  "columnGrouping": {
-    "enabled": true,
-    "headerGroups": [
-      {
-        "cells": [
-          {
-            "header": "Product Information",
-            "colspan": 3,
-            "headerStyle": "text-align: center; background-color: #f3f4f6;"
-          },
-          {
-            "header": "Price",
-            "field": "price",
-            "sortable": true
-          }
-        ]
-      }
-    ],
-    "footerGroups": [
-      {
-        "cells": [
-          {
-            "footer": "TOTALS:",
-            "colspan": 3,
-            "footerStyle": "text-align: right; font-weight: bold;"
-          },
-          {
-            "isTotal": true,
-            "totalField": "price",
-            "totalType": "sum",
-            "formatType": "currency"
-          }
-        ]
-      }
-    ]
-  }
-}</code></pre>
-                                </div>
-
-                                <div class="mt-4 grid gap-4 md:grid-cols-3">
-                                    <div class="rounded-lg bg-rose-50 p-4 dark:bg-rose-900/20">
-                                        <h4 class="mb-2 font-semibold text-rose-800 dark:text-rose-200">Header Groups:</h4>
-                                        <ul class="list-inside list-disc text-sm text-rose-700 dark:text-rose-300">
-                                            <li><code>headerGroups</code> - Array of header row configurations</li>
-                                            <li><code>cells</code> - Array of cells in each row</li>
-                                            <li><code>header</code> - Text content with template support</li>
-                                            <li><code>field/sortable</code> - Make headers sortable</li>
-                                            <li><code>colspan/rowspan</code> - Span multiple columns/rows</li>
-                                            <li><code>headerStyle</code> - Custom CSS styling</li>
-                                        </ul>
-                                    </div>
-                                    
-                                    <div class="rounded-lg bg-pink-50 p-4 dark:bg-pink-900/20">
-                                        <h4 class="mb-2 font-semibold text-pink-800 dark:text-pink-200">Footer Groups:</h4>
-                                        <ul class="list-inside list-disc text-sm text-pink-700 dark:text-pink-300">
-                                            <li><code>footerGroups</code> - Array of footer row configurations</li>
-                                            <li><code>footer</code> - Static footer text</li>
-                                            <li><code>isTotal</code> - Enable automatic calculations</li>
-                                            <li><code>totalField</code> - Field to calculate totals for</li>
-                                            <li><code>totalType</code> - sum, avg, count, min, max</li>
-                                            <li><code>formatType</code> - currency, percentage, number</li>
-                                        </ul>
-                                    </div>
-                                    
-                                    <div class="rounded-lg bg-purple-50 p-4 dark:bg-purple-900/20">
-                                        <h4 class="mb-2 font-semibold text-purple-800 dark:text-purple-200">Advanced Features:</h4>
-                                        <ul class="list-inside list-disc text-sm text-purple-700 dark:text-purple-300">
-                                            <li><code>groupColumnsTotal</code> - Fields to calculate totals for</li>
-                                            <li><code>showTotalsInHeader/Footer</code> - Control total placement</li>
-                                            <li><code>formatDecimals</code> - Decimal places for totals</li>
-                                            <li>Template placeholders with <code>{fieldName}</code></li>
-                                            <li>Automatic NaN handling for non-numeric fields</li>
-                                            <li>Complex multi-level header structures</li>
-                                        </ul>
-                                    </div>
-                                </div>
-
-                                <div class="mt-4 rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
-                                    <h4 class="mb-2 font-semibold text-blue-800 dark:text-blue-200">Use Cases & Benefits:</h4>
-                                    <div class="grid gap-3 md:grid-cols-2">
-                                        <ul class="list-inside list-disc text-sm text-blue-700 dark:text-blue-300">
-                                            <li><strong>Financial Reports:</strong> Complex P&L statements with grouped headers</li>
-                                            <li><strong>Sales Dashboards:</strong> Multi-level performance metrics</li>
-                                            <li><strong>Analytics Tables:</strong> Comparative data with automatic totals</li>
-                                        </ul>
-                                        <ul class="list-inside list-disc text-sm text-blue-700 dark:text-blue-300">
-                                            <li><strong>Scientific Data:</strong> Complex measurement tables</li>
-                                            <li><strong>Excel Replacements:</strong> Professional spreadsheet-like interfaces</li>
-                                            <li><strong>Business Intelligence:</strong> Executive summary tables</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                </PCard>
-
                 <!--DD 20250714:1400 - BEGIN - Add Documentation Section for Column Locking -->
                 <PCard class="mt-8 shadow-lg">
                     <template #header>
@@ -998,7 +922,8 @@ const breadcrumbs: BreadcrumbItem[] = [
                                             "borderLeft": "4px solid #3b82f6"
                                             }
                                         }
-                                        }</code></pre>
+                                        }</code>
+                                    </pre>
                                 </div>
 
                                 <div class="mt-4 grid gap-4 md:grid-cols-3">

@@ -96,6 +96,152 @@ class PrimeVueTestController extends Controller
                 'label' => 'Multiple Dates'
             ],
 
+            //DD 20250720:2115 - BEGIN: ReOrder Feature Demo
+            [
+                'type' => 'datatable',
+                'header' => [
+                    'title' => 'ReOrder Feature Demo - NEWEST FUNCTIONALITY!',
+                    'subtitle' => '🆕 BRAND NEW: Drag to reorder columns and rows with customizable exclusions',
+                    'actions' => [
+                        ['label' => 'Add Product', 'icon' => 'pi pi-plus', 'action' => 'add', 'severity' => 'success']
+                    ]
+                ],
+                'footer' => [
+                    'showRecordCount' => true,
+                    'showSelectedCount' => true,
+                    'text' => 'Drag column headers and row handles to reorder. Some columns excluded from reordering.'
+                ],
+                'columns' => [
+                    [
+                        'field' => 'category',
+                        'header' => 'Category',
+                        'sortable' => true,
+                        'style' => 'width: 150px'
+                    ],
+                    [
+                        'field' => 'inventoryStatus',
+                        'header' => 'Status',
+                        'sortable' => true,
+                        'style' => 'width: 120px'
+                    ],
+                    [
+                        'field' => 'code',
+                        'header' => 'Product Code',
+                        'sortable' => true,
+                        'style' => 'width: 120px'
+                    ],
+                    [
+                        'field' => 'name',
+                        'header' => 'Product Name',
+                        'sortable' => true,
+                        'style' => 'min-width: 200px'
+                    ],
+                    [
+                        'field' => 'price',
+                        'header' => 'Price',
+                        'sortable' => true,
+                        'dataType' => 'currency',
+                        'format' => 2,
+                        'leadText' => '$',
+                        'bodyStyle' => 'text-align: right',
+                        'headerStyle' => 'text-align: right',
+                        'style' => 'width: 100px'
+                    ],
+                    [
+                        'field' => 'quantity',
+                        'header' => 'Stock',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: center',
+                        'headerStyle' => 'text-align: center',
+                        'style' => 'width: 80px'
+                    ],
+                    [
+                        'field' => 'rating',
+                        'header' => 'Rating',
+                        'sortable' => true,
+                        'bodyStyle' => 'text-align: center',
+                        'headerStyle' => 'text-align: center',
+                        'style' => 'width: 80px'
+                    ]
+                ],
+                'dataSource' => [
+                    'url' => '/products',
+                    'method' => 'GET',
+                    'lazy' => false // Client-side for demo
+                ],
+                // NEW: ReOrder Configuration
+                'reOrder' => [
+                    'enabled' => true,
+                    'reOrderRows' => true,     // Enable row reordering with drag handles
+                    'excludeOrdering' => 'price,rating'  // Exclude Price and Rating columns from reordering
+                ],
+                'gridLines' => 'both',
+                'stripedRows' => true,
+                'showGridlines' => true,
+                'size' => 'normal',
+                'paginator' => true,
+                'paginatorPosition' => 'bottom',
+                'rows' => 8,
+                'rowsPerPageOptions' => [5, 8, 10, 15, 25],
+                'currentPageReportTemplate' => 'Showing {first} to {last} of {totalRecords} products',
+                'sortMode' => 'single',
+                'removableSort' => true,
+                'globalFilter' => true,
+                'scrollable' => true,
+                'scrollHeight' => '500px',
+                'exportable' => true,
+                'exportFormats' => ['csv'],
+                'exportFilename' => 'reordered-products-' . date('Y-m-d'),
+                'responsiveLayout' => 'scroll',
+                'tableStyle' => 'min-width: 80rem',
+                'emptyMessage' => 'No products found',
+                // Enhanced conditional styling for better visual feedback
+                'conditionalStyles' => [
+                    [
+                        'column' => 'inventoryStatus',
+                        'value' => 'OUTOFSTOCK',
+                        'operator' => 'eq',
+                        'priority' => 1,
+                        'styleObject' => [
+                            'backgroundColor' => '#fee2e2',
+                            'color' => '#7f1d1d',
+                            'fontWeight' => 'bold'
+                        ]
+                    ],
+                    [
+                        'column' => 'inventoryStatus',
+                        'value' => 'LOWSTOCK',
+                        'operator' => 'eq',
+                        'priority' => 2,
+                        'styleObject' => [
+                            'backgroundColor' => '#fefce8',
+                            'color' => '#a16207'
+                        ]
+                    ],
+                    [
+                        'column' => 'inventoryStatus',
+                        'value' => 'INSTOCK',
+                        'operator' => 'eq',
+                        'priority' => 3,
+                        'styleObject' => [
+                            'backgroundColor' => '#f0fdf4',
+                            'color' => '#166534'
+                        ]
+                    ],
+                    [
+                        'column' => 'price',
+                        'value' => 150,
+                        'operator' => 'gt',
+                        'priority' => 4,
+                        'styleObject' => [
+                            'fontWeight' => 'bold',
+                            'textDecoration' => 'underline'
+                        ]
+                    ]
+                ]
+            ],
+            //DD 20250720:2115 - END
+
             //DD1 - Begin: Subheader Row Grouping DataTable Demo
             [
                 'type' => 'datatable',

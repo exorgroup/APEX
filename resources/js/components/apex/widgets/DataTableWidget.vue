@@ -180,6 +180,15 @@ interface ColumnGrouping {
 }
 //DD 20250720:2100 - END
 
+//DD 20250720:2115 - BEGIN (ReOrder Feature)
+interface ReOrder {
+    enabled: boolean;
+    reOrderColumn?: boolean;
+    reOrderRows?: boolean;
+    excludeOrdering?: string; // Comma-separated list of column fields to exclude from reordering
+}
+//DD 20250720:2115 - END
+
 interface Props {
     widgetId: string;
     // Header/Footer
@@ -261,6 +270,9 @@ interface Props {
     // Reorder
     reorderableColumns?: boolean;
     reorderableRows?: boolean;
+    //DD 20250720:2115 - BEGIN (ReOrder Feature)
+    reOrder?: ReOrder;
+    //DD 20250720:2115 - END
     // Export
     exportable?: boolean;
     exportFormats?: Array<'csv' | 'excel' | 'pdf'>;
@@ -318,6 +330,14 @@ const props = withDefaults(defineProps<Props>(), {
     frozenColumns: 0,
     reorderableColumns: false,
     reorderableRows: false,
+    //DD 20250720:2115 - BEGIN (ReOrder Feature)
+    reOrder: () => ({
+        enabled: false,
+        reOrderColumn: false,
+        reOrderRows: false,
+        excludeOrdering: ''
+    }),
+    //DD 20250720:2115 - END
     exportable: false,
     exportFormats: () => ['csv', 'excel', 'pdf'],
     exportFilename: 'data-export',
@@ -772,6 +792,50 @@ const isNumericField = (field: string): boolean => {
 };
 //DD 20250720:2100 - END
 
+//DD 20250720:2115 - BEGIN (ReOrder Feature)
+// ReOrder computed properties and methods
+const hasReOrder = computed(() => props.reOrder?.enabled || false);
+
+const isColumnReorderEnabled = computed(() => {
+    return hasReOrder.value && props.reOrder?.reOrderColumn;
+});
+
+const isRowReorderEnabled = computed(() => {
+    return hasReOrder.value && props.reOrder?.reOrderRows;
+});
+
+// Parse exclude ordering list
+const excludedFromOrdering = computed(() => {
+    if (!props.reOrder?.excludeOrdering) return new Set<string>();
+    
+    return new Set(
+        props.reOrder.excludeOrdering
+            .split(',')
+            .map(field => field.trim())
+            .filter(field => field.length > 0)
+    );
+});
+
+// Check if a column should be reorderable
+const isColumnReorderable = (column: Column): boolean => {
+    if (!isColumnReorderEnabled.value) return false;
+    if (excludedFromOrdering.value.has(column.field)) return false;
+    if (column.frozen) return false; // Frozen columns typically shouldn't be reorderable
+    if (column.field.startsWith('_action_') || column.field.startsWith('_lock_')) return false; // Action columns shouldn't be reorderable
+    return column.reorderable !== false; // Use column's reorderable property or default to true
+};
+
+// Get effective reorderableColumns setting for DataTable
+const effectiveReorderableColumns = computed(() => {
+    return isColumnReorderEnabled.value && props.columns.some(col => isColumnReorderable(col));
+});
+
+// Get effective reorderableRows setting for DataTable
+const effectiveReorderableRows = computed(() => {
+    return isRowReorderEnabled.value;
+});
+//DD 20250720:2115 - END
+
 // Initialize visible columns based on hidden property
 const initVisibleColumns = () => {
     // Include all data columns that are not marked as hidden
@@ -1034,6 +1098,10 @@ const emit = defineEmits<{
     //DD 20250714:1400 - BEGIN (Column Locking)
     'column-lock-change': [payload: { field: string; locked: boolean; allLockedFields: string[] }];
     //DD 20250714:1400 - END
+    //DD 20250720:2115 - BEGIN (ReOrder Feature)
+    'column-reorder': [event: any];
+    'row-reorder': [event: any];
+    //DD 20250720:2115 - END
 }>();
 
 // Initialize lazy mode
@@ -1052,6 +1120,28 @@ const selectedCount = computed(() => selectedItems.value.length);
 
 // Computed property for all columns (visible and hidden)
 const allColumns = computed(() => props.columns);
+
+//DD 20250720:2115 - BEGIN (ReOrder Feature - Row Reorder Column)
+// Row reorder column based on reOrder configuration
+const rowReorderColumn = computed(() => {
+    const reorderColumns: Column[] = [];
+    
+    if (isRowReorderEnabled.value) {
+        reorderColumns.push({
+            field: '_row_reorder',
+            header: '',
+            sortable: false,
+            exportable: false,
+            reorderable: false,
+            resizable: false,
+            style: 'width: 3rem',
+            frozen: false
+        });
+    }
+    
+    return reorderColumns;
+});
+//DD 20250720:2115 - END
 
 //DD 20250713:2021 - BEGIN
 // Lock action column based on row locking configuration
@@ -1150,7 +1240,9 @@ const actionColumns = computed(() => {
 
 // Combined columns with action columns at the end
 //DD 20250713:2021 - BEGIN
-const columnsWithActions = computed(() => [...allColumns.value, ...lockActionColumn.value, ...actionColumns.value]);
+//DD 20250720:2115 - MODIFIED (ReOrder Feature)
+const columnsWithActions = computed(() => [...rowReorderColumn.value, ...allColumns.value, ...lockActionColumn.value, ...actionColumns.value]);
+//DD 20250720:2115 - END
 //DD 20250713:2021 - END
 
 // Get widget component for ApexWidget type
@@ -1458,17 +1550,20 @@ const onGlobalFilter = () => {
     loadData(event);
 };
 
-// Row reorder
-const onRowReorder = (event: any) => {
-    data.value = event.value;
-    // Emit event for parent to handle persistence
-    console.log('Row reorder:', event);
-};
-
+//DD 20250720:2115 - BEGIN (ReOrder Feature Event Handlers)
 // Column reorder
 const onColReorder = (event: any) => {
     console.log('Column reorder:', event);
+    emit('column-reorder', event);
 };
+
+// Row reorder
+const onRowReorder = (event: any) => {
+    data.value = event.value;
+    console.log('Row reorder:', event);
+    emit('row-reorder', event);
+};
+//DD 20250720:2115 - END
 
 // Group actions
 const executeGroupAction = (action: GroupAction) => {
@@ -1495,7 +1590,7 @@ const exportData = (format: 'csv' | 'excel' | 'pdf') => {
     try {
         // Get visible and exportable columns
         const exportableColumns = visibleColumns.value.filter(col => 
-            col.exportable !== false && !col.field.startsWith('_action_') && !col.field.startsWith('_lock_')
+            col.exportable !== false && !col.field.startsWith('_action_') && !col.field.startsWith('_lock_') && !col.field.startsWith('_row_reorder')
         );
         
         // Use PrimeVue's built-in export methods
@@ -2051,6 +2146,20 @@ watch(() => [sortField.value, sortOrder.value], async () => {
                     />
                 </template>
                 <!--DD 20250714:1400 - END-->
+
+                <!--DD 20250720:2115 - BEGIN (ReOrder Feature - Status Info)-->
+                <!-- ReOrder Status Info -->
+                <template v-if="hasReOrder">
+                    <PDivider layout="vertical" />
+                    <span class="text-sm text-gray-600 dark:text-gray-400">
+                        ReOrder: 
+                        <span v-if="isColumnReorderEnabled" class="text-blue-600">Columns</span>
+                        <span v-if="isColumnReorderEnabled && isRowReorderEnabled">, </span>
+                        <span v-if="isRowReorderEnabled" class="text-green-600">Rows</span>
+                        <span v-if="!isColumnReorderEnabled && !isRowReorderEnabled" class="text-gray-500">Disabled</span>
+                    </span>
+                </template>
+                <!--DD 20250720:2115 - END-->
             </div>
 
             <!-- Export Buttons -->
@@ -2096,8 +2205,8 @@ watch(() => [sortField.value, sortOrder.value], async () => {
             :scrollable="scrollable"
             :scrollHeight="scrollHeight"
             :virtualScrollerOptions="virtualScroll ? { itemSize: 46 } : undefined"
-            :reorderableColumns="reorderableColumns"
-            :reorderableRows="reorderableRows"
+            :reorderableColumns="effectiveReorderableColumns"
+            :reorderableRows="effectiveReorderableRows"
             :resizableColumns="resizableColumns"
             :columnResizeMode="columnResizeMode"
             :stripedRows="stripedRows"
@@ -2113,8 +2222,8 @@ watch(() => [sortField.value, sortOrder.value], async () => {
             :groupRowsBy="hasRowGrouping ? groupingField : undefined"
             @page="onPage"
             @sort="onSort"
+            @column-reorder="onColReorder"
             @row-reorder="onRowReorder"
-            @col-reorder="onColReorder"
             @row-expand="onRowExpand"
             @row-collapse="onRowCollapse"
             :pt="{
@@ -2233,15 +2342,19 @@ watch(() => [sortField.value, sortOrder.value], async () => {
                 :exportable="false"
             />
 
-            <!-- Reorder Column -->
+            <!--DD 20250720:2115 - BEGIN (ReOrder Feature - Row Reorder Column)-->
+            <!-- Row Reorder Column -->
             <PColumn
-                v-if="reorderableRows"
-                :reorderableColumn="false"
+                v-if="isRowReorderEnabled"
                 rowReorder
                 :style="{ width: '3rem' }"
-                :frozen="true"
+                :frozen="false"
                 :exportable="false"
+                :reorderableColumn="false"
+                :resizeable="false"
+                headerStyle="width: 3rem"
             />
+            <!--DD 20250720:2115 - END-->
 
             <!-- Data Columns (All columns rendered, hidden ones use hidden attribute) -->
             <PColumn
@@ -2253,7 +2366,7 @@ watch(() => [sortField.value, sortOrder.value], async () => {
                 :bodyStyle="col.bodyStyle"
                 :headerStyle="col.headerStyle"
                 :exportable="col.exportable !== false"
-                :reorderableColumn="col.reorderable !== false && reorderableColumns"
+                :reorderableColumn="isColumnReorderable(col)"
                 :frozen="col.frozen || (col.lockColumn && isColumnLocked(col.field))"
                 :resizeable="col.resizable !== false && resizableColumns"
                 :pt="{
@@ -2525,6 +2638,14 @@ watch(() => [sortField.value, sortOrder.value], async () => {
                         Column Groups: {{ (columnGrouping?.headerGroups?.length || 0) + (columnGrouping?.footerGroups?.length || 0) }}
                     </span>
                     <!--DD 20250720:2100 - END-->
+                    <!--DD 20250720:2115 - BEGIN (ReOrder Feature - Footer Status)-->
+                    <span v-if="hasReOrder" class="mx-2">|</span>
+                    <span v-if="hasReOrder">
+                        ReOrder: 
+                        <span v-if="isColumnReorderEnabled">Col</span><span v-if="isColumnReorderEnabled && isRowReorderEnabled">/</span><span v-if="isRowReorderEnabled">Row</span>
+                        <span v-if="!isColumnReorderEnabled && !isRowReorderEnabled">Off</span>
+                    </span>
+                    <!--DD 20250720:2115 - END-->
                 </div>
                 <div v-if="footer.text">
                     {{ footer.text }}
@@ -2644,4 +2765,39 @@ watch(() => [sortField.value, sortOrder.value], async () => {
     background-color: rgba(107, 114, 128, 0.2);
 }
 /*DD 20250720:2100 - END*/
+
+/*DD 20250720:2115 - BEGIN (ReOrder Feature Styles)*/
+/* Row reorder handle styling */
+.apex-datatable :deep(.p-datatable-reorderablerow-handle) {
+    cursor: move;
+    color: #6b7280;
+}
+
+.apex-datatable :deep(.p-datatable-reorderablerow-handle):hover {
+    color: #374151;
+}
+
+/* Dark mode support for reorder handle */
+.dark .apex-datatable :deep(.p-datatable-reorderablerow-handle) {
+    color: #9ca3af;
+}
+
+.dark .apex-datatable :deep(.p-datatable-reorderablerow-handle):hover {
+    color: #d1d5db;
+}
+
+/* Column reorder visual feedback */
+.apex-datatable :deep(.p-datatable-reorderable-column) {
+    cursor: move;
+}
+
+.apex-datatable :deep(.p-datatable-reorderable-column):hover {
+    background-color: rgba(59, 130, 246, 0.05);
+}
+
+/* Dark mode support for column reorder */
+.dark .apex-datatable :deep(.p-datatable-reorderable-column):hover {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+/*DD 20250720:2115 - END*/
 </style>
