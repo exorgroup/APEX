@@ -689,6 +689,182 @@ class DataTableWidget extends BaseWidget
                     ]
                 ],
                 //DD 20250715:1600 - END
+                //DD 20250720:2100 - BEGIN (Column Grouping)
+                // Column Grouping Configuration
+                'columnGrouping' => [
+                    'type' => 'object',
+                    'description' => 'Column grouping configuration for header and footer groups',
+                    'properties' => [
+                        'enabled' => [
+                            'type' => 'boolean',
+                            'default' => false,
+                            'description' => 'Enable column grouping functionality'
+                        ],
+                        'headerGroups' => [
+                            'type' => 'array',
+                            'description' => 'Array of header group rows',
+                            'items' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'cells' => [
+                                        'type' => 'array',
+                                        'description' => 'Array of cells in this row',
+                                        'items' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'header' => [
+                                                    'type' => 'string',
+                                                    'description' => 'Header text (can include {fieldName} placeholders)'
+                                                ],
+                                                'field' => [
+                                                    'type' => 'string',
+                                                    'description' => 'Field name for sortable headers'
+                                                ],
+                                                'sortable' => [
+                                                    'type' => 'boolean',
+                                                    'default' => false,
+                                                    'description' => 'Whether this header cell is sortable'
+                                                ],
+                                                'rowspan' => [
+                                                    'type' => 'integer',
+                                                    'minimum' => 1,
+                                                    'description' => 'Number of rows this cell spans'
+                                                ],
+                                                'colspan' => [
+                                                    'type' => 'integer',
+                                                    'minimum' => 1,
+                                                    'description' => 'Number of columns this cell spans'
+                                                ],
+                                                'headerStyle' => [
+                                                    'type' => 'string',
+                                                    'description' => 'CSS style for this header cell'
+                                                ],
+                                                'isTotal' => [
+                                                    'type' => 'boolean',
+                                                    'default' => false,
+                                                    'description' => 'Whether this cell should display calculated totals'
+                                                ],
+                                                'totalField' => [
+                                                    'type' => 'string',
+                                                    'description' => 'Field name for total calculation (required if isTotal is true)'
+                                                ],
+                                                'totalType' => [
+                                                    'type' => 'string',
+                                                    'enum' => ['sum', 'avg', 'count', 'min', 'max'],
+                                                    'default' => 'sum',
+                                                    'description' => 'Type of calculation for totals'
+                                                ],
+                                                'formatType' => [
+                                                    'type' => 'string',
+                                                    'enum' => ['currency', 'percentage', 'number', 'text'],
+                                                    'default' => 'number',
+                                                    'description' => 'How to format the calculated total'
+                                                ],
+                                                'formatDecimals' => [
+                                                    'type' => 'integer',
+                                                    'minimum' => 0,
+                                                    'maximum' => 10,
+                                                    'default' => 2,
+                                                    'description' => 'Number of decimal places for formatting'
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ],
+                        'footerGroups' => [
+                            'type' => 'array',
+                            'description' => 'Array of footer group rows',
+                            'items' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'cells' => [
+                                        'type' => 'array',
+                                        'description' => 'Array of cells in this row',
+                                        'items' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'footer' => [
+                                                    'type' => 'string',
+                                                    'description' => 'Footer text (can include {fieldName} placeholders)'
+                                                ],
+                                                'rowspan' => [
+                                                    'type' => 'integer',
+                                                    'minimum' => 1,
+                                                    'description' => 'Number of rows this cell spans'
+                                                ],
+                                                'colspan' => [
+                                                    'type' => 'integer',
+                                                    'minimum' => 1,
+                                                    'description' => 'Number of columns this cell spans'
+                                                ],
+                                                'footerStyle' => [
+                                                    'type' => 'string',
+                                                    'description' => 'CSS style for this footer cell'
+                                                ],
+                                                'isTotal' => [
+                                                    'type' => 'boolean',
+                                                    'default' => false,
+                                                    'description' => 'Whether this cell should display calculated totals'
+                                                ],
+                                                'totalField' => [
+                                                    'type' => 'string',
+                                                    'description' => 'Field name for total calculation (required if isTotal is true)'
+                                                ],
+                                                'totalType' => [
+                                                    'type' => 'string',
+                                                    'enum' => ['sum', 'avg', 'count', 'min', 'max'],
+                                                    'default' => 'sum',
+                                                    'description' => 'Type of calculation for totals'
+                                                ],
+                                                'formatType' => [
+                                                    'type' => 'string',
+                                                    'enum' => ['currency', 'percentage', 'number', 'text'],
+                                                    'default' => 'number',
+                                                    'description' => 'How to format the calculated total'
+                                                ],
+                                                'formatDecimals' => [
+                                                    'type' => 'integer',
+                                                    'minimum' => 0,
+                                                    'maximum' => 10,
+                                                    'default' => 2,
+                                                    'description' => 'Number of decimal places for formatting'
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ],
+                        'groupColumnsTotal' => [
+                            'type' => 'array',
+                            'items' => ['type' => 'string'],
+                            'description' => 'Array of field names to calculate totals for (outputs "--NaN--" for non-numeric fields)'
+                        ],
+                        'showTotalsInHeader' => [
+                            'type' => 'boolean',
+                            'default' => false,
+                            'description' => 'Whether to show calculated totals in header groups'
+                        ],
+                        'showTotalsInFooter' => [
+                            'type' => 'boolean',
+                            'default' => false,
+                            'description' => 'Whether to show calculated totals in footer groups'
+                        ],
+                        'footerText' => [
+                            'type' => 'string',
+                            'default' => '',
+                            'description' => 'Default footer text to display'
+                        ],
+                        'headerText' => [
+                            'type' => 'string',
+                            'default' => '',
+                            'description' => 'Default header text to display'
+                        ]
+                    ]
+                ],
+                //DD 20250720:2100 - END
                 // Other Configuration
                 'loading' => [
                     'type' => 'boolean',
@@ -813,6 +989,58 @@ class DataTableWidget extends BaseWidget
             ];
         }, $columns);
 
+        //DD 20250720:2100 - BEGIN (Column Grouping Processing)
+        // Process column grouping configuration
+        $columnGrouping = $config['columnGrouping'] ?? [];
+        if (!empty($columnGrouping) && $columnGrouping['enabled']) {
+            // Process header groups
+            if (isset($columnGrouping['headerGroups'])) {
+                $columnGrouping['headerGroups'] = array_map(function ($row) {
+                    if (isset($row['cells'])) {
+                        $row['cells'] = array_map(function ($cell) {
+                            return [
+                                'header' => $cell['header'] ?? '',
+                                'field' => $cell['field'] ?? null,
+                                'sortable' => $cell['sortable'] ?? false,
+                                'rowspan' => $cell['rowspan'] ?? null,
+                                'colspan' => $cell['colspan'] ?? null,
+                                'headerStyle' => $cell['headerStyle'] ?? null,
+                                'isTotal' => $cell['isTotal'] ?? false,
+                                'totalField' => $cell['totalField'] ?? null,
+                                'totalType' => $cell['totalType'] ?? 'sum',
+                                'formatType' => $cell['formatType'] ?? 'number',
+                                'formatDecimals' => $cell['formatDecimals'] ?? 2,
+                            ];
+                        }, $row['cells']);
+                    }
+                    return $row;
+                }, $columnGrouping['headerGroups']);
+            }
+
+            // Process footer groups
+            if (isset($columnGrouping['footerGroups'])) {
+                $columnGrouping['footerGroups'] = array_map(function ($row) {
+                    if (isset($row['cells'])) {
+                        $row['cells'] = array_map(function ($cell) {
+                            return [
+                                'footer' => $cell['footer'] ?? '',
+                                'rowspan' => $cell['rowspan'] ?? null,
+                                'colspan' => $cell['colspan'] ?? null,
+                                'footerStyle' => $cell['footerStyle'] ?? null,
+                                'isTotal' => $cell['isTotal'] ?? false,
+                                'totalField' => $cell['totalField'] ?? null,
+                                'totalType' => $cell['totalType'] ?? 'sum',
+                                'formatType' => $cell['formatType'] ?? 'number',
+                                'formatDecimals' => $cell['formatDecimals'] ?? 2,
+                            ];
+                        }, $row['cells']);
+                    }
+                    return $row;
+                }, $columnGrouping['footerGroups']);
+            }
+        }
+        //DD 20250720:2100 - END
+
         // Use parent transform and merge with our specific config
         return array_merge(parent::transform($config), [
             'props' => [
@@ -933,6 +1161,19 @@ class DataTableWidget extends BaseWidget
                     'footerTemplate' => 'Total items: {rowCount}'
                 ],
                 //DD 20250715:1600 - END
+                //DD 20250720:2100 - BEGIN (Column Grouping)
+                // Column Grouping
+                'columnGrouping' => $columnGrouping ?: [
+                    'enabled' => false,
+                    'headerGroups' => [],
+                    'footerGroups' => [],
+                    'groupColumnsTotal' => [],
+                    'showTotalsInHeader' => false,
+                    'showTotalsInFooter' => false,
+                    'footerText' => '',
+                    'headerText' => ''
+                ],
+                //DD 20250720:2100 - END
                 // Other
                 'loading' => $config['loading'] ?? false,
                 'emptyMessage' => $config['emptyMessage'] ?? 'No records found',

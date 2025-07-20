@@ -7,6 +7,8 @@ import PMultiSelect from 'primevue/multiselect';
 import PButton from 'primevue/button';
 import PDataTable from 'primevue/datatable';
 import PColumn from 'primevue/column';
+import PColumnGroup from 'primevue/columngroup';
+import PRow from 'primevue/row';
 import PInputText from 'primevue/inputtext';
 import PDivider from 'primevue/divider';
 import vTooltip from 'primevue/tooltip';
@@ -145,6 +147,39 @@ interface RowGrouping {
 }
 //DD 20250715:1600 - END
 
+//DD 20250720:2100 - BEGIN (Column Grouping)
+interface ColumnGroupCell {
+    header?: string;
+    footer?: string;
+    field?: string;
+    sortable?: boolean;
+    rowspan?: number;
+    colspan?: number;
+    headerStyle?: string;
+    footerStyle?: string;
+    isTotal?: boolean; // Flag to indicate this cell should show calculated totals
+    totalField?: string; // Field name for total calculation
+    totalType?: 'sum' | 'avg' | 'count' | 'min' | 'max'; // Type of calculation
+    formatType?: 'currency' | 'percentage' | 'number' | 'text'; // How to format the total
+    formatDecimals?: number; // Number of decimal places
+}
+
+interface ColumnGroupRow {
+    cells: ColumnGroupCell[];
+}
+
+interface ColumnGrouping {
+    enabled: boolean;
+    headerGroups?: ColumnGroupRow[]; // Array of header group rows
+    footerGroups?: ColumnGroupRow[]; // Array of footer group rows
+    groupColumnsTotal?: string[]; // Fields to calculate totals for
+    showTotalsInHeader?: boolean;
+    showTotalsInFooter?: boolean;
+    footerText?: string;
+    headerText?: string;
+}
+//DD 20250720:2100 - END
+
 interface Props {
     widgetId: string;
     // Header/Footer
@@ -250,6 +285,9 @@ interface Props {
     //DD 20250715:1600 - BEGIN (Row Grouping)
     rowGrouping?: RowGrouping;
     //DD 20250715:1600 - END
+    //DD 20250720:2100 - BEGIN (Column Grouping)
+    columnGrouping?: ColumnGrouping;
+    //DD 20250720:2100 - END
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -334,8 +372,20 @@ const props = withDefaults(defineProps<Props>(), {
         footerRowCountText: 'Total items: ',
         footerText: '',
         footerTemplate: 'Total items: {rowCount}'
-    })
+    }),
     //DD 20250715:1600 - END
+    //DD 20250720:2100 - BEGIN (Column Grouping)
+    columnGrouping: () => ({
+        enabled: false,
+        headerGroups: [],
+        footerGroups: [],
+        groupColumnsTotal: [],
+        showTotalsInHeader: false,
+        showTotalsInFooter: false,
+        footerText: '',
+        headerText: ''
+    })
+    //DD 20250720:2100 - END
 });
 
 const dt = ref();
@@ -623,6 +673,104 @@ const calculateGroupTotal = (groupValue: any, field: string): number => {
         }, 0);
 };
 //DD 20250715:1600 - END
+
+//DD 20250720:2100 - BEGIN (Column Grouping)
+// Column grouping computed properties and methods
+const hasColumnGrouping = computed(() => props.columnGrouping?.enabled || false);
+
+const hasHeaderGroups = computed(() => 
+    hasColumnGrouping.value && 
+    props.columnGrouping?.headerGroups && 
+    props.columnGrouping.headerGroups.length > 0
+);
+
+const hasFooterGroups = computed(() => 
+    hasColumnGrouping.value && 
+    props.columnGrouping?.footerGroups && 
+    props.columnGrouping.footerGroups.length > 0
+);
+
+// Calculate totals for column grouping
+const calculateColumnTotal = (field: string, type: 'sum' | 'avg' | 'count' | 'min' | 'max' = 'sum'): number => {
+    const currentData = isLazyMode.value ? data.value : filteredData.value;
+    
+    if (currentData.length === 0) return 0;
+    
+    const values = currentData.map(item => {
+        const value = field.split('.').reduce((obj: any, key: string) => {
+            return obj && obj[key] !== undefined ? obj[key] : 0;
+        }, item);
+        return parseFloat(value) || 0;
+    }).filter(val => !isNaN(val));
+    
+    if (values.length === 0) return 0;
+    
+    switch (type) {
+        case 'sum':
+            return values.reduce((sum, val) => sum + val, 0);
+        case 'avg':
+            return values.reduce((sum, val) => sum + val, 0) / values.length;
+        case 'count':
+            return values.length;
+        case 'min':
+            return Math.min(...values);
+        case 'max':
+            return Math.max(...values);
+        default:
+            return values.reduce((sum, val) => sum + val, 0);
+    }
+};
+
+// Format total values based on format type
+const formatColumnTotal = (value: number, formatType: string = 'number', decimals: number = 2): string => {
+    if (isNaN(value)) return '--NaN--';
+    
+    switch (formatType) {
+        case 'currency':
+            return value.toLocaleString('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            });
+        case 'percentage':
+            return `${value.toFixed(decimals)}%`;
+        case 'number':
+            return value.toFixed(decimals);
+        default:
+            return String(value);
+    }
+};
+
+// Process cell content for column groups
+const processCellContent = (cell: ColumnGroupCell): string => {
+    if (cell.header) {
+        // Handle header with template processing
+        return processTemplate(cell.header, {}, {});
+    }
+    
+    if (cell.footer) {
+        // Handle footer with template processing
+        return processTemplate(cell.footer, {}, {});
+    }
+    
+    if (cell.isTotal && cell.totalField) {
+        // Calculate and format total
+        const total = calculateColumnTotal(cell.totalField, cell.totalType);
+        return formatColumnTotal(total, cell.formatType, cell.formatDecimals);
+    }
+    
+    return '';
+};
+
+// Check if column data is numeric for totals
+const isNumericField = (field: string): boolean => {
+    const column = props.columns.find(col => col.field === field);
+    return column?.dataType === 'number' || 
+           column?.dataType === 'currency' || 
+           column?.dataType === 'percentage';
+};
+//DD 20250720:2100 - END
 
 // Initialize visible columns based on hidden property
 const initVisibleColumns = () => {
@@ -1975,6 +2123,24 @@ watch(() => [sortField.value, sortOrder.value], async () => {
                 })
             }"
         >
+            <!--DD 20250720:2100 - BEGIN (Column Grouping Header)-->
+            <!-- Column Group Header -->
+            <PColumnGroup v-if="hasHeaderGroups" type="header">
+                <PRow v-for="(row, rowIndex) in columnGrouping?.headerGroups" :key="`header-row-${rowIndex}`">
+                    <PColumn
+                        v-for="(cell, cellIndex) in row.cells"
+                        :key="`header-cell-${rowIndex}-${cellIndex}`"
+                        :header="processCellContent(cell)"
+                        :field="cell.field"
+                        :sortable="cell.sortable || false"
+                        :rowspan="cell.rowspan"
+                        :colspan="cell.colspan"
+                        :headerStyle="cell.headerStyle"
+                    />
+                </PRow>
+            </PColumnGroup>
+            <!--DD 20250720:2100 - END-->
+
             <!--DD 20250714:1400 - BEGIN (Column Locking)-->
             <template v-if="(showExpandControls && expandControlsPosition === 'header') || (hasColumnLocking && columnLockButtonPosition === 'header')" #header>
                 <div class="flex items-center justify-between">
@@ -2305,6 +2471,22 @@ watch(() => [sortField.value, sortOrder.value], async () => {
                     </template>
                 </div>
             </template>
+
+            <!--DD 20250720:2100 - BEGIN (Column Grouping Footer)-->
+            <!-- Column Group Footer -->
+            <PColumnGroup v-if="hasFooterGroups" type="footer">
+                <PRow v-for="(row, rowIndex) in columnGrouping?.footerGroups" :key="`footer-row-${rowIndex}`">
+                    <PColumn
+                        v-for="(cell, cellIndex) in row.cells"
+                        :key="`footer-cell-${rowIndex}-${cellIndex}`"
+                        :footer="processCellContent(cell)"
+                        :rowspan="cell.rowspan"
+                        :colspan="cell.colspan"
+                        :footerStyle="cell.footerStyle"
+                    />
+                </PRow>
+            </PColumnGroup>
+            <!--DD 20250720:2100 - END-->
         </PDataTable>
 
         <!-- Footer -->
@@ -2337,6 +2519,12 @@ watch(() => [sortField.value, sortOrder.value], async () => {
                         Grouped by: {{ groupingField }}
                     </span>
                     <!--DD 20250715:1600 - END-->
+                    <!--DD 20250720:2100 - BEGIN (Column Grouping)-->
+                    <span v-if="hasColumnGrouping" class="mx-2">|</span>
+                    <span v-if="hasColumnGrouping">
+                        Column Groups: {{ (columnGrouping?.headerGroups?.length || 0) + (columnGrouping?.footerGroups?.length || 0) }}
+                    </span>
+                    <!--DD 20250720:2100 - END-->
                 </div>
                 <div v-if="footer.text">
                     {{ footer.text }}
@@ -2431,4 +2619,29 @@ watch(() => [sortField.value, sortOrder.value], async () => {
     --table-header-height: 56px; /* Default height, will be overridden by JS */
 }
 /* DD 20250715:1600 - END */
+
+/*DD 20250720:2100 - BEGIN (Column Grouping Styles)*/
+/* Column grouping header styling */
+.apex-datatable :deep(.p-datatable-thead-group) th {
+    background-color: rgba(59, 130, 246, 0.1);
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Column grouping footer styling */
+.apex-datatable :deep(.p-datatable-tfoot-group) td {
+    background-color: rgba(107, 114, 128, 0.1);
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Dark mode support for column groups */
+.dark .apex-datatable :deep(.p-datatable-thead-group) th {
+    background-color: rgba(59, 130, 246, 0.2);
+}
+
+.dark .apex-datatable :deep(.p-datatable-tfoot-group) td {
+    background-color: rgba(107, 114, 128, 0.2);
+}
+/*DD 20250720:2100 - END*/
 </style>

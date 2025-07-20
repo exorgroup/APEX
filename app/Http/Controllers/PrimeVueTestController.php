@@ -96,8 +96,6 @@ class PrimeVueTestController extends Controller
                 'label' => 'Multiple Dates'
             ],
 
-
-
             //DD1 - Begin: Subheader Row Grouping DataTable Demo
             [
                 'type' => 'datatable',
@@ -216,21 +214,21 @@ class PrimeVueTestController extends Controller
             ],
             //DD1 - End
 
-            //DD2 - Begin: Expandable Row Grouping DataTable Demo
+            //DD2 - Begin: Column Grouping DataTable Demo
             [
                 'type' => 'datatable',
                 'header' => [
-                    'title' => 'Row Grouping Demo - Expandable Mode',
-                    'subtitle' => '🆕 NEW FEATURE: Collapsible groups with expand/collapse all functionality',
+                    'title' => 'Column Grouping Demo - Header & Footer Groups',
+                    'subtitle' => '🆕 NEWEST FEATURE: Advanced column grouping with spanning headers, footers and totals',
                     'actions' => [
                         ['label' => 'Add Product', 'icon' => 'pi pi-plus', 'action' => 'add', 'severity' => 'success'],
-                        ['label' => 'Group Analysis', 'icon' => 'pi pi-chart-bar', 'action' => 'analyze-groups', 'severity' => 'info']
+                        ['label' => 'Export Analysis', 'icon' => 'pi pi-download', 'action' => 'export-analysis', 'severity' => 'info']
                     ]
                 ],
                 'footer' => [
                     'showRecordCount' => true,
                     'showSelectedCount' => true,
-                    'text' => 'Click group headers to expand/collapse or use the controls above'
+                    'text' => 'Complex table headers and footers with automatic totals calculations'
                 ],
                 'columns' => [
                     [
@@ -238,12 +236,6 @@ class PrimeVueTestController extends Controller
                         'header' => 'Category',
                         'sortable' => true,
                         'style' => 'width: 150px'
-                    ],
-                    [
-                        'field' => 'inventoryStatus',
-                        'header' => 'Status',
-                        'sortable' => true,
-                        'style' => 'width: 120px'
                     ],
                     [
                         'field' => 'code',
@@ -283,6 +275,12 @@ class PrimeVueTestController extends Controller
                         'bodyStyle' => 'text-align: center',
                         'headerStyle' => 'text-align: center',
                         'style' => 'width: 80px'
+                    ],
+                    [
+                        'field' => 'inventoryStatus',
+                        'header' => 'Status',
+                        'sortable' => true,
+                        'style' => 'width: 120px'
                     ]
                 ],
                 'dataSource' => [
@@ -290,27 +288,174 @@ class PrimeVueTestController extends Controller
                     'method' => 'GET',
                     'lazy' => false // Client-side for demo
                 ],
-                // Row Grouping Configuration - Expandable Mode
-                'rowGrouping' => [
+                // NEW: Column Grouping Configuration
+                'columnGrouping' => [
                     'enabled' => true,
-                    'rowGroupMode' => 'expandable',
-                    'groupRowsBy' => ['category'],
-                    'groupRowsTotals' => ['price', 'quantity'], // Calculate totals for these fields
-                    // Header configuration
-                    'showHeaderTotal' => true,
-                    'showHeaderRowCount' => true,
-                    'headerRowCountText' => 'Items count: ',
-                    'headerText' => 'Expandable Group Details',
-                    // Footer configuration
-                    'showFooterTotal' => true,
-                    'showFooterRowCount' => true,
-                    'footerRowCountText' => 'Group total: ',
-                    'footerText' => 'Group footer information',
-                    // Expandable mode specific
-                    'showExpandCollapseAllButton' => true,
-                    'expandAllLabel' => 'Expand All Categories',
-                    'collapseAllLabel' => 'Collapse All Categories',
-                    'expandCollapsePosition' => 'header'
+                    'headerGroups' => [
+                        // First header row
+                        [
+                            'cells' => [
+                                [
+                                    'header' => 'Product Information',
+                                    'colspan' => 7,
+                                    'headerStyle' => 'text-align: center; background-color: #f3f4f6; font-weight: bold;'
+                                ]
+                            ]
+                        ],
+                        // Second header row
+                        [
+                            'cells' => [
+                                [
+                                    'header' => 'Category',
+                                    'field' => 'category',
+                                    'sortable' => true,
+                                    'rowspan' => 2,
+                                    'headerStyle' => 'text-align: center;'
+                                ],
+                                [
+                                    'header' => 'Identification',
+                                    'colspan' => 2,
+                                    'headerStyle' => 'text-align: center; background-color: #f9fafb;'
+                                ],
+                                [
+                                    'header' => 'Financial Data',
+                                    'colspan' => 2,
+                                    'headerStyle' => 'text-align: center; background-color: #dbeafe; font-weight: bold;'
+                                ],
+                                [
+                                    'header' => 'Quality Metrics',
+                                    'colspan' => 2,
+                                    'headerStyle' => 'text-align: center; background-color: #dcfce7; font-weight: bold;'
+                                ]
+                            ]
+                        ],
+                        // Third header row (actual column headers)
+                        [
+                            'cells' => [
+
+                                [
+                                    'header' => 'Code',
+                                    'field' => 'code',
+                                    'sortable' => true
+                                ],
+                                [
+                                    'header' => 'Product Name',
+                                    'field' => 'name',
+                                    'sortable' => true
+                                ],
+                                [
+                                    'header' => 'Price ($)',
+                                    'field' => 'price',
+                                    'sortable' => true
+                                ],
+                                [
+                                    'header' => 'Stock',
+                                    'field' => 'quantity',
+                                    'sortable' => true
+                                ],
+                                [
+                                    'header' => 'Rating',
+                                    'field' => 'rating',
+                                    'sortable' => true
+                                ],
+                                [
+                                    'header' => 'Status',
+                                    'field' => 'inventoryStatus',
+                                    'sortable' => true
+                                ]
+                            ]
+                        ]
+                    ],
+                    'footerGroups' => [
+                        // First footer row with calculated totals
+                        [
+                            'cells' => [
+                                [
+                                    'footer' => 'TOTALS:',
+                                    'colspan' => 3,
+                                    'footerStyle' => 'text-align: right; font-weight: bold; background-color: #f9fafb;'
+                                ],
+                                [
+                                    'isTotal' => true,
+                                    'totalField' => 'price',
+                                    'totalType' => 'sum',
+                                    'formatType' => 'currency',
+                                    'formatDecimals' => 2,
+                                    'footerStyle' => 'text-align: right; font-weight: bold; background-color: #dbeafe;'
+                                ],
+                                [
+                                    'isTotal' => true,
+                                    'totalField' => 'quantity',
+                                    'totalType' => 'sum',
+                                    'formatType' => 'number',
+                                    'formatDecimals' => 0,
+                                    'footerStyle' => 'text-align: center; font-weight: bold; background-color: #dbeafe;'
+                                ],
+                                [
+                                    'isTotal' => true,
+                                    'totalField' => 'rating',
+                                    'totalType' => 'avg',
+                                    'formatType' => 'number',
+                                    'formatDecimals' => 1,
+                                    'footerStyle' => 'text-align: center; font-weight: bold; background-color: #dcfce7;'
+                                ],
+                                [
+                                    'footer' => 'Various',
+                                    'footerStyle' => 'text-align: center; font-style: italic; background-color: #dcfce7;'
+                                ]
+                            ]
+                        ],
+                        // Second footer row with additional analytics
+                        [
+                            'cells' => [
+                                [
+                                    'footer' => 'ANALYTICS:',
+                                    'colspan' => 2,
+                                    'footerStyle' => 'text-align: right; font-weight: bold; background-color: #fef3c7;'
+                                ],
+                                [
+                                    'isTotal' => true,
+                                    'totalField' => 'price',
+                                    'totalType' => 'count',
+                                    'formatType' => 'text',
+                                    'footerStyle' => 'text-align: center; background-color: #fef3c7;'
+                                ],
+                                [
+                                    'isTotal' => true,
+                                    'totalField' => 'price',
+                                    'totalType' => 'avg',
+                                    'formatType' => 'currency',
+                                    'formatDecimals' => 2,
+                                    'footerStyle' => 'text-align: right; background-color: #fef3c7;'
+                                ],
+                                [
+                                    'isTotal' => true,
+                                    'totalField' => 'rating',
+                                    'totalType' => 'max',
+                                    'formatType' => 'number',
+                                    'formatDecimals' => 1,
+                                    'footerStyle' => 'text-align: center; background-color: #fef3c7;'
+                                ],
+                                [
+                                    'isTotal' => true,
+                                    'totalField' => 'rating',
+                                    'totalType' => 'min',
+                                    'formatType' => 'number',
+                                    'formatDecimals' => 1,
+                                    'footerStyle' => 'text-align: center; background-color: #fef3c7;'
+                                ],
+                                [
+                                    'footer' => 'End Report',
+                                    'footerStyle' => 'text-align: center; font-style: italic; background-color: #fef3c7;'
+                                ]
+                            ]
+                        ]
+                    ],
+                    'groupColumnsTotal' => ['price', 'quantity', 'rating'],
+                    'showTotalsInHeader' => false,
+                    'showTotalsInFooter' => true,
+                    'headerText' => 'Product Analysis Dashboard',
+                    'footerText' => 'Financial and Inventory Summary'
                 ],
                 'gridLines' => 'both',
                 'stripedRows' => true,
@@ -318,8 +463,8 @@ class PrimeVueTestController extends Controller
                 'size' => 'normal',
                 'paginator' => true,
                 'paginatorPosition' => 'bottom',
-                'rows' => 15,
-                'rowsPerPageOptions' => [10, 15, 25, 50],
+                'rows' => 10,
+                'rowsPerPageOptions' => [5, 10, 15, 25, 50],
                 'currentPageReportTemplate' => 'Showing {first} to {last} of {totalRecords} products',
                 'sortMode' => 'single',
                 'removableSort' => true,
@@ -328,9 +473,9 @@ class PrimeVueTestController extends Controller
                 'scrollHeight' => '500px',
                 'exportable' => true,
                 'exportFormats' => ['csv'],
-                'exportFilename' => 'grouped-products-expandable-' . date('Y-m-d'),
+                'exportFilename' => 'column-grouped-products-' . date('Y-m-d'),
                 'responsiveLayout' => 'scroll',
-                'tableStyle' => 'min-width: 80rem',
+                'tableStyle' => 'min-width: 90rem',
                 'emptyMessage' => 'No products found'
             ],
             //DD2 - End
@@ -1348,7 +1493,7 @@ class PrimeVueTestController extends Controller
                         'header' => 'Price',
                         'dataType' => 'currency',
                         'format' => 2,  // 2 decimal places
-                        'leadText' => '$',
+                        'leadText' => ' $',
                         'sortable' => true,
                         'bodyStyle' => 'text-align: right',
                         'headerStyle' => 'text-align: right'
