@@ -172,10 +172,7 @@ class PrimeVueTestController extends Controller
                 // NEW: ReOrder Configuration
                 'reOrder' => [
                     'enabled' => true,
-<<<<<<< HEAD
                     'reOrderColumn' => true,   // Enable column reordering
-=======
->>>>>>> 61e4a919c63428e231bdf62e712502149e409b98
                     'reOrderRows' => true,     // Enable row reordering with drag handles
                     'excludeOrdering' => 'price,rating'  // Exclude Price and Rating columns from reordering
                 ],
