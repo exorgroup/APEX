@@ -442,6 +442,35 @@ class DataTableWidget extends BaseWidget
                     'default' => false,
                     'description' => 'Enable row reordering'
                 ],
+                //DD 20250720:2115 - BEGIN (ReOrder Feature)
+                // ReOrder Configuration
+                'reOrder' => [
+                    'type' => 'object',
+                    'description' => 'ReOrder configuration for enhanced column and row reordering',
+                    'properties' => [
+                        'enabled' => [
+                            'type' => 'boolean',
+                            'default' => false,
+                            'description' => 'Enable ReOrder functionality'
+                        ],
+                        'reOrderColumn' => [
+                            'type' => 'boolean',
+                            'default' => false,
+                            'description' => 'Enable column reordering when reOrder is enabled'
+                        ],
+                        'reOrderRows' => [
+                            'type' => 'boolean',
+                            'default' => false,
+                            'description' => 'Enable row reordering when reOrder is enabled - adds drag handles'
+                        ],
+                        'excludeOrdering' => [
+                            'type' => 'string',
+                            'default' => '',
+                            'description' => 'Comma-separated list of column fields to exclude from reordering (e.g., "price,stock")'
+                        ]
+                    ]
+                ],
+                //DD 20250720:2115 - END
                 'exportable' => [
                     'type' => 'boolean',
                     'default' => false,
@@ -1041,6 +1070,26 @@ class DataTableWidget extends BaseWidget
         }
         //DD 20250720:2100 - END
 
+        //DD 20250720:2115 - BEGIN (ReOrder Feature Processing)
+        // Process reOrder configuration
+        $reOrder = $config['reOrder'] ?? [];
+        if (!empty($reOrder)) {
+            $reOrder = [
+                'enabled' => $reOrder['enabled'] ?? false,
+                'reOrderColumn' => $reOrder['reOrderColumn'] ?? false,
+                'reOrderRows' => $reOrder['reOrderRows'] ?? false,
+                'excludeOrdering' => $reOrder['excludeOrdering'] ?? '',
+            ];
+        } else {
+            $reOrder = [
+                'enabled' => false,
+                'reOrderColumn' => false,
+                'reOrderRows' => false,
+                'excludeOrdering' => '',
+            ];
+        }
+        //DD 20250720:2115 - END
+
         // Use parent transform and merge with our specific config
         return array_merge(parent::transform($config), [
             'props' => [
@@ -1109,6 +1158,10 @@ class DataTableWidget extends BaseWidget
                 // Reorder
                 'reorderableColumns' => $config['reorderableColumns'] ?? false,
                 'reorderableRows' => $config['reorderableRows'] ?? false,
+                //DD 20250720:2115 - BEGIN (ReOrder Feature)
+                // ReOrder
+                'reOrder' => $reOrder,
+                //DD 20250720:2115 - END
                 'exportable' => $config['exportable'] ?? false,
                 'exportFormats' => $config['exportFormats'] ?? ['csv', 'excel', 'pdf'],
                 'exportFilename' => $config['exportFilename'] ?? 'data-export',

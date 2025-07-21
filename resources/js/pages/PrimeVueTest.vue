@@ -42,6 +42,12 @@ const dataTableWidgets = computed(() =>
     props.widgets.filter(w => w.type === 'datatable')
 );
 
+//DD 20250720:2115 - BEGIN - Add ReOrder demo widget
+const reOrderDataTable = computed(() => 
+    dataTableWidgets.value.find(w => w.props.header?.title === 'ReOrder Feature Demo - NEWEST FUNCTIONALITY!')
+);
+//DD 20250720:2115 - END
+
 //DD1 - Row Grouping DataTable - Subheader Mode
 const subheaderRowGroupingDataTable = computed(() => 
     dataTableWidgets.value.find(w => w.props.header?.title === 'Row Grouping Demo - Subheader Mode')
@@ -137,6 +143,30 @@ const handleCrudAction = (payload: any) => {
     }
 };
 
+//DD 20250720:2115 - BEGIN - Handle ReOrder events
+const handleColumnReorder = (payload: any) => {
+    console.log('Column Reordered:', payload);
+    // Optional: Show notification or perform analytics
+    // toast.add({ 
+    //     severity: 'info', 
+    //     summary: 'Column Reordered', 
+    //     detail: `Columns have been reordered`, 
+    //     life: 3000 
+    // });
+};
+
+const handleRowReorder = (payload: any) => {
+    console.log('Row Reordered:', payload);
+    // Optional: Show notification or save new order
+    // toast.add({ 
+    //     severity: 'info', 
+    //     summary: 'Row Reordered', 
+    //     detail: `Rows have been reordered`, 
+    //     life: 3000 
+    // });
+};
+//DD 20250720:2115 - END
+
 //DD 20250714:1400 - BEGIN - Handle column locking events
 const handleColumnLockChange = (payload: any) => {
     console.log('Column Lock Changed:', payload);
@@ -191,6 +221,14 @@ const handleHeaderAction = (action: string) => {
         case 'refresh':
             alert('Refresh data clicked');
             break;
+        //DD 20250720:2115 - BEGIN
+        case 'reset-order':
+            alert('Reset Order clicked - this would reset column and row order to defaults');
+            break;
+        case 'export-reordered':
+            alert('Export Reordered clicked - this would export data in current display order');
+            break;
+        //DD 20250720:2115 - END
         //DD2 - Column Grouping actions
         case 'export-analysis':
             alert('Export Analysis clicked - this would export the column grouped data with totals');
@@ -284,6 +322,52 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
                                     Server-side data tables with sorting, filtering, and pagination:
                                 </p>
+
+                                <!--DD 20250720:2115 - BEGIN - ReOrder Feature Demo Section -->
+                                <div v-if="reOrderDataTable" class="mb-8">
+                                    <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">
+                                        🆕 ReOrder Feature Demo - BRAND NEW FUNCTIONALITY!
+                                    </h4>
+                                    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                        <div class="mb-4 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 p-4 text-sm dark:from-amber-900/20 dark:to-orange-900/20">
+                                            <div class="mb-3 text-lg font-semibold text-gray-800 dark:text-gray-200">
+                                                🔄 Advanced Column & Row Reordering System
+                                            </div>
+                                            <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-1">
+                                                <div class="space-y-2">
+                                                    <div class="text-amber-800 dark:text-amber-200">
+                                                        <strong>✨ ReOrder Features:</strong>
+                                                    </div>
+                                                    <ul class="list-inside list-disc space-y-1 text-sm text-amber-700 dark:text-amber-300">
+                                                        <li><strong>Column Reordering:</strong> Drag column headers to reorder columns (Price and Rating excluded)</li>
+                                                        <li><strong>Row Reordering:</strong> Use drag handles (≡) to reorder rows by dragging them up or down</li>
+                                                        <li><strong>Exclusion Control:</strong> Specific columns can be excluded from reordering via configuration</li>
+                                                        <li><strong>Visual Feedback:</strong> Drag cursors and hover effects provide clear user guidance</li>
+                                                        <li><strong>Event Tracking:</strong> All reorder actions are logged and can trigger custom behaviors</li>
+                                                        <li><strong>Status Display:</strong> Toolbar and footer show current ReOrder configuration status</li>
+                                                        <li><strong>Smart Integration:</strong> Works seamlessly with sorting, filtering, and pagination</li>
+                                                        <li><strong>Export Support:</strong> Reordered data can be exported in the new display order</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="mt-3 text-xs text-gray-600 dark:text-gray-400">
+                                                💡 <strong>Use Case:</strong> Perfect for custom dashboards, personalized data views, and user-defined report layouts where column and row order matters.
+                                            </div>
+                                            <div class="mt-2 text-xs text-gray-500 dark:text-gray-500">
+                                                🏆 <strong>Try It:</strong> Drag "Category" column header to reorder columns, then use the ≡ handles to reorder rows!
+                                            </div>
+                                        </div>
+                                        <WidgetRenderer 
+                                            :widgets="[reOrderDataTable]" 
+                                            @action="handleCustomAction"
+                                            @crud-action="handleCrudAction"
+                                            @header-action="handleHeaderAction"
+                                            @column-reorder="handleColumnReorder"
+                                            @row-reorder="handleRowReorder"
+                                        />
+                                    </div>
+                                </div>
+                                <!--DD 20250720:2115 - END -->
 
                                 <!--DD1 - BEGIN - Subheader Row Grouping Demo Section -->
                                 <div v-if="subheaderRowGroupingDataTable" class="mb-8">
