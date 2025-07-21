@@ -368,10 +368,6 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     </div>
                                 </div>
                                 <!--DD 20250720:2115 - END -->
-<<<<<<< HEAD
-
-=======
->>>>>>> 61e4a919c63428e231bdf62e712502149e409b98
                                 <!--DD1 - BEGIN - Subheader Row Grouping Demo Section -->
                                 <div v-if="subheaderRowGroupingDataTable" class="mb-8">
                                     <h4 class="mb-3 text-base font-medium text-gray-600 dark:text-gray-400">

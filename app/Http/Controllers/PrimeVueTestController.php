@@ -96,7 +96,7 @@ class PrimeVueTestController extends Controller
                 'label' => 'Multiple Dates'
             ],
 
-            //DD 20250720:2115 - BEGIN: ReOrder Feature Demo
+            //DD 20250720:2115 - BEGIN: ReOrder Feature Demo with Context Menu
             [
                 'type' => 'datatable',
                 'header' => [
@@ -175,6 +175,42 @@ class PrimeVueTestController extends Controller
                     'reOrderColumn' => true,   // Enable column reordering
                     'reOrderRows' => true,     // Enable row reordering with drag handles
                     'excludeOrdering' => 'price,rating'  // Exclude Price and Rating columns from reordering
+                ],
+                // Context Menu Configuration
+                'contextMenu' => [
+                    'enabled' => true,
+                    'items' => [
+                        [
+                            'icon' => 'pi pi-eye',
+                            'label' => 'View Product',
+                            'url' => '/template/{code}',
+                            'urlTarget' => '_blank'
+                        ],
+                        [
+                            'icon' => 'pi pi-pencil',
+                            'label' => 'Edit Product',
+                            'action' => 'edit'
+                        ],
+                        [
+                            'icon' => 'pi pi-copy',
+                            'label' => 'Duplicate',
+                            'action' => 'duplicate'
+                        ],
+                        [
+                            'icon' => 'https://cdn-icons-png.flaticon.com/16/1828/1828874.png',
+                            'label' => 'Add to Favorites',
+                            'action' => 'favorite'
+                        ],
+                        [
+                            'separator' => true
+                        ],
+                        [
+                            'icon' => 'pi pi-trash',
+                            'label' => 'Delete Product',
+                            'action' => 'delete',
+                            'disabled' => false
+                        ]
+                    ]
                 ],
                 'gridLines' => 'both',
                 'stripedRows' => true,

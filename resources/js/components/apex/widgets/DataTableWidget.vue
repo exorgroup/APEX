@@ -12,6 +12,7 @@ import PRow from 'primevue/row';
 import PInputText from 'primevue/inputtext';
 import PDivider from 'primevue/divider';
 import vTooltip from 'primevue/tooltip';
+import PContextMenu from 'primevue/contextmenu';
 import WidgetRenderer from '../WidgetRenderer.vue';
 
 interface Column {
@@ -189,6 +190,23 @@ interface ReOrder {
 }
 //DD 20250720:2115 - END
 
+// Context Menu interfaces
+interface ContextMenuItem {
+    icon?: string; // URL to image or PrimeIcon class (e.g., 'pi pi-search')
+    label: string;
+    url?: string;
+    urlTarget?: '_self' | '_blank' | '_parent' | '_top';
+    action?: string;
+    separator?: boolean;
+    disabled?: boolean;
+    visible?: boolean;
+}
+
+interface ContextMenu {
+    enabled: boolean;
+    items: ContextMenuItem[];
+}
+
 interface Props {
     widgetId: string;
     // Header/Footer
@@ -300,6 +318,8 @@ interface Props {
     //DD 20250720:2100 - BEGIN (Column Grouping)
     columnGrouping?: ColumnGrouping;
     //DD 20250720:2100 - END
+    // Context Menu
+    contextMenu?: ContextMenu;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -404,8 +424,13 @@ const props = withDefaults(defineProps<Props>(), {
         showTotalsInFooter: false,
         footerText: '',
         headerText: ''
-    })
+    }),
     //DD 20250720:2100 - END
+    // Context Menu
+    contextMenu: () => ({
+        enabled: false,
+        items: []
+    })
 });
 
 const dt = ref();
@@ -487,6 +512,79 @@ const columnLockButtonPosition = computed(() => {
     return props.columnLocking?.buttonPosition || 'toolbar';
 });
 //DD 20250714:1400 - END
+
+// Context Menu
+const cm = ref();
+const contextMenuSelection = ref<any>(null);
+
+// Check if context menu is enabled
+const hasContextMenu = computed(() => {
+    return props.contextMenu?.enabled && props.contextMenu?.items?.length > 0;
+});
+
+// Process menu items with field replacements
+const processMenuItems = (rowData: any): any[] => {
+    if (!props.contextMenu?.items) return [];
+    
+    return props.contextMenu.items
+        .filter(item => item.visible !== false)
+        .map(item => {
+            // Process URL with field replacements
+            let processedUrl = item.url;
+            if (processedUrl) {
+                processedUrl = processedUrl.replace(/{(\w+)}/g, (match, field) => {
+                    return rowData[field] || match;
+                });
+            }
+            
+            // Determine icon type (URL vs PrimeIcon)
+            const isIconUrl = item.icon && (item.icon.startsWith('http') || item.icon.startsWith('/') || item.icon.includes('.'));
+            
+            return {
+                label: item.label,
+                icon: !isIconUrl ? item.icon : undefined,
+                command: () => handleContextMenuAction(item, rowData, processedUrl),
+                separator: item.separator,
+                disabled: item.disabled,
+                class: isIconUrl ? 'p-menuitem-with-image' : undefined,
+                template: isIconUrl ? (options: any) => {
+                    return `<a class="${options.class}" href="#">
+                        <img src="${item.icon}" alt="${item.label}" class="p-menuitem-icon-image" />
+                        <span class="p-menuitem-text">${item.label}</span>
+                    </a>`;
+                } : undefined
+            };
+        });
+};
+
+// Handle context menu actions
+const handleContextMenuAction = (item: ContextMenuItem, rowData: any, processedUrl?: string) => {
+    if (item.url && processedUrl) {
+        // Navigate to URL
+        window.open(processedUrl, item.urlTarget || '_self');
+    } else if (item.action) {
+        // Emit custom action
+        emit('context-menu-action', {
+            action: item.action,
+            data: rowData,
+            item: item
+        });
+    }
+    
+    // Clear context menu selection
+    contextMenuSelection.value = null;
+};
+
+// Handle row context menu event
+const onRowContextMenu = (event: any) => {
+    if (!hasContextMenu.value) return;
+    
+    // Set the selected row for context menu
+    contextMenuSelection.value = event.data;
+    
+    // Show context menu
+    cm.value.show(event.originalEvent);
+};
 
 //DD 20250715:1600 - BEGIN (Row Grouping)
 // Row grouping computed properties and methods
@@ -692,8 +790,7 @@ const calculateGroupTotal = (groupValue: any, field: string): number => {
             return sum + (parseFloat(fieldValue) || 0);
         }, 0);
 };
-//DD 20250715:1600 - END
-
+//DD 20250715:1600 - END 
 //DD 20250720:2100 - BEGIN (Column Grouping)
 // Column grouping computed properties and methods
 const hasColumnGrouping = computed(() => props.columnGrouping?.enabled || false);
@@ -1102,6 +1199,7 @@ const emit = defineEmits<{
     'column-reorder': [event: any];
     'row-reorder': [event: any];
     //DD 20250720:2115 - END
+    'context-menu-action': [payload: { action: string; data: any; item: ContextMenuItem }];
 }>();
 
 // Initialize lazy mode
@@ -2035,10 +2133,24 @@ watch(() => [sortField.value, sortOrder.value], async () => {
     }
 });
 //DD 20250715:1600 - END
+
+// Context menu computed menu model
+const contextMenuModel = computed(() => {
+    if (!hasContextMenu.value || !contextMenuSelection.value) return [];
+    return processMenuItems(contextMenuSelection.value);
+});
 </script>
 
 <template>
     <div class="apex-datatable-widget">
+        <!-- Context Menu -->
+        <PContextMenu 
+            v-if="hasContextMenu"
+            ref="cm" 
+            :model="contextMenuModel" 
+            @hide="contextMenuSelection = null"
+        />
+        
         <!-- Header -->
         <div v-if="header" class="mb-4 rounded-t-lg border border-b-0 border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
             <div class="flex items-center justify-between">
@@ -2174,8 +2286,7 @@ watch(() => [sortField.value, sortOrder.value], async () => {
                     @click="exportData(format)"
                 />
             </div>
-        </div>
-
+        </div> 
         <!-- DataTable -->
         <PDataTable
             ref="dt"
@@ -2185,6 +2296,8 @@ watch(() => [sortField.value, sortOrder.value], async () => {
             :dataKey="dataKey"
             v-model:selection="selectedItems"
             v-model:expandedRows="expandedRows"
+            v-model:contextMenuSelection="contextMenuSelection"
+            :contextMenu="hasContextMenu"
             :paginator="paginator"
             :paginatorPosition="paginatorPosition"
             :rows="rows"
@@ -2226,6 +2339,7 @@ watch(() => [sortField.value, sortOrder.value], async () => {
             @row-reorder="onRowReorder"
             @row-expand="onRowExpand"
             @row-collapse="onRowCollapse"
+            @row-contextmenu="onRowContextMenu"
             :pt="{
                 bodyrow: ({ props }: { props: any }) => ({
                     class: [{ 'font-bold': props.frozenRow }]
@@ -2692,6 +2806,14 @@ watch(() => [sortField.value, sortOrder.value], async () => {
 
 .apex-datatable :deep(.p-column-filter) {
     width: 100%;
+}
+
+/* Context Menu custom icon styling */
+.apex-datatable :deep(.p-menuitem-with-image .p-menuitem-icon-image) {
+    width: 1rem;
+    height: 1rem;
+    margin-right: 0.5rem;
+    vertical-align: middle;
 }
 
 /* DD 20250715:1600 - BEGIN (Row Grouping Styles) */
