@@ -103,13 +103,7 @@ class PrimeVueTestController extends Controller
                     'title' => 'ReOrder Feature Demo - NEWEST FUNCTIONALITY!',
                     'subtitle' => '🆕 BRAND NEW: Drag to reorder columns and rows with customizable exclusions',
                     'actions' => [
-<<<<<<< HEAD
-                        ['label' => 'Add Product', 'icon' => 'pi pi-plus', 'action' => 'add', 'severity' => 'success'],
-                        ['label' => 'Reset Order', 'icon' => 'pi pi-refresh', 'action' => 'reset-order', 'severity' => 'warning'],
-                        ['label' => 'Export Reordered', 'icon' => 'pi pi-download', 'action' => 'export-reordered', 'severity' => 'info']
-=======
                         ['label' => 'Add Product', 'icon' => 'pi pi-plus', 'action' => 'add', 'severity' => 'success']
->>>>>>> 61e4a919c63428e231bdf62e712502149e409b98
                     ]
                 ],
                 'footer' => [
