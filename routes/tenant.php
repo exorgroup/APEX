@@ -6,6 +6,8 @@ use App\Http\Controllers\ApexTestController;
 use App\Http\Controllers\ApexTestController2;
 use App\Http\Controllers\CounterTestController;
 use App\Http\Controllers\PrimeVueTestController;
+use App\Http\Controllers\PrimeVueTestController_New;
+
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
@@ -36,6 +38,7 @@ Route::middleware([
 
     Route::get('/counter-test', [CounterTestController::class, 'index'])->name('counter.test');
     Route::get('/primevue-test', [PrimeVueTestController::class, 'index'])->name('primevue.test');
+    Route::get('/primevue-test-new', [PrimeVueTestController_New::class, 'index'])->name('primevue.test.new');
 
     // PrimeVue Test Route
     /*Route::get('/primevue-test', function () {

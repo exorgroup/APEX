@@ -12,7 +12,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-// Reactive data
+// Reactive data 
 const counter = ref(0);
 const temperature = ref(20);
 
