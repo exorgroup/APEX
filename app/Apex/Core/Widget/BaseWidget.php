@@ -1,4 +1,5 @@
 <?php
+// app/Apex/Core/Widget/BaseWidget.php
 
 namespace App\Apex\Core\Widget;
 
