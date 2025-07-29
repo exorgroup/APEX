@@ -5,7 +5,8 @@ namespace App\Providers;
 use App\Apex\Core\Widget\WidgetRegistry;
 use App\Apex\Core\Widget\WidgetRenderer;
 use App\Apex\Core\Template\TemplateManager;
-use App\Apex\Widgets\BreadcrumbWidget;
+use App\Apex\Pro\Widgets\Menu\BreadcrumbWidget;
+
 use App\Apex\Widgets\KnobWidget;
 use App\Apex\Widgets\DatePickerWidget;
 use App\Apex\Widgets\InputTextWidget;

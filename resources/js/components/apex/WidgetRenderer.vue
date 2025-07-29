@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, markRaw, type Component } from 'vue';
-import BreadcrumbWidget from './widgets/BreadcrumbWidget.vue';
+import BreadcrumbWidget from './pro/widgets/Menu/BreadcrumbWidget.vue';
 import TextareaWidget from './widgets/TextareaWidget.vue'; 
 import KnobWidget from './widgets/KnobWidget.vue';
 import DatePickerWidget from './widgets/DatePickerWidget.vue';
