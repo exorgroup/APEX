@@ -13,583 +13,727 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Artisan;
-use App\Apex\Audit\Services\AuditService;
-use App\Apex\Audit\Services\HistoryService;
-use App\Apex\Audit\Services\RollbackService;
-use App\Apex\Audit\Services\ApexAuditLanguageService;
-use App\Apex\Audit\Exceptions\RollbackException;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\AuditDebugController;
+use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
+use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
 /*
 |--------------------------------------------------------------------------
-| Keep Your Existing Routes Here
+| IMPORTANT: Wrap ALL routes in tenancy middleware
 |--------------------------------------------------------------------------
-|
-| Add your existing tenant routes above this comment block.
-| The APEX Audit routes below are additional testing routes.
-|
 */
 
-// Your existing routes go here...
-// Route::get('/', [DashboardController::class, 'index']);
-// Route::resource('users', UserController::class);
-// etc...
+Route::middleware([
+    'web',
+    InitializeTenancyByDomain::class,
+    PreventAccessFromCentralDomains::class,
+])->group(function () {
 
-/*
-|--------------------------------------------------------------------------
-| APEX Audit Testing Routes
-|--------------------------------------------------------------------------
-|
-| Routes for testing and managing APEX Audit functionality.
-| These routes provide comprehensive testing endpoints for all audit features.
-|
-*/
+    /*
+    |--------------------------------------------------------------------------
+    | Your Application Routes
+    |--------------------------------------------------------------------------
+    */
 
-Route::get('/debug-connection', function () {
-    return response()->json([
-        'default_connection' => config('database.default'),
-        'tenant_id' => function_exists('tenant') && tenant() ? tenant('id') : 'no tenant',
-        'current_database' => DB::connection()->getDatabaseName(),
-        'audit_connection_config' => config('apex.audit.audit.connection'),
-        'tenancy_enabled' => config('apex.audit.tenancy.enabled'),
-        'tables_in_db' => DB::select('SHOW TABLES'),
-    ]);
-})->name('debug-connection');
+    // Add your existing application routes here
 
-Route::prefix('apex/audit')->name('apex.audit.')->group(function () {
 
-    // Main Dashboard Route
-    Route::get('/dashboard', function () {
-        $langService = app(\App\Apex\Audit\Services\ApexAuditLanguageService::class);
+    /*
+    |--------------------------------------------------------------------------
+    | APEX Audit Debug Routes
+    |--------------------------------------------------------------------------
+    */
 
+    // Basic connection debug
+    Route::get('/debug-connection', function () {
         return response()->json([
-            'success' => true,
-            'message' => 'APEX Audit Testing Dashboard',
-            'system_status' => [
-                'audit_enabled' => config('apex.audit.audit.enabled'),
-                'history_enabled' => config('apex.audit.history.enabled'),
-                'signatures_enabled' => config('apex.audit.audit.signature.enabled'),
-                'queue_enabled' => config('apex.audit.audit.queue.enabled'),
-                'current_language' => $langService->getCurrentLanguage(),
-                'supported_languages' => count($langService->getSupportedLanguages()),
-            ],
-            'available_tests' => [
-                'basic_logging' => 'Test basic audit logging functionality',
-                'ui_actions' => 'Test UI action tracking',
-                'history_management' => 'Test history viewing and filtering',
-                'rollback_system' => 'Test rollback functionality',
-                'language_support' => 'Test multi-language features',
-                'signature_verification' => 'Test digital signature integrity',
-                'widget_integration' => 'Test APEX widget configurations',
-                'middleware_configs' => 'Test route-level configurations',
-            ],
-            'quick_links' => [
-                'create_test_data' => '/apex/audit/test/create-test-data',
-                'view_history' => '/apex/audit/history/list',
-                'system_stats' => '/apex/audit/admin/statistics',
-                'language_test' => '/apex/audit/language/test-translations',
-                'run_test_suite' => '/apex/audit/test/run-test-suite',
-            ],
-            'current_config' => [
-                'audit_enabled' => config('apex.audit.audit.enabled'),
-                'language' => $langService->getCurrentLanguage(),
-                'supported_languages' => $langService->getSupportedLanguages(),
-                'detection_method' => config('apex.audit.language.detection_method'),
-            ],
+            'default_connection' => config('database.default'),
+            'tenant_id' => function_exists('tenant') && tenant() ? tenant('id') : 'no tenant',
+            'current_database' => DB::connection()->getDatabaseName(),
+            'audit_connection_config' => config('apex.audit.audit.connection'),
+            'tenancy_enabled' => config('apex.audit.tenancy.enabled'),
+            'tables_in_db' => DB::select('SHOW TABLES'),
         ]);
-    })->name('dashboard');
+    });
 
-    // Test Data Management Routes
-    Route::prefix('test')->name('test.')->group(function () {
+    /*
+|--------------------------------------------------------------------------
+| APEX Audit API Routes (for testing with PowerShell/Postman)
+|--------------------------------------------------------------------------
+*/
 
-        // Create test data for auditing
-        Route::post('/create-test-data', function () {
-            $auditService = app(AuditService::class);
+    Route::withoutMiddleware(['web'])->prefix('api/apex/audit')->group(function () {
+
+        // Create test data
+        Route::post('/test/create-test-data', function () {
+            $auditService = app(\App\Apex\Audit\Services\AuditService::class);
             $results = [];
+            $errors = [];
 
-            // Ensure we're using the tenant's database connection
-            $tenantConnection = config('database.default');
+            // Check initial counts
+            $initialAuditCount = DB::connection('tenant')->table('apex_audit')->count();
+            $initialHistoryCount = DB::connection('tenant')->table('apex_history')->count();
 
-            // Create various test scenarios
             $testScenarios = [
                 ['action' => 'create', 'model' => 'Car', 'data' => ['make' => 'Toyota', 'model' => 'Camry', 'year' => 2024]],
                 ['action' => 'update', 'model' => 'Car', 'data' => ['price' => 25000, 'color' => 'Blue']],
                 ['action' => 'delete', 'model' => 'Car', 'data' => ['id' => 1, 'reason' => 'Test deletion']],
-                ['action' => 'restore', 'model' => 'Car', 'data' => ['id' => 1, 'restored_by' => 'admin']],
-                ['action' => 'custom', 'model' => 'System', 'data' => ['test_run' => now(), 'type' => 'integration_test']],
             ];
 
             foreach ($testScenarios as $i => $scenario) {
-                $auditService->logCustomAction([
-                    'event_type' => $scenario['action'] === 'custom' ? 'custom' : 'model_crud',
-                    'action_type' => $scenario['action'],
-                    'model_type' => "TestModel{$scenario['model']}",
-                    'model_id' => (string) ($i + 1),
-                    'table_name' => strtolower($scenario['model']) . 's',
-                    'additional_data' => array_merge($scenario['data'], [
-                        'test_scenario' => true,
-                        'scenario_index' => $i + 1,
-                        'created_at' => now()->toISOString(),
-                        'language' => apex_lang(),
-                        'tenant' => tenant('id') ?? 'unknown',
-                        'database_connection' => $tenantConnection,
-                    ]),
-                    'source_element' => 'test-data-generator',
-                ]);
-
-                $results[] = apex_trans('descriptions.performed_action', [
-                    'action' => $scenario['action'],
-                    'model' => $scenario['model'],
-                    'id' => $i + 1
-                ]);
+                try {
+                    $auditService->logCustomAction([
+                        'event_type' => $scenario['action'] === 'custom' ? 'custom' : 'model_crud',
+                        'action_type' => $scenario['action'],
+                        'model_type' => "TestModel{$scenario['model']}",
+                        'model_id' => (string) ($i + 1),
+                        'table_name' => strtolower($scenario['model']) . 's',
+                        'additional_data' => $scenario['data'],
+                        'source_element' => 'api-test',
+                    ]);
+                    $results[] = "Created {$scenario['action']} audit for {$scenario['model']}";
+                } catch (\Exception $e) {
+                    $errors[] = [
+                        'scenario' => $scenario['action'],
+                        'error' => $e->getMessage(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                    ];
+                }
             }
 
+            // Get final counts
+            $finalAuditCount = DB::connection('tenant')->table('apex_audit')->count();
+            $finalHistoryCount = DB::connection('tenant')->table('apex_history')->count();
+
             return response()->json([
-                'success' => true,
-                'message' => apex_trans('success.data_exported'),
+                'success' => empty($errors),
                 'results' => $results,
-                'count' => count($results),
-                'language' => apex_lang(),
-                'tenant_info' => [
-                    'tenant_id' => tenant('id') ?? 'unknown',
-                    'database_connection' => $tenantConnection,
+                'errors' => $errors,
+                'counts' => [
+                    'initial_audit' => $initialAuditCount,
+                    'final_audit' => $finalAuditCount,
+                    'audit_created' => $finalAuditCount - $initialAuditCount,
+                    'initial_history' => $initialHistoryCount,
+                    'final_history' => $finalHistoryCount,
+                    'history_created' => $finalHistoryCount - $initialHistoryCount,
                 ],
-            ]);
-        })->name('create-data');
-
-        // Test audit logging directly
-        Route::post('/test-audit-log', function (Request $request) {
-            $auditService = app(AuditService::class);
-            $customData = $request->get('data', []);
-
-            $auditService->logCustomAction([
-                'event_type' => 'custom',
-                'action_type' => 'manual_test',
-                'model_type' => 'TestModel',
-                'model_id' => '999',
-                'table_name' => 'test_table',
-                'additional_data' => array_merge([
-                    'test_type' => 'manual_audit_test',
-                    'user_input' => $customData,
-                    'timestamp' => now()->toISOString(),
-                    'language' => apex_lang(),
-                    'ip_address' => $request->ip(),
-                ], $customData),
-                'source_element' => 'manual-test-form',
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => apex_trans('success.audit_created'),
-                'language' => apex_lang(),
-                'test_data' => $customData,
-            ]);
-        })->name('log-audit');
-
-        // Test UI action logging
-        Route::post('/test-ui-action', function (Request $request) {
-            $auditService = app(AuditService::class);
-            $actionType = $request->get('action_type', 'button_click');
-            $element = $request->get('element', 'test-button');
-
-            $auditService->logUIAction([
-                'action_type' => $actionType,
-                'source_element' => $element,
-                'additional_data' => [
-                    'page_context' => 'audit_testing',
-                    'user_agent' => $request->userAgent(),
-                    'test_mode' => true,
-                    'timestamp' => now()->toISOString(),
-                ],
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'UI action logged successfully',
-                'action_type' => $actionType,
-                'element' => $element,
-                'language' => apex_lang(),
-            ]);
-        })->name('log-ui-action');
-
-        // Run comprehensive test suite
-        Route::post('/run-test-suite', function () {
-            $auditService = app(AuditService::class);
-            $historyService = app(HistoryService::class);
-            $results = [];
-
-            // Test 1: Basic audit logging
-            try {
-                $auditService->logCustomAction([
-                    'event_type' => 'test_suite',
-                    'action_type' => 'basic_test',
-                    'model_type' => 'TestSuite',
-                    'model_id' => '1',
-                    'additional_data' => ['test' => 'basic_logging'],
-                ]);
-                $results['basic_logging'] = ['status' => 'passed', 'message' => 'Basic audit logging works'];
-            } catch (\Exception $e) {
-                $results['basic_logging'] = ['status' => 'failed', 'message' => $e->getMessage()];
-            }
-
-            // Test 2: Language system
-            try {
-                $currentLang = apex_lang();
-                $translation = apex_trans('history.title');
-                $results['language_system'] = [
-                    'status' => 'passed',
-                    'current_language' => $currentLang,
-                    'sample_translation' => $translation
-                ];
-            } catch (\Exception $e) {
-                $results['language_system'] = ['status' => 'failed', 'message' => $e->getMessage()];
-            }
-
-            // Test 3: History service
-            try {
-                $summary = $historyService->getHistorySummary();
-                $results['history_service'] = [
-                    'status' => 'passed',
-                    'total_records' => $summary['total_records'] ?? 0
-                ];
-            } catch (\Exception $e) {
-                $results['history_service'] = ['status' => 'failed', 'message' => $e->getMessage()];
-            }
-
-            // Test 4: Configuration
-            $configTests = [
-                'audit_enabled' => config('apex.audit.audit.enabled'),
-                'signatures_enabled' => config('apex.audit.audit.signature.enabled'),
-                'language_supported' => count(apex_supported_languages()) > 0,
-            ];
-
-            $results['configuration'] = [
-                'status' => array_reduce($configTests, fn($carry, $test) => $carry && $test, true) ? 'passed' : 'failed',
-                'tests' => $configTests
-            ];
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Test suite completed',
-                'results' => $results,
-                'overall_status' => !in_array('failed', array_column($results, 'status')) ? 'passed' : 'failed',
-                'executed_at' => now()->toISOString(),
-            ]);
-        })->name('run-test-suite');
-    });
-
-    // History Management Routes
-    Route::prefix('history')->name('history.')->group(function () {
-
-        // Get history for testing
-        Route::get('/list', function (Request $request) {
-            $historyService = app(HistoryService::class);
-
-            $filters = $request->only(['action_type', 'user_id', 'search', 'date_from', 'date_to']);
-            $perPage = $request->get('per_page', 20);
-
-            $history = $historyService->getRecentActivity(30, $perPage, $filters);
-            $summary = $historyService->getHistorySummary();
-
-            return response()->json([
-                'success' => true,
-                'data' => $history,
-                'summary' => $summary,
-                'filters_applied' => $filters,
-                'language' => apex_lang(),
-            ]);
-        })->name('list');
-
-        // Preview rollback
-        Route::get('/rollback/{historyId}/preview', function ($historyId) {
-            try {
-                $rollbackService = app(RollbackService::class);
-                $preview = $rollbackService->previewRollback($historyId);
-
-                return response()->json([
-                    'success' => true,
-                    'preview' => $preview,
-                    'title' => apex_trans('rollback.preview_title'),
-                    'description' => apex_trans('rollback.preview_description'),
-                ]);
-            } catch (RollbackException $e) {
-                return response()->json([
-                    'success' => false,
-                    'error' => $e->getUserMessage(),
-                    'details' => $e->toArray(),
-                ], 400);
-            }
-        })->name('rollback.preview');
-
-        // Test rollback functionality
-        Route::post('/rollback/{historyId}', function ($historyId) {
-            try {
-                $rollbackService = app(RollbackService::class);
-                $result = $rollbackService->rollback($historyId);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => apex_trans('rollback.success'),
-                    'rolled_back' => $result,
-                ]);
-            } catch (RollbackException $e) {
-                return response()->json([
-                    'success' => false,
-                    'error' => $e->getUserMessage(),
-                    'details' => $e->toArray(),
-                ], 400);
-            }
-        })->name('rollback');
-
-        // Export history
-        Route::get('/export', function (Request $request) {
-            $historyService = app(HistoryService::class);
-            $filters = $request->only(['action_type', 'user_id', 'date_from', 'date_to']);
-
-            $data = $historyService->exportHistory(null, null, $filters);
-
-            return response()->json([
-                'success' => true,
-                'data' => $data,
-                'count' => count($data),
-                'exported_at' => now()->toISOString(),
-                'filters' => $filters,
-            ]);
-        })->name('export');
-    });
-
-    // Language Testing Routes
-    Route::prefix('language')->name('language.')->group(function () {
-
-        // Test language detection
-        Route::get('/current', function () {
-            $langService = app(ApexAuditLanguageService::class);
-
-            return response()->json([
-                'current_language' => $langService->getCurrentLanguage(),
-                'supported_languages' => $langService->getSupportedLanguages(),
-                'detection_method' => config('apex.audit.language.detection_method'),
-                'direction' => $langService->getLanguageDirection(),
-                'cache_enabled' => config('apex.audit.language.cache.enabled'),
-            ]);
-        })->name('current');
-
-        // Set language
-        Route::post('/set/{language}', function ($language) {
-            $langService = app(ApexAuditLanguageService::class);
-
-            if (!$langService->isLanguageSupported($language)) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Language not supported',
-                    'supported' => array_keys($langService->getSupportedLanguages()),
-                ], 400);
-            }
-
-            $langService->setLanguage($language);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Language set successfully',
-                'language' => $language,
-                'test_translations' => [
-                    'title' => apex_trans('history.title'),
-                    'success' => apex_trans('rollback.success'),
-                    'created' => apex_trans('actions.create'),
-                ],
-            ]);
-        })->name('set');
-
-        // Test translations
-        Route::get('/test-translations', function () {
-            return response()->json([
-                'current_language' => apex_lang(),
-                'language_name' => app(ApexAuditLanguageService::class)->getSupportedLanguages()[apex_lang()] ?? 'Unknown',
-                'sample_translations' => [
-                    'actions' => [
-                        'create' => apex_trans('actions.create'),
-                        'update' => apex_trans('actions.update'),
-                        'delete' => apex_trans('actions.delete'),
-                        'restore' => apex_trans('actions.restore'),
-                    ],
-                    'messages' => [
-                        'history_title' => apex_trans('history.title'),
-                        'rollback_success' => apex_trans('rollback.success'),
-                        'no_records' => apex_trans('history.no_records'),
-                    ],
-                    'dynamic_examples' => [
-                        'created_new' => apex_trans('descriptions.created_new', [
-                            'model' => 'Car',
-                            'id' => '123'
-                        ]),
-                        'updated_model' => apex_trans('descriptions.updated_model', [
-                            'model' => 'User',
-                            'id' => '456',
-                            'fields' => 'name, email'
-                        ]),
-                    ],
-                ],
-            ]);
-        })->name('test-translations');
-    });
-
-    // Verification and Cleanup Routes
-    Route::prefix('admin')->name('admin.')->group(function () {
-
-        // Verify signatures
-        Route::post('/verify-signatures', function (Request $request) {
-            $sample = $request->get('sample', 10);
-
-            Artisan::call('apex:audit-verify', [
-                '--sample' => $sample,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'output' => Artisan::output(),
-                'message' => apex_trans('verification.verification_completed'),
-                'sample_size' => $sample,
-            ]);
-        })->name('verify');
-
-        // Test cleanup (dry run)
-        Route::post('/test-cleanup', function (Request $request) {
-            $days = $request->get('days', 30);
-
-            Artisan::call('apex:audit-cleanup', [
-                '--dry-run' => true,
-                '--days' => $days,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'output' => Artisan::output(),
-                'message' => 'Cleanup test completed (dry run)',
-                'retention_days' => $days,
-            ]);
-        })->name('test-cleanup');
-
-        // Get audit statistics
-        Route::get('/statistics', function () {
-            $historyService = app(HistoryService::class);
-            $rollbackService = app(RollbackService::class);
-
-            return response()->json([
-                'audit_system' => [
-                    'history_summary' => $historyService->getHistorySummary(),
-                    'rollback_stats' => $rollbackService->getRollbackStatistics(),
-                    'recent_activity' => $historyService->getRecentActivity(7, 5),
-                ],
-                'configuration' => [
+                'config' => [
                     'audit_enabled' => config('apex.audit.audit.enabled'),
                     'history_enabled' => config('apex.audit.history.enabled'),
-                    'signatures_enabled' => config('apex.audit.audit.signature.enabled'),
-                    'queue_enabled' => config('apex.audit.audit.queue.enabled'),
-                    'language_method' => config('apex.audit.language.detection_method'),
-                    'current_language' => apex_lang(),
+                    'signature_enabled' => config('apex.audit.audit.signature.enabled'),
+                    'secret_key' => config('apex.audit.audit.signature.secret_key') ? 'SET' : 'NOT SET',
                 ],
-                'performance' => [
-                    'cache_enabled' => config('apex.audit.language.cache.enabled'),
-                    'compression_enabled' => config('apex.audit.audit.performance.compress_large_data'),
-                    'batch_processing' => config('apex.audit.audit.batch.enabled'),
-                ],
-                'generated_at' => now()->toISOString(),
             ]);
-        })->name('statistics');
+        });
+
+        // View history
+        Route::get('/history/list', function () {
+            $historyService = app(\App\Apex\Audit\Services\HistoryService::class);
+
+            try {
+                $history = $historyService->getRecentActivity(30, 20);
+                $summary = $historyService->getHistorySummary();
+
+                return response()->json([
+                    'success' => true,
+                    'data' => $history,
+                    'summary' => $summary,
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'error' => $e->getMessage(),
+                    'line' => $e->getLine(),
+                ], 500);
+            }
+        });
+
+        // Get statistics
+        Route::get('/statistics', function () {
+            $auditCount = DB::connection('tenant')->table('apex_audit')->count();
+            $historyCount = DB::connection('tenant')->table('apex_history')->count();
+
+            return response()->json([
+                'audit_records' => $auditCount,
+                'history_records' => $historyCount,
+                'tenant' => tenant('id'),
+                'database' => DB::connection()->getDatabaseName(),
+                'config' => [
+                    'audit_enabled' => config('apex.audit.audit.enabled'),
+                    'history_enabled' => config('apex.audit.history.enabled'),
+                ],
+            ]);
+        });
+
+        // Debug what's in the tables
+        Route::get('/debug/table-contents', function () {
+            $audits = DB::connection('tenant')->table('apex_audit')
+                ->select('id', 'event_type', 'action_type', 'model_type', 'created_at')
+                ->get();
+
+            $histories = DB::connection('tenant')->table('apex_history')
+                ->select('id', 'audit_id', 'action_type', 'model_type', 'created_at')
+                ->get();
+
+            return response()->json([
+                'audit_records' => $audits,
+                'history_records' => $histories,
+            ]);
+        });
+
+        // Add this route to test the AuditService internal methods directly
+
+        Route::post('/test/audit-service-internal', function () {
+            $results = [];
+
+            try {
+                // Get services
+                $auditService = app(\App\Apex\Audit\Services\AuditService::class);
+                $signatureService = app(\App\Apex\Audit\Services\AuditSignatureService::class);
+
+                // Prepare test data manually
+                $testData = [
+                    'audit_uuid' => \Illuminate\Support\Str::uuid()->toString(),
+                    'event_type' => 'custom',
+                    'action_type' => 'internal_test_' . time(),
+                    'model_type' => 'TestModel',
+                    'model_id' => '777',
+                    'table_name' => 'tests',
+                    'user_id' => null,
+                    'session_id' => 'test_session',
+                    'ip_address' => '127.0.0.1',
+                    'user_agent' => 'Test Agent',
+                    'created_at' => now()->toDateTimeString(),
+                ];
+
+                // Generate signature
+                $testData['signature'] = $signatureService->generateSignature($testData);
+
+                // Test direct DB insert
+                $directInsertId = DB::connection('tenant')->table('apex_audit')->insertGetId($testData);
+                $results['direct_insert'] = [
+                    'success' => true,
+                    'id' => $directInsertId,
+                ];
+
+                // Now test through the service's createAuditRecord method using reflection
+                $reflection = new \ReflectionClass($auditService);
+                $method = $reflection->getMethod('createAuditRecord');
+                $method->setAccessible(true);
+
+                $testData2 = $testData;
+                $testData2['audit_uuid'] = \Illuminate\Support\Str::uuid()->toString();
+                $testData2['action_type'] = 'service_method_test_' . time();
+                $testData2['model_id'] = '666';
+
+                $serviceInsertId = $method->invoke($auditService, $testData2);
+                $results['service_method'] = [
+                    'success' => true,
+                    'id' => $serviceInsertId,
+                ];
+
+                // Check if queueing is enabled
+                $results['queue_config'] = [
+                    'enabled' => config('apex.audit.audit.queue.enabled'),
+                    'connection' => config('apex.audit.audit.queue.connection'),
+                    'queue_name' => config('apex.audit.audit.queue.queue'),
+                ];
+
+                // Final count
+                $results['final_count'] = DB::connection('tenant')->table('apex_audit')->count();
+            } catch (\Throwable $e) {
+                $results['error'] = [
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'class' => get_class($e),
+                ];
+            }
+
+            return response()->json($results);
+        });
+
+        Route::get('/test/check-logs', function () {
+            $logFile = storage_path('logs/laravel.log');
+            $results = [
+                'log_file_exists' => file_exists($logFile),
+                'apex_audit_errors' => [],
+            ];
+
+            if (file_exists($logFile)) {
+                // Get last 50 lines that contain "APEX Audit"
+                $lines = file($logFile);
+                $apexLines = [];
+
+                foreach ($lines as $line) {
+                    if (stripos($line, 'APEX Audit') !== false) {
+                        // Parse the log entry
+                        if (preg_match('/\[([\d-\s:]+)\].*APEX Audit: (.+)/', $line, $matches)) {
+                            $apexLines[] = [
+                                'time' => $matches[1],
+                                'message' => trim($matches[2]),
+                            ];
+                        }
+                    }
+                }
+
+                // Get last 10 APEX Audit entries
+                $results['apex_audit_errors'] = array_slice($apexLines, -10);
+            }
+
+            // Also test logCustomAction with detailed error capture
+            try {
+                $auditService = app(\App\Apex\Audit\Services\AuditService::class);
+
+                // Temporarily modify log level to capture everything
+                config(['logging.channels.single.level' => 'debug']);
+
+                $auditService->logCustomAction([
+                    'event_type' => 'custom',
+                    'action_type' => 'log_test_' . time(),
+                    'model_type' => 'TestModel',
+                    'model_id' => '555',
+                    'table_name' => 'tests',
+                    'additional_data' => ['test' => true],
+                ]);
+
+                $results['logCustomAction_test'] = 'completed';
+            } catch (\Exception $e) {
+                $results['logCustomAction_error'] = $e->getMessage();
+            }
+
+            return response()->json($results);
+        });
+
+        // Add this route to test the prepareCustomAuditData method directly
+
+        Route::post('/test/prepare-audit-data', function () {
+            $results = [];
+
+            try {
+                $auditService = app(\App\Apex\Audit\Services\AuditService::class);
+
+                // Test data
+                $testData = [
+                    'event_type' => 'custom',
+                    'action_type' => 'prepare_test_' . time(),
+                    'model_type' => 'TestModel',
+                    'model_id' => '444',
+                    'table_name' => 'tests',
+                    'additional_data' => ['test' => true, 'timestamp' => now()],
+                ];
+
+                // Use reflection to call the protected method
+                $reflection = new \ReflectionClass($auditService);
+                $method = $reflection->getMethod('prepareCustomAuditData');
+                $method->setAccessible(true);
+
+                $preparedData = $method->invoke($auditService, $testData);
+                $results['prepared_data'] = $preparedData;
+
+                // Check what's in the request config
+                $results['request_config'] = app('apex.audit.request.config', []);
+
+                // Check session status
+                $results['session'] = [
+                    'exists' => session()->isStarted(),
+                    'id' => session()->getId(),
+                ];
+
+                // Now try the full logCustomAction with the prepared data
+                $createMethod = $reflection->getMethod('createAuditRecord');
+                $createMethod->setAccessible(true);
+
+                $auditId = $createMethod->invoke($auditService, $preparedData);
+                $results['audit_created'] = [
+                    'success' => true,
+                    'id' => $auditId,
+                ];
+            } catch (\Throwable $e) {
+                $results['error'] = [
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => array_slice($e->getTrace(), 0, 3),
+                ];
+            }
+
+            // Final count
+            $results['final_count'] = DB::connection('tenant')->table('apex_audit')->count();
+
+            return response()->json($results);
+        });
+
+        // Add this fixed version that handles missing request config
+
+        Route::post('/test/prepare-audit-data-fixed', function () {
+            $results = [];
+
+            try {
+                // Set the request config manually since we're not using the middleware
+                app()->instance('apex.audit.request.config', []);
+
+                $auditService = app(\App\Apex\Audit\Services\AuditService::class);
+
+                // Test data
+                $testData = [
+                    'event_type' => 'custom',
+                    'action_type' => 'fixed_test_' . time(),
+                    'model_type' => 'TestModel',
+                    'model_id' => '333',
+                    'table_name' => 'tests',
+                    'additional_data' => ['test' => true, 'timestamp' => now()->toISOString()],
+                ];
+
+                // Use reflection to call the protected method
+                $reflection = new \ReflectionClass($auditService);
+                $method = $reflection->getMethod('prepareCustomAuditData');
+                $method->setAccessible(true);
+
+                $preparedData = $method->invoke($auditService, $testData);
+                $results['prepared_data'] = $preparedData;
+
+                // Now create the audit record
+                $createMethod = $reflection->getMethod('createAuditRecord');
+                $createMethod->setAccessible(true);
+
+                $auditId = $createMethod->invoke($auditService, $preparedData);
+                $results['audit_created'] = [
+                    'success' => true,
+                    'id' => $auditId,
+                ];
+            } catch (\Throwable $e) {
+                $results['error'] = [
+                    'message' => $e->getMessage(),
+                    'line' => $e->getLine(),
+                ];
+            }
+
+            // Final count
+            $results['final_count'] = DB::connection('tenant')->table('apex_audit')->count();
+
+            return response()->json($results);
+        });
+
+        // Also fix the main test route
+        Route::post('/test/create-test-data-fixed', function () {
+            // Set the request config to avoid the error
+            app()->instance('apex.audit.request.config', []);
+
+            $auditService = app(\App\Apex\Audit\Services\AuditService::class);
+            $results = [];
+            $errors = [];
+
+            $initialCount = DB::connection('tenant')->table('apex_audit')->count();
+
+            $testScenarios = [
+                ['action' => 'create', 'model' => 'Car', 'data' => ['make' => 'Toyota', 'model' => 'Camry', 'year' => 2024]],
+                ['action' => 'update', 'model' => 'Car', 'data' => ['price' => 25000, 'color' => 'Blue']],
+                ['action' => 'delete', 'model' => 'Car', 'data' => ['id' => 1, 'reason' => 'Test deletion']],
+            ];
+
+            foreach ($testScenarios as $i => $scenario) {
+                try {
+                    $auditService->logCustomAction([
+                        'event_type' => $scenario['action'] === 'custom' ? 'custom' : 'model_crud',
+                        'action_type' => $scenario['action'],
+                        'model_type' => "TestModel{$scenario['model']}",
+                        'model_id' => (string) ($i + 1),
+                        'table_name' => strtolower($scenario['model']) . 's',
+                        'additional_data' => $scenario['data'],
+                        'source_element' => 'api-test-fixed',
+                    ]);
+                    $results[] = "Created {$scenario['action']} audit for {$scenario['model']}";
+                } catch (\Exception $e) {
+                    $errors[] = $e->getMessage();
+                }
+            }
+
+            $finalCount = DB::connection('tenant')->table('apex_audit')->count();
+
+            return response()->json([
+                'success' => empty($errors),
+                'results' => $results,
+                'errors' => $errors,
+                'created' => $finalCount - $initialCount,
+                'final_count' => $finalCount,
+            ]);
+        });
+
+        // Test with real Car model operations
+        Route::post('/test/real-model-audit', function () {
+            // Set the request config
+            app()->instance('apex.audit.request.config', []);
+
+            $results = [];
+            $auditService = app(\App\Apex\Audit\Services\AuditService::class);
+
+            try {
+                // Initial counts
+                $initialAudit = DB::connection('tenant')->table('apex_audit')->count();
+                $initialHistory = DB::connection('tenant')->table('apex_history')->count();
+
+                // Test 1: Create a real Car model
+                $car = new \App\Models\Car();
+                $car->make = 'Honda';
+                $car->model = 'Civic';
+                $car->year = 2024;
+                $car->color = 'Red';
+                $car->vin = 'VIN' . time();
+                $car->price = 28000;
+                $car->status = 'available';
+                $car->save();
+
+                $results['create'] = [
+                    'success' => true,
+                    'car_id' => $car->id,
+                ];
+
+                // Test 2: Update the car
+                $car->price = 27500;
+                $car->color = 'Blue';
+                $car->save();
+
+                $results['update'] = [
+                    'success' => true,
+                    'changes' => ['price' => 27500, 'color' => 'Blue'],
+                ];
+
+                // Test 3: Delete the car
+                $car->delete();
+
+                $results['delete'] = [
+                    'success' => true,
+                    'deleted_id' => $car->id,
+                ];
+
+                // Final counts
+                $finalAudit = DB::connection('tenant')->table('apex_audit')->count();
+                $finalHistory = DB::connection('tenant')->table('apex_history')->count();
+
+                $results['counts'] = [
+                    'audit_created' => $finalAudit - $initialAudit,
+                    'history_created' => $finalHistory - $initialHistory,
+                    'final_audit' => $finalAudit,
+                    'final_history' => $finalHistory,
+                ];
+
+                // Check if observer is attached
+                $results['observer_check'] = [
+                    'has_auditable_trait' => in_array(\App\Apex\Audit\Traits\ApexAuditable::class, class_uses(\App\Models\Car::class)),
+                    'observer_registered' => class_exists(\App\Apex\Audit\Observers\ApexAuditObserver::class),
+                ];
+            } catch (\Exception $e) {
+                $results['error'] = [
+                    'message' => $e->getMessage(),
+                    'line' => $e->getLine(),
+                ];
+            }
+
+            return response()->json($results);
+        });
+
+        // Test why history isn't created for custom actions
+        Route::post('/test/custom-with-history', function () {
+            app()->instance('apex.audit.request.config', []);
+
+            $auditService = app(\App\Apex\Audit\Services\AuditService::class);
+
+            // Check the shouldCreateHistory logic
+            $reflection = new \ReflectionClass($auditService);
+            $method = $reflection->getMethod('shouldCreateHistory');
+            $method->setAccessible(true);
+
+            $testData = [
+                'action_type' => 'create',
+                'model' => null, // No actual model for custom actions
+            ];
+
+            $shouldCreate = $method->invoke($auditService, $testData);
+
+            return response()->json([
+                'should_create_history' => $shouldCreate,
+                'reason' => 'Custom actions without real models do not create history records',
+                'history_enabled' => config('apex.audit.history.enabled'),
+            ]);
+        });
+
+        // Test AuditService directly
+        Route::post('/test/audit-service-debug', function () {
+            $results = [];
+
+            // Test 1: Check if AuditService exists and configuration
+            try {
+                $auditService = app(\App\Apex\Audit\Services\AuditService::class);
+                $results['service_exists'] = true;
+                $results['service_class'] = get_class($auditService);
+            } catch (\Exception $e) {
+                $results['service_error'] = $e->getMessage();
+            }
+
+            // Test 2: Try direct logCustomAction with full error capture
+            try {
+                $auditService = app(\App\Apex\Audit\Services\AuditService::class);
+
+                // Check if logCustomAction method exists
+                if (!method_exists($auditService, 'logCustomAction')) {
+                    throw new \Exception('logCustomAction method does not exist on AuditService');
+                }
+
+                // Call the method
+                $result = $auditService->logCustomAction([
+                    'event_type' => 'custom',
+                    'action_type' => 'debug_test_' . time(),
+                    'model_type' => 'TestModel',
+                    'model_id' => '999',
+                    'table_name' => 'tests',
+                    'additional_data' => ['test' => true, 'timestamp' => now()->toISOString()],
+                ]);
+
+                $results['logCustomAction'] = [
+                    'success' => true,
+                    'result' => $result,
+                ];
+            } catch (\Throwable $e) {
+                $results['logCustomAction'] = [
+                    'success' => false,
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => array_slice($e->getTrace(), 0, 5), // First 5 trace items
+                ];
+            }
+
+            // Test 3: Check database after attempt
+            $results['database_check'] = [
+                'audit_count' => DB::connection('tenant')->table('apex_audit')->count(),
+                'history_count' => DB::connection('tenant')->table('apex_history')->count(),
+                'last_audit' => DB::connection('tenant')->table('apex_audit')
+                    ->orderBy('id', 'desc')
+                    ->first(),
+            ];
+
+            // Test 4: Check if we can access AuditService methods
+            if (isset($auditService)) {
+                $results['service_methods'] = get_class_methods($auditService);
+            }
+
+            return response()->json($results);
+        });
     });
 
-    // Widget Testing Routes
-    Route::prefix('widgets')->name('widgets.')->group(function () {
+    // Audit specific debug
+    Route::get('/debug-audit', function () {
+        $auditModel = new \App\Apex\Audit\Models\ApexAudit();
+        $historyModel = new \App\Apex\Audit\Models\ApexHistory();
 
-        // Get history widget configuration
-        Route::get('/history/{modelType?}/{modelId?}', function ($modelType = null, $modelId = null) {
-            $historyService = app(HistoryService::class);
-
-            $config = $historyService->getWidgetConfig($modelType, $modelId, [
-                'title' => apex_trans('widgets.history_widget'),
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'widget_config' => $config,
-                'model_type' => $modelType,
-                'model_id' => $modelId,
-                'language' => apex_lang(),
-            ]);
-        })->name('history-config');
-
-        // Get audit summary widget data
-        Route::get('/summary', function () {
-            $historyService = app(HistoryService::class);
-
-            $summary = $historyService->getHistorySummary();
-            $timeline = $historyService->getHistoryTimeline(null, null, 30);
-
-            return response()->json([
-                'success' => true,
-                'summary' => $summary,
-                'timeline' => $timeline,
-                'widget_title' => apex_trans('widgets.audit_summary'),
-                'language' => apex_lang(),
-            ]);
-        })->name('summary');
-    });
-});
-
-// Middleware configuration routes for testing
-Route::prefix('apex/audit/middleware-test')->name('apex.audit.middleware.')->group(function () {
-
-    // Test different middleware configurations
-    Route::middleware(['apex.audit.config:source_context=api,track_fields=name,email'])
-        ->post('/api-style', function (Request $request) {
-            return response()->json([
-                'message' => 'API-style audit configuration applied',
-                'config' => app('apex.audit.request.config', []),
-                'request_info' => [
-                    'method' => $request->method(),
-                    'path' => $request->path(),
-                    'route' => $request->route()?->getName(),
-                ],
-            ]);
-        })->name('api-test');
-
-    Route::middleware([
-        'apex.audit.config:source_context=admin',
-        'apex.audit.config:enhanced_tracking=true',
-        'apex.audit.config:additional_data.admin_level=super'
-    ])->post('/admin-style', function (Request $request) {
         return response()->json([
-            'message' => 'Admin-style audit configuration applied',
-            'config' => app('apex.audit.request.config', []),
-            'request_info' => [
-                'method' => $request->method(),
-                'path' => $request->path(),
-                'route' => $request->route()?->getName(),
+            'audit_connection' => $auditModel->getConnectionName(),
+            'history_connection' => $historyModel->getConnectionName(),
+            'audit_table' => $auditModel->getTable(),
+            'history_table' => $historyModel->getTable(),
+            'current_db_connection' => config('database.default'),
+            'tenant_info' => [
+                'id' => tenant('id'),
+                'db_name' => tenant('tenancy_db_name'),
             ],
+            'audit_count' => DB::connection($auditModel->getConnectionName())->table('apex_audit')->count(),
+            'history_count' => DB::connection($historyModel->getConnectionName())->table('apex_history')->count(),
         ]);
-    })->name('admin-test');
+    });
 
-    Route::middleware(['apex.audit.config:disable_audit=true'])
-        ->post('/disabled', function (Request $request) {
-            return response()->json([
-                'message' => 'Audit disabled for this route',
-                'config' => app('apex.audit.request.config', []),
-                'request_info' => [
-                    'method' => $request->method(),
-                    'path' => $request->path(),
-                    'route' => $request->route()?->getName(),
-                ],
-            ]);
-        })->name('disabled-test');
+    // Test audit creation using controller
+    Route::post('/debug-audit-create', [AuditDebugController::class, 'testCreate']);
 
-    // Test JSON configuration
-    Route::middleware(['apex.audit.config:{"source_context":"json_test","track_all_fields":true}'])
-        ->post('/json-config', function (Request $request) {
+    // API route that bypasses session middleware completely
+    Route::withoutMiddleware(['web'])->group(function () {
+        Route::post('/api/test-audit', function () {
+            try {
+                // Direct database insertion to bypass all Laravel logic
+                $id = DB::connection('tenant')->table('apex_audit')->insertGetId([
+                    'audit_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                    'event_type' => 'custom',
+                    'action_type' => 'direct_db_test',
+                    'model_type' => 'TestModel',
+                    'model_id' => '1',
+                    'table_name' => 'tests',
+                    'signature' => 'test',
+                    'created_at' => now(),
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'method' => 'direct_db_insert',
+                    'id' => $id,
+                    'count' => DB::connection('tenant')->table('apex_audit')->count(),
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'error' => $e->getMessage(),
+                    'line' => $e->getLine(),
+                ], 500);
+            }
+        });
+
+        Route::post('/api/test-model', function () {
+            try {
+                $audit = new \App\Apex\Audit\Models\ApexAudit();
+                $audit->audit_uuid = \Illuminate\Support\Str::uuid();
+                $audit->event_type = 'custom';
+                $audit->action_type = 'model_test';
+                $audit->model_type = 'TestModel';
+                $audit->model_id = '2';
+                $audit->table_name = 'tests';
+                $audit->signature = 'test';
+                $audit->created_at = now();
+
+                $saved = $audit->save();
+
+                return response()->json([
+                    'success' => $saved,
+                    'method' => 'eloquent_model',
+                    'id' => $audit->id,
+                    'connection' => $audit->getConnectionName(),
+                    'count' => DB::connection('tenant')->table('apex_audit')->count(),
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ], 500);
+            }
+        });
+    });
+
+    // Simple test without CSRF
+    Route::post('/test-audit-simple', function () {
+        try {
+            $audit = new \App\Apex\Audit\Models\ApexAudit();
+            $audit->audit_uuid = \Illuminate\Support\Str::uuid();
+            $audit->event_type = 'custom';
+            $audit->action_type = 'simple_test';
+            $audit->model_type = 'TestModel';
+            $audit->model_id = '1';
+            $audit->table_name = 'tests';
+            $audit->signature = 'test';
+            $audit->created_at = now();
+
+            $saved = $audit->save();
+
             return response()->json([
-                'message' => 'JSON configuration applied',
-                'config' => app('apex.audit.request.config', []),
+                'success' => $saved,
+                'id' => $audit->id,
+                'connection' => $audit->getConnectionName(),
+                'count' => DB::connection('tenant')->table('apex_audit')->count(),
             ]);
-        })->name('json-test');
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+            ], 500);
+        }
+    })->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 });
 
 /*
@@ -597,32 +741,11 @@ Route::prefix('apex/audit/middleware-test')->name('apex.audit.middleware.')->gro
 | Quick Testing URLs
 |--------------------------------------------------------------------------
 |
-| Use these URLs to quickly test APEX Audit functionality:
+| Test the audit system:
 |
-| Dashboard:
-| GET /apex/audit/dashboard
-|
-| Create Test Data:
-| POST /apex/audit/test/create-test-data
-|
-| View History:
-| GET /apex/audit/history/list
-|
-| Test Language:
-| GET /apex/audit/language/current
-| POST /apex/audit/language/set/es
-| GET /apex/audit/language/test-translations
-|
-| System Statistics:
-| GET /apex/audit/admin/statistics
-|
-| Run Full Test Suite:
-| POST /apex/audit/test/run-test-suite
-|
-| Test Middleware:
-| POST /apex/audit/middleware-test/api-style
-| POST /apex/audit/middleware-test/admin-style
-|
-| All routes return JSON responses suitable for AJAX calls.
+| GET  /debug-connection     - Check tenant connection
+| GET  /debug-audit         - Check audit tables
+| POST /debug-audit-create  - Test audit creation (with controller)
+| POST /test-audit-simple   - Simple audit test (no CSRF)
 |
 */

@@ -4,7 +4,7 @@
 Copyright EXOR Group ltd 2025 
 Version 1.0.0.0 
 APEX Laravel Auditing
-Description: Migration for creating the apex_history table for user-facing audit trail display with rollback capabilities and clean field change tracking.
+Description: Migration for creating the apex_history table for user-facing audit history with rollback capabilities and simplified CRUD operation tracking.
 */
 
 use Illuminate\Database\Migrations\Migration;
@@ -19,28 +19,40 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('apex_history', function (Blueprint $table) {
+            // Primary key
             $table->bigIncrements('id');
 
-            // Link to audit record
+            // Link to audit table (optional - some history may not have audit)
             $table->unsignedBigInteger('audit_id')->nullable()->index();
 
             // Model information
             $table->string('model_type')->index();
             $table->string('model_id')->index();
-            $table->enum('action_type', ['create', 'update', 'delete', 'restore'])->index();
 
-            // Change tracking
-            $table->json('field_changes')->nullable();
+            // Action information
+            $table->enum('action_type', [
+                'create',
+                'update',
+                'delete',
+                'restore',
+                'rollback'
+            ])->index();
+
+            // Human-readable description
             $table->text('description');
 
-            // Rollback functionality
-            $table->json('rollback_data')->nullable();
-            $table->boolean('can_rollback')->default(false)->index();
-            $table->timestamp('rolled_back_at')->nullable()->index();
-            $table->unsignedBigInteger('rolled_back_by')->nullable();
+            // Field changes (for updates)
+            $table->json('field_changes')->nullable();
 
             // User information
             $table->unsignedBigInteger('user_id')->nullable()->index();
+            $table->string('user_name')->nullable();
+
+            // Rollback information
+            $table->boolean('can_rollback')->default(false)->index();
+            $table->json('rollback_data')->nullable();
+            $table->timestamp('rolled_back_at')->nullable()->index();
+            $table->unsignedBigInteger('rolled_back_by')->nullable();
 
             // Timestamps
             $table->timestamps();
@@ -48,13 +60,14 @@ return new class extends Migration
             // Composite indexes for performance
             $table->index(['model_type', 'model_id', 'created_at'], 'apex_history_model_date_idx');
             $table->index(['user_id', 'created_at'], 'apex_history_user_date_idx');
-            $table->index(['can_rollback', 'rolled_back_at'], 'apex_history_rollback_idx');
             $table->index(['action_type', 'created_at'], 'apex_history_action_date_idx');
-            $table->index(['audit_id'], 'apex_history_audit_idx');
+            $table->index(['can_rollback', 'rolled_back_at'], 'apex_history_rollback_idx');
 
-            // Foreign key constraints (commented out for flexibility)
-            // $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
-            // $table->foreign('rolled_back_by')->references('id')->on('users')->onDelete('set null');
+            // Foreign key to audit table (if audit exists)
+            $table->foreign('audit_id')
+                ->references('id')
+                ->on('apex_audit')
+                ->onDelete('cascade');
         });
     }
 

@@ -4,371 +4,189 @@
 Copyright EXOR Group ltd 2025 
 Version 1.0.0.0 
 APEX Laravel Auditing
-Description: Middleware for configuring audit settings per route or request. Allows fine-grained control over audit behavior including field tracking, source identification, and additional context data.
+Description: Middleware for configuring APEX audit behavior on a per-route basis. Allows fine-grained control over audit settings including field tracking, source context, and selective disabling.
 */
 
 namespace App\Apex\Audit\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Log;
 
 class ApexAuditConfig
 {
     /**
      * Handle an incoming request.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  string|null  $config
+     * @return \Symfony\Component\HttpFoundation\Response
      */
-    public function handle(Request $request, Closure $next, ...$configParams): Response
+    public function handle(Request $request, Closure $next, ?string $config = null): Response
     {
-        // Parse configuration parameters
-        $auditConfig = $this->parseConfigParameters($configParams);
+        // Parse configuration from middleware parameter
+        $auditConfig = $this->parseConfig($config);
 
         // Store configuration for this request
         app()->instance('apex.audit.request.config', $auditConfig);
 
-        // Log the configuration application if debug mode is enabled
-        if (config('app.debug') && !empty($auditConfig)) {
-            Log::debug('APEX Audit: Route-level configuration applied', [
-                'route' => $request->route()?->getName() ?? $request->path(),
-                'config' => $auditConfig,
-            ]);
+        // Check if audit should be disabled for this request
+        if ($auditConfig['disable_audit'] ?? false) {
+            config(['apex.audit.audit.enabled' => false]);
         }
 
+        // Check if history should be disabled for this request
+        if ($auditConfig['disable_history'] ?? false) {
+            config(['apex.audit.history.enabled' => false]);
+        }
+
+        // Set tenant context if specified
+        if (isset($auditConfig['tenant_context'])) {
+            $this->setTenantContext($auditConfig['tenant_context']);
+        }
+
+        // Process the request
         $response = $next($request);
 
-        // Clean up configuration after request
-        app()->forgetInstance('apex.audit.request.config');
+        // Log UI action if configured
+        if ($auditConfig['log_ui_action'] ?? false) {
+            $this->logUIAction($request, $response, $auditConfig);
+        }
 
         return $response;
     }
 
     /**
-     * Parse configuration parameters from middleware.
-     * 
-     * @param array $configParams
+     * Parse configuration string or array.
+     *
+     * @param  string|null  $config
      * @return array
      */
-    protected function parseConfigParameters(array $configParams): array
+    protected function parseConfig(?string $config): array
     {
-        $config = [];
-
-        foreach ($configParams as $param) {
-            // Handle different parameter formats
-            if (is_string($param)) {
-                $this->parseStringParameter($param, $config);
-            } elseif (is_array($param)) {
-                $config = array_merge($config, $param);
-            }
+        if (empty($config)) {
+            return [];
         }
 
-        return $config;
-    }
-
-    /**
-     * Parse a string parameter into configuration.
-     * 
-     * @param string $param
-     * @param array &$config
-     */
-    protected function parseStringParameter(string $param, array &$config): void
-    {
-        // Handle key=value format
-        if (strpos($param, '=') !== false) {
-            [$key, $value] = explode('=', $param, 2);
-            $this->setConfigValue($config, trim($key), $this->parseValue(trim($value)));
-            return;
+        // Check if it's JSON
+        if (str_starts_with($config, '{')) {
+            return json_decode($config, true) ?: [];
         }
 
-        // Handle JSON format
-        if ($this->isJson($param)) {
-            $decoded = json_decode($param, true);
-            if ($decoded) {
-                $config = array_merge($config, $decoded);
-            }
-            return;
-        }
+        // Parse key:value pairs
+        $parsed = [];
+        $pairs = explode(',', $config);
 
-        // Handle comma-separated key:value pairs
-        if (strpos($param, ':') !== false) {
-            $pairs = explode(',', $param);
-            foreach ($pairs as $pair) {
-                if (strpos($pair, ':') !== false) {
-                    [$key, $value] = explode(':', $pair, 2);
-                    $this->setConfigValue($config, trim($key), $this->parseValue(trim($value)));
+        foreach ($pairs as $pair) {
+            $pair = trim($pair);
+            if (strpos($pair, ':') !== false) {
+                [$key, $value] = explode(':', $pair, 2);
+                $key = trim($key);
+                $value = trim($value);
+
+                // Convert string boolean values
+                if ($value === 'true') {
+                    $value = true;
+                } elseif ($value === 'false') {
+                    $value = false;
+                } elseif (is_numeric($value)) {
+                    $value = $value + 0; // Convert to int or float
                 }
+
+                $parsed[$key] = $value;
+            } else {
+                // Single values are treated as flags
+                $parsed[$pair] = true;
             }
+        }
+
+        return $parsed;
+    }
+
+    /**
+     * Set tenant context for audit operations.
+     *
+     * @param  string  $tenantContext
+     * @return void
+     */
+    protected function setTenantContext(string $tenantContext): void
+    {
+        // If using tenancy package, ensure we're in the right context
+        if (function_exists('tenant') && !tenant()) {
+            // Try to initialize tenant context if not already set
+            $tenant = \App\Models\Tenant::find($tenantContext);
+            if ($tenant) {
+                tenancy()->initialize($tenant);
+            }
+        }
+    }
+
+    /**
+     * Log UI action for this request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Symfony\Component\HttpFoundation\Response  $response
+     * @param  array  $config
+     * @return void
+     */
+    protected function logUIAction(Request $request, Response $response, array $config): void
+    {
+        if (!config('apex.audit.audit.enabled') || !config('apex.audit.audit.track_ui_actions')) {
             return;
         }
 
-        // Handle simple flags
-        $config[$param] = true;
-    }
+        try {
+            $auditService = app(\App\Apex\Audit\Services\AuditService::class);
 
-    /**
-     * Set a configuration value, handling nested keys.
-     * 
-     * @param array &$config
-     * @param string $key
-     * @param mixed $value
-     */
-    protected function setConfigValue(array &$config, string $key, $value): void
-    {
-        // Handle nested keys like "additional_data.api_version"
-        if (strpos($key, '.') !== false) {
-            $keys = explode('.', $key);
-            $current = &$config;
+            $actionData = [
+                'action' => $config['ui_action_name'] ?? $request->route()?->getName() ?? $request->path(),
+                'element' => $config['source_element'] ?? null,
+                'additional_data' => array_merge(
+                    [
+                        'method' => $request->method(),
+                        'path' => $request->path(),
+                        'status_code' => $response->getStatusCode(),
+                        'request_data' => $this->getFilteredRequestData($request, $config),
+                    ],
+                    $config['additional_data'] ?? []
+                ),
+            ];
 
-            foreach ($keys as $nestedKey) {
-                if (!isset($current[$nestedKey])) {
-                    $current[$nestedKey] = [];
-                }
-                $current = &$current[$nestedKey];
-            }
-
-            $current = $value;
-        } else {
-            $config[$key] = $value;
+            $auditService->logUIAction($actionData);
+        } catch (\Exception $e) {
+            // Log error but don't break the request
+            Log::error('Failed to log UI action in ApexAuditConfig middleware: ' . $e->getMessage());
         }
     }
 
     /**
-     * Parse a string value to appropriate type.
-     * 
-     * @param string $value
-     * @return mixed
-     */
-    protected function parseValue(string $value)
-    {
-        // Handle boolean values
-        if (in_array(strtolower($value), ['true', 'false'])) {
-            return strtolower($value) === 'true';
-        }
-
-        // Handle numeric values
-        if (is_numeric($value)) {
-            return strpos($value, '.') !== false ? (float) $value : (int) $value;
-        }
-
-        // Handle JSON arrays/objects
-        if ($this->isJson($value)) {
-            return json_decode($value, true);
-        }
-
-        // Handle comma-separated lists
-        if (strpos($value, ',') !== false && !$this->isJson($value)) {
-            return array_map('trim', explode(',', $value));
-        }
-
-        // Return as string
-        return $value;
-    }
-
-    /**
-     * Check if a string is valid JSON.
-     * 
-     * @param string $string
-     * @return bool
-     */
-    protected function isJson(string $string): bool
-    {
-        json_decode($string);
-        return json_last_error() === JSON_ERROR_NONE;
-    }
-
-    /**
-     * Create middleware configuration for common scenarios.
-     */
-    public static function configs(): array
-    {
-        return [
-            // API endpoints
-            'api' => [
-                'source_context' => 'api',
-                'additional_data' => ['interface' => 'api'],
-            ],
-
-            // Admin panel
-            'admin' => [
-                'source_context' => 'admin',
-                'track_all_fields' => true,
-                'additional_data' => ['interface' => 'admin'],
-            ],
-
-            // Public interface
-            'public' => [
-                'source_context' => 'public',
-                'track_minimal' => true,
-                'additional_data' => ['interface' => 'public'],
-            ],
-
-            // Sensitive operations
-            'sensitive' => [
-                'enhanced_tracking' => true,
-                'require_justification' => true,
-                'additional_data' => ['sensitivity_level' => 'high'],
-            ],
-
-            // Bulk operations
-            'bulk' => [
-                'batch_tracking' => true,
-                'track_summary_only' => true,
-                'additional_data' => ['operation_type' => 'bulk'],
-            ],
-
-            // No tracking
-            'no_audit' => [
-                'disable_audit' => true,
-            ],
-
-            // History only (no detailed audit)
-            'history_only' => [
-                'disable_detailed_audit' => true,
-                'history_only' => true,
-            ],
-        ];
-    }
-
-    /**
-     * Get configuration for a specific preset.
-     * 
-     * @param string $preset
+     * Get filtered request data for audit logging.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  array  $config
      * @return array
      */
-    public static function preset(string $preset): array
+    protected function getFilteredRequestData(Request $request, array $config): array
     {
-        $configs = static::configs();
-        return $configs[$preset] ?? [];
-    }
+        $data = $request->all();
 
-    /**
-     * Create middleware instance with preset configuration.
-     * 
-     * @param string $preset
-     * @param array $additional
-     * @return string
-     */
-    public static function withPreset(string $preset, array $additional = []): string
-    {
-        $config = array_merge(static::preset($preset), $additional);
-        return 'apex.audit.config:' . json_encode($config);
-    }
+        // Remove sensitive fields
+        $sensitiveFields = array_merge(
+            ['password', 'password_confirmation', 'token', 'api_key'],
+            $config['exclude_fields'] ?? []
+        );
 
-    /**
-     * Create middleware for tracking specific fields only.
-     * 
-     * @param array $fields
-     * @return string
-     */
-    public static function trackFields(array $fields): string
-    {
-        return 'apex.audit.config:track_fields=' . implode(',', $fields);
-    }
+        foreach ($sensitiveFields as $field) {
+            unset($data[$field]);
+        }
 
-    /**
-     * Create middleware for excluding specific fields.
-     * 
-     * @param array $fields
-     * @return string
-     */
-    public static function excludeFields(array $fields): string
-    {
-        return 'apex.audit.config:exclude_fields=' . implode(',', $fields);
-    }
+        // Only include specified fields if configured
+        if (!empty($config['include_fields'])) {
+            $data = array_intersect_key($data, array_flip($config['include_fields']));
+        }
 
-    /**
-     * Create middleware for tracking specific actions only.
-     * 
-     * @param array $actions
-     * @return string
-     */
-    public static function trackActions(array $actions): string
-    {
-        return 'apex.audit.config:audit_events=' . implode(',', $actions);
-    }
-
-    /**
-     * Create middleware with custom source element.
-     * 
-     * @param string $element
-     * @return string
-     */
-    public static function sourceElement(string $element): string
-    {
-        return "apex.audit.config:source_element={$element}";
-    }
-
-    /**
-     * Create middleware with additional context data.
-     * 
-     * @param array $data
-     * @return string
-     */
-    public static function withContext(array $data): string
-    {
-        return 'apex.audit.config:additional_data=' . json_encode($data);
-    }
-
-    /**
-     * Disable auditing for this route.
-     * 
-     * @return string
-     */
-    public static function disabled(): string
-    {
-        return 'apex.audit.config:disable_audit=true';
-    }
-
-    /**
-     * Enable enhanced tracking with full context.
-     * 
-     * @return string
-     */
-    public static function enhanced(): string
-    {
-        return 'apex.audit.config:enhanced_tracking=true,track_all_fields=true';
+        return $data;
     }
 }
-
-/*
-Usage Examples:
-
-// In routes/web.php or routes/api.php
-
-// Using preset configurations
-Route::middleware(['apex.audit.config:api'])->group(function () {
-    Route::apiResource('cars', CarController::class);
-});
-
-// Using helper methods
-Route::middleware([ApexAuditConfig::trackFields(['price', 'status'])])
-    ->put('cars/{car}/price', [CarController::class, 'updatePrice']);
-
-Route::middleware([ApexAuditConfig::sourceElement('admin-panel')])
-    ->group(function () {
-        // Admin routes
-    });
-
-// Using JSON configuration
-Route::middleware(['apex.audit.config:{"source_context":"api","track_fields":["name","email"]}'])
-    ->post('users', [UserController::class, 'store']);
-
-// Using key=value pairs
-Route::middleware(['apex.audit.config:source_element=user-profile,enhanced_tracking=true'])
-    ->put('profile', [ProfileController::class, 'update']);
-
-// Disable auditing for specific routes
-Route::middleware([ApexAuditConfig::disabled()])
-    ->get('health-check', [HealthController::class, 'check']);
-
-// Multiple configurations
-Route::middleware([
-    'apex.audit.config:source_context=admin',
-    'apex.audit.config:additional_data.admin_level=super',
-    'apex.audit.config:track_all_fields=true'
-])->group(function () {
-    // Super admin routes
-});
-*/
