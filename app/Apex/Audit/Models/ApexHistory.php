@@ -395,6 +395,52 @@ class ApexHistory extends Model
             ->where('can_rollback', false);
     }
 
+    // Add these methods to your App\Apex\Audit\Models\ApexHistory.php
+
+    /**
+     * Check if this history record can be rolled back by the current user.
+     */
+    public function canBeRolledBack(): bool
+    {
+        // Already rolled back
+        if ($this->isRolledBack()) {
+            return false;
+        }
+
+        // Not configured as rollbackable
+        if (!$this->can_rollback) {
+            return false;
+        }
+
+        // Global rollback disabled
+        if (!config('apex.audit.history.allow_rollback', true)) {
+            return false;
+        }
+
+        // No authentication system - always allow
+        return true;
+    }
+
+    /**
+     * Get the audited model instance if it still exists.
+     */
+    public function getAuditedModel()
+    {
+        if (!$this->model_type || !$this->model_id) {
+            return null;
+        }
+
+        try {
+            if (!class_exists($this->model_type)) {
+                return null;
+            }
+
+            return $this->model_type::find($this->model_id);
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
     /**
      * Get statistics for history records.
      */

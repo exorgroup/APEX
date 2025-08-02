@@ -26,43 +26,214 @@ class RollbackService
     }
 
     /**
-     * Rollback a history record.
+     * Rollback a history record with comprehensive error handling.
      * 
      * @param int $historyId History record ID to rollback
-     * @return bool True if rollback was successful
-     * @throws RollbackException If rollback fails
+     * @return array Result with success flag and error details
      */
-    public function rollback(int $historyId): bool
+    public function rollback(int $historyId): array
     {
-        $history = ApexHistory::findOrFail($historyId);
-
-        // Validate rollback is possible
-        $this->validateRollback($history);
+        Log::info('=== rollback entry ===');
 
         try {
-            return DB::transaction(function () use ($history) {
+            $history = ApexHistory::findOrFail($historyId);
+
+            // Validate rollback is possible
+            $this->validateRollback($history);
+
+            $success = DB::transaction(function () use ($history) {
                 // Perform the actual rollback
                 $success = $this->performRollback($history);
-
+                Log::info('=== rollback entry a ===');
                 if ($success) {
                     // Mark as rolled back
+                    Log::info('=== rollback entry b ===');
                     $this->markAsRolledBack($history);
 
+                    Log::info('=== rollback entry c===');
                     // Log the rollback action
                     $this->logRollbackAction($history);
                 }
+                Log::info('=== rollback exit ===');
 
                 return $success;
             });
+
+            return [
+                'success' => $success,
+                'error' => null,
+                'error_type' => null,
+                'user_message' => null,
+                'technical_details' => null
+            ];
+        } catch (RollbackException $e) {
+            Log::error('APEX Audit: Rollback failed (RollbackException)', [
+                'history_id' => $historyId,
+                'error_type' => $e->getType(),
+                'error' => $e->getMessage(),
+                'context' => $e->getContext(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getUserMessage(),
+                'error_type' => $e->getType() ?? 'rollback_exception',
+                'user_message' => $e->getUserMessage(),
+                'technical_details' => $e->getMessage()
+            ];
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('APEX Audit: Rollback failed (Database Error)', [
+                'history_id' => $historyId,
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+            ]);
+
+            $userMessage = $this->getDatabaseErrorMessage($e);
+
+            return [
+                'success' => false,
+                'error' => $userMessage,
+                'error_type' => 'database_error',
+                'user_message' => $userMessage,
+                'technical_details' => $e->getMessage()
+            ];
         } catch (\Exception $e) {
-            Log::error('APEX Audit: Rollback failed', [
+            Log::error('APEX Audit: Rollback failed (General Exception)', [
                 'history_id' => $historyId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            throw new RollbackException("Rollback failed: {$e->getMessage()}", 0, $e);
+            return [
+                'success' => false,
+                'error' => 'An unexpected error occurred during rollback',
+                'error_type' => 'system_error',
+                'user_message' => 'A technical error occurred. Please try again or contact support.',
+                'technical_details' => $e->getMessage()
+            ];
         }
+    }
+
+    /**
+     * Attempt rollback with detailed error reporting.
+     * 
+     * @param int $historyId
+     * @return array
+     */
+    public function attemptRollback(int $historyId): array
+    {
+        $result = $this->rollback($historyId);
+
+        // Add additional context for UI display
+        if (!$result['success']) {
+            $result['display_message'] = $this->getDisplayMessage($result['error_type'], $result['user_message']);
+            $result['can_retry'] = $this->canRetryRollback($result['error_type']);
+            $result['suggested_action'] = $this->getSuggestedAction($result['error_type']);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get user-friendly database error messages.
+     * 
+     * @param \Illuminate\Database\QueryException $e
+     * @return string
+     */
+    protected function getDatabaseErrorMessage(\Illuminate\Database\QueryException $e): string
+    {
+        $errorMessage = $e->getMessage();
+
+        // Handle common database errors
+        if (str_contains($errorMessage, 'Duplicate entry')) {
+            if (str_contains($errorMessage, 'vin_unique')) {
+                return 'Cannot restore: A car with this VIN already exists';
+            }
+            return 'Cannot restore: A record with this unique identifier already exists';
+        }
+
+        if (str_contains($errorMessage, 'foreign key constraint')) {
+            return 'Cannot rollback: This action would violate data relationships';
+        }
+
+        if (str_contains($errorMessage, "doesn't exist")) {
+            return 'Cannot rollback: The target table or record no longer exists';
+        }
+
+        if (str_contains($errorMessage, 'Data too long')) {
+            return 'Cannot rollback: Some data values are too large for the database fields';
+        }
+
+        // Generic database error
+        return 'Database error occurred during rollback. Please check the data and try again.';
+    }
+
+    /**
+     * Get display message for UI.
+     * 
+     * @param string $errorType
+     * @param string $userMessage
+     * @return string
+     */
+    protected function getDisplayMessage(string $errorType, string $userMessage): string
+    {
+        return match ($errorType) {
+            'database_error' => "❌ {$userMessage}",
+            'rollback_exception' => "⚠️ {$userMessage}",
+            'system_error' => "🔧 {$userMessage}",
+            default => "❌ {$userMessage}"
+        };
+    }
+
+    /**
+     * Check if rollback can be retried.
+     * 
+     * @param string $errorType
+     * @return bool
+     */
+    protected function canRetryRollback(string $errorType): bool
+    {
+        return match ($errorType) {
+            'database_error' => false, // Usually permanent issues
+            'rollback_exception' => false, // Business logic issues
+            'system_error' => true, // Might be temporary
+            default => false
+        };
+    }
+
+    /**
+     * Get suggested action for error type.
+     * 
+     * @param string $errorType
+     * @return string
+     */
+    protected function getSuggestedAction(string $errorType): string
+    {
+        return match ($errorType) {
+            'database_error' => 'Check for duplicate records or data conflicts and resolve them first.',
+            'rollback_exception' => 'This action cannot be rolled back due to business rules.',
+            'system_error' => 'Please try again. If the problem persists, contact support.',
+            default => 'Please contact support for assistance.'
+        };
+    }
+
+    /**
+     * Legacy rollback method for backward compatibility.
+     * 
+     * @param int $historyId History record ID to rollback
+     * @return bool True if rollback was successful
+     * @throws RollbackException If rollback fails
+     */
+    public function rollbackLegacy(int $historyId): bool
+    {
+        $result = $this->rollback($historyId);
+
+        if (!$result['success']) {
+            throw new RollbackException($result['technical_details'] ?? $result['error']);
+        }
+
+        return $result['success'];
     }
 
     /**
@@ -73,38 +244,64 @@ class RollbackService
      */
     protected function validateRollback(ApexHistory $history): void
     {
+        Log::info('=== validateRollback entry ===');
+
+        Log::info('=== validateRollback 1 ===');
         // Check if already rolled back
         if ($history->isRolledBack()) {
             throw new RollbackException('This action has already been rolled back.');
         }
 
+        Log::info('=== validateRollback 2 ===');
         // Check if rollback is allowed for this record
         if (!$history->can_rollback) {
             throw new RollbackException('This action cannot be rolled back.');
         }
 
+        Log::info('=== validateRollback 3 ===');
         // Check if rollback is globally enabled
         if (!config('apex.audit.history.allow_rollback', true)) {
             throw new RollbackException('Rollback functionality is disabled.');
         }
 
+        Log::info('=== validateRollback 4 ===');
         // Check user permissions
-        if (!$history->canBeRolledBack()) {
-            throw new RollbackException('You do not have permission to rollback this action.');
+        try {
+            if (!$history->canBeRolledBack()) {
+                Log::info('=== validateRollback 4a ===');
+                throw new RollbackException('You do not have permission to rollback this action.');
+                Log::info('=== validateRollback 4b ===');
+            }
+        } catch (\Exception $e) {
+            Log::info('=== validateRollback 4 exception ===');
+            Log::info($e->getMessage());
+            Log::info('=== e ===');
+            Log::info($e);
         }
 
+        Log::info('=== validateRollback 5 ===');
         // Check if rollback data exists
         if (!$history->rollback_data) {
             throw new RollbackException('No rollback data available for this action.');
         }
 
-        // Check if model still exists (for updates)
-        if ($history->action_type === 'update') {
-            $model = $history->getAuditedModel();
-            if (!$model) {
-                throw new RollbackException('The original record no longer exists and cannot be updated.');
+        try {
+            Log::info('=== validateRollback 6 ===');
+            // Check if model still exists (for updates)
+            Log::info('=== validateRollback 6 a ===');
+            if ($history->action_type === 'update') {
+                Log::info('=== validateRollback 6 b ===');
+                $model = $history->getAuditedModel();
+                Log::info('=== validateRollback 6 c===');
+                if (!$model) {
+                    throw new RollbackException('The original record no longer exists and cannot be updated.');
+                }
             }
+        } catch (\Exception $e) {
+            Log::info('=== validateRollback 6 exception ===');
+            Log::info($e->getMessage());
         }
+        Log::info('=== validateRollback exit ===');
     }
 
     /**
@@ -116,16 +313,20 @@ class RollbackService
      */
     protected function performRollback(ApexHistory $history): bool
     {
+        Log::info('=== performRollback entry ===');
         $rollbackData = $history->rollback_data;
 
         switch ($rollbackData['action']) {
             case 'restore_values':
+                Log::info('=== performRollback 1 exit ===');
                 return $this->rollbackUpdate($history, $rollbackData);
 
             case 'restore_record':
+                Log::info('=== performRollback 2 exit ===');
                 return $this->rollbackDelete($history, $rollbackData);
 
             default:
+                Log::info('=== performRollback 3 exit ===');
                 throw new RollbackException("Unknown rollback action: {$rollbackData['action']}");
         }
     }
@@ -140,6 +341,7 @@ class RollbackService
      */
     protected function rollbackUpdate(ApexHistory $history, array $rollbackData): bool
     {
+        Log::info('=== rollbackUpdate entry ===');
         $model = $history->getAuditedModel();
 
         if (!$model) {
@@ -175,6 +377,7 @@ class RollbackService
         if (!$saved) {
             throw new RollbackException('Failed to save model during rollback.');
         }
+        Log::info('=== rollbackUpdate exit ===');
 
         return true;
     }
@@ -189,6 +392,7 @@ class RollbackService
      */
     protected function rollbackDelete(ApexHistory $history, array $rollbackData): bool
     {
+        Log::info('=== rollbackDelete entry ===');
         $modelClass = $history->model_type;
         $modelId = $history->model_id;
         $restoredValues = $rollbackData['values'];
@@ -238,6 +442,7 @@ class RollbackService
             if (!$saved) {
                 throw new RollbackException('Failed to save restored model.');
             }
+            Log::info('=== rollbackDelete exit ===');
 
             return true;
         } catch (\Exception $e) {
@@ -252,10 +457,20 @@ class RollbackService
      */
     protected function markAsRolledBack(ApexHistory $history): void
     {
+        Log::info('=== markAsRolledBack entry ===');
+
+        Log::info('$history');
+        Log::info($history);
+
         $history->update([
+            'can_rollback' => false,
             'rolled_back_at' => now(),
             'rolled_back_by' => Auth::check() ? Auth::id() : null,
         ]);
+
+        Log::info('$history 2');
+        Log::info($history);
+        Log::info('=== markAsRolledBack exit ===');
     }
 
     /**
@@ -265,6 +480,7 @@ class RollbackService
      */
     protected function logRollbackAction(ApexHistory $history): void
     {
+        Log::info('=== logRollbackAction entry ===');
         $this->auditService->logCustomAction([
             'event_type' => 'rollback_action',
             'action_type' => 'rollback',
@@ -279,6 +495,7 @@ class RollbackService
             ],
             'source_element' => 'rollback-action',
         ]);
+        Log::info('=== logRollbackAction exit ===');
     }
 
     /**
@@ -289,22 +506,14 @@ class RollbackService
      */
     public function batchRollback(array $historyIds): array
     {
+        Log::info('=== batchRollback entry ===');
         $results = [];
 
         foreach ($historyIds as $historyId) {
-            try {
-                $success = $this->rollback($historyId);
-                $results[$historyId] = [
-                    'success' => $success,
-                    'error' => null,
-                ];
-            } catch (\Exception $e) {
-                $results[$historyId] = [
-                    'success' => false,
-                    'error' => $e->getMessage(),
-                ];
-            }
+            $result = $this->rollback($historyId);
+            $results[$historyId] = $result;
         }
+        Log::info('=== batchRollback exit ===');
 
         return $results;
     }
@@ -318,6 +527,7 @@ class RollbackService
      */
     public function previewRollback(int $historyId): array
     {
+        Log::info('=== previewRollback entry ===');
         $history = ApexHistory::findOrFail($historyId);
 
         // Validate rollback is possible
@@ -354,6 +564,7 @@ class RollbackService
                 ];
                 break;
         }
+        Log::info('=== previewRollback exit ===');
 
         return $preview;
     }
@@ -366,17 +577,21 @@ class RollbackService
      */
     protected function getRollbackDescription(ApexHistory $history): string
     {
+        Log::info('=== getRollbackDescription entry ===');
         $modelName = class_basename($history->model_type);
 
         switch ($history->action_type) {
             case 'update':
+                Log::info('=== getRollbackDescription update exit ===');
                 $fieldCount = count($history->rollback_data['values'] ?? []);
                 return "Restore {$fieldCount} field(s) of {$modelName} #{$history->model_id} to previous values";
 
             case 'delete':
+                Log::info('=== getRollbackDescription delete exit ===');
                 return "Restore deleted {$modelName} #{$history->model_id}";
 
             default:
+                Log::info('=== getRollbackDescription default exit ===');
                 return "Rollback {$history->action_type} action on {$modelName} #{$history->model_id}";
         }
     }
@@ -389,6 +604,7 @@ class RollbackService
      */
     protected function getRestorationMethod(ApexHistory $history): string
     {
+        Log::info('=== getRestorationMethod entry ===');
         $modelClass = $history->model_type;
 
         if (!class_exists($modelClass)) {
@@ -402,6 +618,7 @@ class RollbackService
                 return 'soft_delete_restore';
             }
         }
+        Log::info('=== getRestorationMethod exit ===');
 
         return 'hard_restore';
     }
@@ -415,6 +632,7 @@ class RollbackService
      */
     public function getRollbackStatistics(?string $modelType = null, ?int $days = null): array
     {
+        Log::info('=== getRollbackStatistics entry ===');
         $query = ApexHistory::query();
 
         if ($modelType) {
@@ -429,6 +647,7 @@ class RollbackService
         $rollbackable = $query->where('can_rollback', true)->count();
         $rolledBack = $query->whereNotNull('rolled_back_at')->count();
 
+        Log::info('=== getRollbackStatistics exit ===');
         return [
             'total_actions' => $total,
             'rollbackable_actions' => $rollbackable,
