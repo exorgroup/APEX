@@ -10,6 +10,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "cmdotcom/text-sdk-php": "^3.0",
         "inertiajs/inertia-laravel": "^2.0",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
@@ -29,6 +30,8 @@
     "autoload": {
         "psr-4": {
             "App\\": "app/",
+            "Apex\\Hermes\\": "apex/hermes/src/",
+            "Apex\\Autentica\\": "apex/autentica/src/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
         },

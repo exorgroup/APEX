@@ -73,6 +73,13 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'hermes' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/hermes/hermes.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('HERMES_LOG_RETENTION_DAYS', 30),
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),
@@ -89,7 +96,7 @@ return [
             'handler_with' => [
                 'host' => env('PAPERTRAIL_URL'),
                 'port' => env('PAPERTRAIL_PORT'),
-                'connectionString' => 'tls://'.env('PAPERTRAIL_URL').':'.env('PAPERTRAIL_PORT'),
+                'connectionString' => 'tls://' . env('PAPERTRAIL_URL') . ':' . env('PAPERTRAIL_PORT'),
             ],
             'processors' => [PsrLogMessageProcessor::class],
         ],

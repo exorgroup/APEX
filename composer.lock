@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e22a4d62d7e21a5997a0c332912c9be3",
+    "content-hash": "62eed245d865466dd5bce1af623fe226",
     "packages": [
         {
             "name": "brick/math",
@@ -134,6 +134,65 @@
                 }
             ],
             "time": "2024-02-09T16:56:22+00:00"
+        },
+        {
+            "name": "cmdotcom/text-sdk-php",
+            "version": "3.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/cmdotcom/text-sdk-php.git",
+                "reference": "c467885dfa424f4b9d5e9b64b9dbd8ac5ec4965f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/cmdotcom/text-sdk-php/zipball/c467885dfa424f4b9d5e9b64b9dbd8ac5ec4965f",
+                "reference": "c467885dfa424f4b9d5e9b64b9dbd8ac5ec4965f",
+                "shasum": ""
+            },
+            "require": {
+                "ext-curl": "*",
+                "ext-json": "*",
+                "php": "^7.1||^8.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "~7.0||~9.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "CMText": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Niels Verbaken",
+                    "email": "nv@cm.nl",
+                    "role": "Developer"
+                }
+            ],
+            "description": "PHP SDK to send messages with CM.com",
+            "homepage": "https://www.cm.com/products/text/",
+            "keywords": [
+                "IMessage",
+                "cm.com",
+                "instagram",
+                "line",
+                "rcs",
+                "sms",
+                "twitter",
+                "viber",
+                "wechat",
+                "whatsapp"
+            ],
+            "support": {
+                "issues": "https://github.com/cmdotcom/text-sdk-php/issues",
+                "source": "https://github.com/cmdotcom/text-sdk-php/tree/3.0.1"
+            },
+            "time": "2025-02-06T19:28:49+00:00"
         },
         {
             "name": "dflydev/dot-access-data",
