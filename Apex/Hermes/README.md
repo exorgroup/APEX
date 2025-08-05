@@ -430,4 +430,4 @@ This software is proprietary and confidential.
 
 This software and associated documentation files (the "Software") are the property of EXOR Group Ltd. The Software is provided under license and may only be used or copied in accordance with the terms of the license agreement. No part of this Software may be reproduced, distributed, or transmitted in any form or by any means without the prior written permission of EXOR Group Ltd.
 
-For licensing information, please contact: licensing@exorgroup.com
+For licensing information, please contact: duncan.dimech@exorgroup.com
