@@ -1,0 +1,1158 @@
+# Hermes - APEX Laravel Messaging Service
+
+A powerful, provider-agnostic messaging service for Laravel applications that acts as a unified API gateway for SMS and messaging providers. Hermes provides a clean, consistent interface for sending messages while handling authentication, validation, and provider-specific quirks.
+
+## Table of Contents
+- [Features](#features)
+- [System Architecture](#system-architecture)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [API Reference](#api-reference)
+- [Code Examples](#code-examples)
+- [Database Schema](#database-schema)
+- [Configuration](#configuration)
+- [Error Handling](#error-handling)
+- [Security](#security)
+- [Testing](#testing)
+- [Troubleshooting](#troubleshooting)
+- [Extending Hermes](#extending-hermes)
+- [License](#license)
+
+## Features
+
+- 🚀 **Provider Agnostic** - Currently supports CM Telecom with easy extensibility for additional providers
+- 🔐 **Secure API Authentication** - API key-based authentication with optional secret validation
+- 📱 **SMS Capabilities** - Send single or bulk SMS messages with delivery tracking
+- 📊 **Multi-part Message Control** - Automatic validation and control over long message handling
+- 🌍 **Multi-tenant Ready** - Designed to work with Laravel's multi-tenancy packages
+- 💾 **Separate Database** - Uses its own database for complete isolation
+- 📝 **Comprehensive Logging** - Built-in audit trail and error logging
+- 🔄 **Provider Failover** - Architecture supports automatic failover between providers
+
+## System Architecture
+
+### Directory Structure
+```
+apex/hermes/
+├── config/
+│   ├── providers.php          # Provider configurations (CM, Messente)
+│   └── services.php           # Service type definitions (SMS, WhatsApp)
+├── database/
+│   └── migrations/
+│       └── 2025_01_01_000001_create_hermes_api_keys_table.php
+├── routes/
+│   └── api.php               # API route definitions
+└── src/
+    ├── Api/
+    │   ├── Controllers/
+    │   │   └── MessageController.php    # Main API controller
+    │   └── Middleware/
+    │       └── ApiAuthentication.php    # API key validation
+    ├── Console/
+    │   └── Commands/
+    │       └── GenerateApiKeyCommand.php # Artisan command
+    ├── Helpers/
+    │   └── TextClientResultHelper.php    # Result parsing helper
+    ├── Providers/
+    │   ├── CMTelecom/
+    │   │   ├── CMProvider.php           # CM implementation
+    │   │   └── CMProviderSimple.php     # Simplified CM provider
+    │   └── Contracts/
+    │       └── MessageProvider.php      # Provider interface
+    ├── Services/
+    │   └── MessageRouter.php            # Provider selection logic
+    └── HermesServiceProvider.php        # Laravel service provider
+```
+
+### Class Relationships
+```mermaid
+graph TD
+    A[MessageController] --> B[CMProvider]
+    B --> C[MessageProvider Interface]
+    A --> D[MessageRouter]
+    D --> B
+    A --> E[ApiAuthentication]
+    B --> F[TextClientResultHelper]
+```
+
+### Data Flow
+1. **Request** → ApiAuthentication → MessageController
+2. **Controller** → MessageRouter → Provider Selection
+3. **Provider** → External API (CM Telecom)
+4. **Response** → TextClientResultHelper → Controller → Client
+
+## Requirements
+
+- PHP 8.0+ (uses typed properties, union types)
+- Laravel 9.0+ (uses latest routing and middleware features)
+- MySQL 5.7+ or MariaDB 10.3+ (JSON column support)
+- Composer 2.0+
+- CM Telecom account with valid API key
+- SSL/TLS support for API communications
+
+## Installation
+
+### 1. Database Setup
+
+Create a dedicated database for Hermes:
+
+```sql
+CREATE DATABASE `apex-hermes` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+GRANT ALL PRIVILEGES ON `apex-hermes`.* TO 'your_user'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+### 2. Environment Configuration
+
+Add the following to your `.env` file:
+
+```dotenv
+# Hermes Database Connection
+HERMES_DB_CONNECTION=hermes
+HERMES_DB_HOST=127.0.0.1
+HERMES_DB_PORT=3306
+HERMES_DB_DATABASE=apex-hermes
+HERMES_DB_USERNAME=root
+HERMES_DB_PASSWORD=your_password
+
+# Hermes Configuration
+HERMES_DEFAULT_PROVIDER=cm
+HERMES_ENCRYPT_KEYS=true
+HERMES_CM_MARKUP=15
+HERMES_MESSENTE_MARKUP=15
+HERMES_RATE_LIMIT_ENABLED=true
+HERMES_RATE_LIMIT_PER_MINUTE=60
+HERMES_RATE_LIMIT_PER_HOUR=1000
+
+# Logging Configuration
+HERMES_LOGGING_ENABLED=true
+HERMES_LOG_CHANNEL=hermes
+HERMES_LOG_MESSAGE_CONTENT=false
+HERMES_LOG_RETENTION_DAYS=30
+
+# Provider Specific
+HERMES_WEBHOOK_URL=https://your-domain.com/hermes/webhook
+HERMES_BLOCKED_COUNTRIES=
+HERMES_ALLOWED_COUNTRIES=
+HERMES_CONTENT_FILTERING=false
+HERMES_REQUIRE_OPT_IN=false
+```
+
+### 3. Database Configuration
+
+Add the Hermes connection to `config/database.php`:
+
+```php
+'connections' => [
+    // ... existing connections ...
+    
+    'hermes' => [
+        'driver' => 'mysql',
+        'host' => env('HERMES_DB_HOST', '127.0.0.1'),
+        'port' => env('HERMES_DB_PORT', '3306'),
+        'database' => env('HERMES_DB_DATABASE', 'apex-hermes'),
+        'username' => env('HERMES_DB_USERNAME', 'root'),
+        'password' => env('HERMES_DB_PASSWORD', ''),
+        'unix_socket' => env('HERMES_DB_SOCKET', ''),
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'prefix' => '',
+        'prefix_indexes' => true,
+        'strict' => true,
+        'engine' => null,
+        'options' => extension_loaded('pdo_mysql') ? array_filter([
+            PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+        ]) : [],
+    ],
+],
+```
+
+### 4. Logging Configuration
+
+Add to `config/logging.php`:
+
+```php
+'channels' => [
+    // ... existing channels ...
+    
+    'hermes' => [
+        'driver' => 'daily',
+        'path' => storage_path('logs/hermes/hermes.log'),
+        'level' => env('LOG_LEVEL', 'debug'),
+        'days' => env('HERMES_LOG_RETENTION_DAYS', 30),
+    ],
+],
+```
+
+### 5. Composer Configuration
+
+Update your `composer.json` to include the Apex namespace:
+
+```json
+{
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Apex\\Hermes\\": "apex/hermes/src/",
+            "Apex\\Autentica\\": "apex/autentica/src/"
+        }
+    },
+    "require": {
+        "php": "^8.0",
+        "laravel/framework": "^9.0",
+        "cmdotcom/text-sdk-php": "^2.0"
+    }
+}
+```
+
+Then run:
+
+```bash
+composer update
+composer dump-autoload -o
+```
+
+### 6. Service Provider Registration
+
+Add to `config/app.php` providers array:
+
+```php
+'providers' => [
+    /*
+     * Laravel Framework Service Providers...
+     */
+    Illuminate\Auth\AuthServiceProvider::class,
+    // ... other providers ...
+    
+    /*
+     * Package Service Providers...
+     */
+    Apex\Hermes\HermesServiceProvider::class,
+],
+```
+
+### 7. Install Dependencies
+
+```bash
+composer require cmdotcom/text-sdk-php
+```
+
+### 8. Run Migrations
+
+```bash
+php artisan migrate --database=hermes --path=apex/hermes/database/migrations
+```
+
+### 9. Generate API Keys
+
+Generate your first API key:
+
+```bash
+php artisan hermes:generate-api-key cm --api-key=YOUR_CM_API_KEY
+```
+
+Output structure:
+```
+=== HERMES API CREDENTIALS ===
+API Key: [64 character alphanumeric string]
+API Secret: [64 character alphanumeric string]
+Provider: CM
+```
+
+> [!IMPORTANT]
+> Save these credentials securely! The API secret cannot be retrieved later.
+
+## API Reference
+
+### Authentication
+
+All API requests require authentication via headers:
+
+| Header | Type | Required | Format | Description |
+| --- | --- | --- | --- | --- |
+| `X-API-Key` | string | ✅ | 64 alphanumeric chars | Your Hermes API key |
+| `X-API-Secret` | string | ⚪ | 64 alphanumeric chars | Your Hermes API secret (recommended) |
+| `Content-Type` | string | ✅ | `application/json` | Request content type |
+| `Accept` | string | ✅ | `application/json` | Expected response type |
+
+### Endpoints
+
+#### Send SMS
+
+<kbd>POST</kbd> `/api/v1/sms/send`
+
+**Request Body Schema:**
+```json
+{
+    "message_text": {
+        "type": "string",
+        "required": true,
+        "maxLength": 1600,
+        "description": "Message content (160 chars for single SMS)"
+    },
+    "sender": {
+        "type": "string",
+        "required": true,
+        "maxLength": 11,
+        "pattern": "^[a-zA-Z0-9\\s]{1,11}$",
+        "description": "Sender ID (alphanumeric)"
+    },
+    "recipient_phone_number": {
+        "type": ["string", "array"],
+        "required": true,
+        "pattern": "^\\+?[1-9]\\d{1,14}$",
+        "description": "E.164 format phone number(s)"
+    },
+    "reference": {
+        "type": "string",
+        "required": false,
+        "maxLength": 255,
+        "description": "Your tracking reference"
+    },
+    "allow_multi_part": {
+        "type": "boolean",
+        "required": false,
+        "default": true,
+        "description": "Allow messages longer than 160 chars"
+    }
+}
+```
+
+**Response Schema (201 Created):**
+```json
+{
+    "success": true,
+    "result": {
+        "details": [
+            {
+                "to": "string (normalized phone number)",
+                "status": "string (Accepted|Rejected)",
+                "reference": "string|null",
+                "parts": "integer (message parts)",
+                "messageDetails": "string|null",
+                "messageErrorCode": "integer"
+            }
+        ],
+        "status_message": "string",
+        "status_code": "integer",
+        "success": "boolean",
+        "accepted_count": "integer",
+        "rejected_count": "integer",
+        "total_parts": "integer"
+    },
+    "status_code": 201,
+    "status_message": "string"
+}
+```
+
+**Character Limits:**
+| Type | Single Part | Multi Part | Detection |
+| --- | --- | --- | --- |
+| ASCII | 160 chars | 153 chars/part | Auto-detected |
+| Unicode | 70 chars | 67 chars/part | Auto-detected |
+
+#### Get Message Status
+
+<kbd>GET</kbd> `/api/v1/sms/status`
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `reference` | string | ✅ | Your tracking reference |
+
+**Response Schema:**
+```json
+{
+    "success": true,
+    "reference": "string",
+    "status": "delivered|pending|failed",
+    "message": "string"
+}
+```
+
+#### Send Rich SMS
+
+<kbd>POST</kbd> `/api/v1/sms/send-rich`
+
+**Additional Body Parameters:**
+```json
+{
+    "channel": {
+        "type": "string",
+        "required": true,
+        "enum": ["SMS", "WHATSAPP"],
+        "description": "Messaging channel"
+    },
+    "hybrid_app_key": {
+        "type": "string",
+        "required": "if channel=WHATSAPP",
+        "description": "WhatsApp Business API key"
+    },
+    "media": {
+        "type": "object",
+        "required": false,
+        "properties": {
+            "url": {
+                "type": "string",
+                "format": "url",
+                "required": true
+            },
+            "type": {
+                "type": "string",
+                "required": true,
+                "enum": ["image/jpeg", "image/png", "video/mp4"]
+            },
+            "caption": {
+                "type": "string",
+                "required": false,
+                "maxLength": 1024
+            }
+        }
+    }
+}
+```
+
+### Error Response Schema
+
+All errors follow this structure:
+```json
+{
+    "success": false,
+    "message": "string (error description)",
+    "errors": {
+        "field_name": ["array of validation errors"]
+    },
+    "details": {
+        "additional": "context-specific information"
+    }
+}
+```
+
+**HTTP Status Codes:**
+| Code | Meaning | Common Causes |
+| --- | --- | --- |
+| `201` | Created | Message accepted for delivery |
+| `400` | Bad Request | Message too long, invalid format |
+| `401` | Unauthorized | Invalid/missing API key |
+| `422` | Unprocessable Entity | Validation errors |
+| `429` | Too Many Requests | Rate limit exceeded |
+| `500` | Internal Server Error | Provider error, system failure |
+
+## Code Examples
+
+### Basic Integration
+
+<details>
+<summary>Simple SMS Function</summary>
+
+```php
+function sendSms(string $message, string $to, string $from = 'MyApp'): bool
+{
+    $response = Http::withHeaders([
+        'X-API-Key' => env('HERMES_API_KEY'),
+        'X-API-Secret' => env('HERMES_API_SECRET'),
+        'Accept' => 'application/json'
+    ])->post(env('HERMES_API_URL') . '/api/v1/sms/send', [
+        'message_text' => $message,
+        'sender' => $from,
+        'recipient_phone_number' => $to,
+        'allow_multi_part' => false
+    ]);
+    
+    return $response->successful();
+}
+```
+
+</details>
+
+<details>
+<summary>Laravel Service Class</summary>
+
+```php
+<?php
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
+
+class HermesService
+{
+    protected PendingRequest $client;
+    
+    public function __construct()
+    {
+        $this->client = Http::baseUrl(config('services.hermes.base_url'))
+            ->withHeaders([
+                'X-API-Key' => config('services.hermes.api_key'),
+                'X-API-Secret' => config('services.hermes.api_secret'),
+                'Accept' => 'application/json',
+            ])
+            ->timeout(30)
+            ->retry(3, 100);
+    }
+    
+    /**
+     * Send SMS message
+     * 
+     * @param string $message
+     * @param string|array $recipients
+     * @param array $options
+     * @return array
+     * @throws \Exception
+     */
+    public function sendSms(string $message, string|array $recipients, array $options = []): array
+    {
+        $response = $this->client->post('/api/v1/sms/send', array_merge([
+            'message_text' => $message,
+            'sender' => config('services.hermes.default_sender', 'MyApp'),
+            'recipient_phone_number' => $recipients,
+            'allow_multi_part' => true,
+        ], $options));
+        
+        if (!$response->successful()) {
+            $this->handleError($response);
+        }
+        
+        return $response->json();
+    }
+    
+    /**
+     * Send WhatsApp message
+     * 
+     * @param string $message
+     * @param string $recipient
+     * @param array|null $media
+     * @return array
+     * @throws \Exception
+     */
+    public function sendWhatsApp(string $message, string $recipient, ?array $media = null): array
+    {
+        $payload = [
+            'message_text' => $message,
+            'sender' => config('services.hermes.whatsapp_sender'),
+            'recipient_phone_number' => $recipient,
+            'channel' => 'WHATSAPP',
+            'hybrid_app_key' => config('services.hermes.whatsapp_key'),
+        ];
+        
+        if ($media) {
+            $payload['media'] = $media;
+        }
+        
+        $response = $this->client->post('/api/v1/sms/send-rich', $payload);
+        
+        if (!$response->successful()) {
+            $this->handleError($response);
+        }
+        
+        return $response->json();
+    }
+    
+    /**
+     * Get message status
+     * 
+     * @param string $reference
+     * @return array
+     * @throws \Exception
+     */
+    public function getStatus(string $reference): array
+    {
+        $response = $this->client->get('/api/v1/sms/status', [
+            'reference' => $reference
+        ]);
+        
+        if (!$response->successful()) {
+            $this->handleError($response);
+        }
+        
+        return $response->json();
+    }
+    
+    /**
+     * Handle API errors
+     * 
+     * @param Response $response
+     * @throws \Exception
+     */
+    protected function handleError(Response $response): void
+    {
+        $error = $response->json();
+        $message = $error['message'] ?? 'Unknown error occurred';
+        
+        match ($response->status()) {
+            400 => throw new \InvalidArgumentException($message),
+            401 => throw new \Exception('Authentication failed: ' . $message),
+            422 => throw new \InvalidArgumentException('Validation failed: ' . json_encode($error['errors'] ?? [])),
+            429 => throw new \Exception('Rate limit exceeded. Please try again later.'),
+            default => throw new \Exception('SMS service error: ' . $message),
+        };
+    }
+}
+```
+
+</details>
+
+<details>
+<summary>Laravel Notification Channel</summary>
+
+```php
+<?php
+
+namespace App\Notifications\Channels;
+
+use App\Services\HermesService;
+use Illuminate\Notifications\Notification;
+
+class HermesSmsChannel
+{
+    protected HermesService $hermes;
+    
+    public function __construct(HermesService $hermes)
+    {
+        $this->hermes = $hermes;
+    }
+    
+    public function send($notifiable, Notification $notification): void
+    {
+        if (!$phone = $notifiable->routeNotificationFor('hermes')) {
+            return;
+        }
+        
+        $message = $notification->toHermes($notifiable);
+        
+        if (is_string($message)) {
+            $this->hermes->sendSms($message, $phone);
+        } elseif (is_array($message)) {
+            $this->hermes->sendSms(
+                $message['text'],
+                $phone,
+                [
+                    'sender' => $message['from'] ?? null,
+                    'reference' => $message['reference'] ?? null,
+                ]
+            );
+        }
+    }
+}
+
+// Usage in Notification class:
+public function via($notifiable): array
+{
+    return [HermesSmsChannel::class];
+}
+
+public function toHermes($notifiable): string
+{
+    return "Your order #{$this->order->id} has been shipped!";
+}
+```
+
+</details>
+
+<details>
+<summary>Queue Job for Bulk SMS</summary>
+
+```php
+<?php
+
+namespace App\Jobs;
+
+use App\Services\HermesService;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Collection;
+
+class SendBulkSms implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    
+    public int $tries = 3;
+    public int $maxExceptions = 3;
+    
+    public function __construct(
+        protected string $message,
+        protected Collection $recipients,
+        protected string $sender = 'MyApp'
+    ) {}
+    
+    public function handle(HermesService $hermes): void
+    {
+        // Chunk recipients to avoid hitting API limits
+        $this->recipients->chunk(100)->each(function ($chunk) use ($hermes) {
+            $result = $hermes->sendSms(
+                $this->message,
+                $chunk->pluck('phone')->toArray(),
+                [
+                    'sender' => $this->sender,
+                    'reference' => 'bulk-' . now()->timestamp,
+                ]
+            );
+            
+            // Log results
+            \Log::channel('hermes')->info('Bulk SMS sent', [
+                'accepted' => $result['result']['accepted_count'],
+                'rejected' => $result['result']['rejected_count'],
+                'recipients' => $chunk->count(),
+            ]);
+            
+            // Handle rejected numbers
+            if ($result['result']['rejected_count'] > 0) {
+                $this->handleRejected($result['result']['details']);
+            }
+        });
+    }
+    
+    protected function handleRejected(array $details): void
+    {
+        collect($details)
+            ->filter(fn($detail) => $detail['status'] === 'Rejected')
+            ->each(function ($detail) {
+                \Log::channel('hermes')->warning('SMS rejected', [
+                    'to' => $detail['to'],
+                    'reason' => $detail['messageDetails'] ?? 'Unknown',
+                ]);
+            });
+    }
+}
+```
+
+</details>
+
+## Database Schema
+
+### hermes_api_keys Table
+
+```sql
+CREATE TABLE `hermes_api_keys` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `key` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `secret` text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Encrypted',
+  `provider` enum('cm','messente') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `provider_api_key` text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Encrypted',
+  `provider_api_secret` text COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Encrypted',
+  `active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `signature` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `hermes_api_keys_key_unique` (`key`),
+  KEY `hermes_api_keys_provider_index` (`provider`),
+  KEY `hermes_api_keys_active_index` (`active`),
+  KEY `hermes_api_keys_provider_active_index` (`provider`,`active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+### Field Descriptions
+
+| Field | Type | Purpose | Constraints |
+| --- | --- | --- | --- |
+| `id` | bigint unsigned | Primary key | Auto-increment |
+| `key` | varchar(64) | Hermes API key | Unique, indexed |
+| `secret` | text | Encrypted API secret | Encrypted using Laravel |
+| `provider` | enum | SMS provider identifier | 'cm' or 'messente' |
+| `provider_api_key` | text | Provider's API key | Encrypted |
+| `provider_api_secret` | text | Provider's API secret | Nullable, encrypted |
+| `active` | boolean | Enable/disable key | Default: true |
+| `signature` | varchar(128) | Data integrity hash | SHA512 |
+
+## Configuration
+
+### Provider Configuration (config/providers.php)
+
+```php
+return [
+    'default' => env('HERMES_DEFAULT_PROVIDER', 'cm'),
+    
+    'providers' => [
+        'cm' => [
+            'name' => 'CM Telecom',
+            'endpoint' => 'https://gw.messaging.cm.com/v1.0/message',
+            'features' => [
+                'sms' => true,
+                'whatsapp' => true,
+                'rcs' => true,
+                'voice' => false,
+                'mms' => true,
+                'delivery_reports' => true,
+                'unicode' => true,
+                'long_messages' => true,
+                'scheduling' => true,
+            ],
+            'limits' => [
+                'sms_length' => 160,
+                'sms_length_unicode' => 70,
+                'sender_id_length' => 11,
+                'max_recipients_per_request' => 1000,
+            ],
+            'pricing' => [
+                'markup_percentage' => env('HERMES_CM_MARKUP', 15),
+                'minimum_charge' => 0.01,
+            ],
+            'timeout' => 30,
+            'retry_attempts' => 3,
+            'retry_delay' => 1000,
+        ],
+    ],
+    
+    'rate_limit' => [
+        'enabled' => env('HERMES_RATE_LIMIT_ENABLED', true),
+        'requests_per_minute' => env('HERMES_RATE_LIMIT_PER_MINUTE', 60),
+        'requests_per_hour' => env('HERMES_RATE_LIMIT_PER_HOUR', 1000),
+    ],
+];
+```
+
+### Service Configuration (config/services.php)
+
+Add Hermes configuration:
+
+```php
+'hermes' => [
+    'base_url' => env('HERMES_API_URL', 'https://your-domain.com'),
+    'api_key' => env('HERMES_API_KEY'),
+    'api_secret' => env('HERMES_API_SECRET'),
+    'default_sender' => env('HERMES_DEFAULT_SENDER', 'MyApp'),
+    'whatsapp_sender' => env('HERMES_WHATSAPP_SENDER'),
+    'whatsapp_key' => env('HERMES_WHATSAPP_KEY'),
+],
+```
+
+## Error Handling
+
+### Provider-Specific Errors
+
+#### CM Telecom
+- **Status Code 0**: Normalized to 201 (success)
+- **Invalid destination**: Check phone number format
+- **Insufficient credit**: Top up CM account
+- **Invalid sender**: Use alphanumeric max 11 chars
+
+### Validation Errors
+
+Common validation failures:
+```json
+{
+    "success": false,
+    "message": "Validation failed",
+    "errors": {
+        "sender": ["The sender field must not be greater than 11 characters."],
+        "recipient_phone_number": ["The recipient phone number field is required."]
+    }
+}
+```
+
+### Rate Limiting
+
+When rate limit is exceeded:
+```json
+{
+    "success": false,
+    "message": "Too many requests",
+    "details": {
+        "retry_after": 60,
+        "limit": "60 requests per minute"
+    }
+}
+```
+
+## Security
+
+### API Key Management
+
+- [x] **64-character random keys** - Generated using `Str::random(64)`
+- [x] **Encrypted storage** - Using Laravel's encryption (AES-256-CBC)
+- [x] **SHA512 signatures** - Data integrity verification
+- [x] **Soft deletes** - Keys are never hard deleted
+- [x] **Active status** - Keys can be disabled without deletion
+
+### Request Security
+
+- [x] **HTTPS only** - Enforce SSL/TLS in production
+- [x] **Rate limiting** - Per API key limits
+- [x] **Input validation** - Comprehensive request validation
+- [x] **SQL injection protection** - Parameterized queries
+- [x] **XSS protection** - Output encoding
+
+### Audit Trail
+
+All operations are logged with:
+- Timestamp
+- API key used
+- IP address
+- User agent
+- Request details
+- Response status
+
+## Testing
+
+### Unit Test Example
+
+<details>
+<summary>PHPUnit Test</summary>
+
+```php
+<?php
+
+namespace Tests\Feature;
+
+use Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+
+class HermesSmsTest extends TestCase
+{
+    use RefreshDatabase;
+    
+    protected function setUp(): void
+    {
+        parent::setUp();
+        
+        // Mock CM responses
+        Http::fake([
+            'gw.messaging.cm.com/*' => Http::response([
+                'messages' => [
+                    [
+                        'to' => '0035699999999',
+                        'status' => 'Accepted',
+                        'reference' => 'test-ref',
+                        'parts' => 1,
+                    ]
+                ]
+            ], 200)
+        ]);
+    }
+    
+    public function test_can_send_sms()
+    {
+        $response = $this->withHeaders([
+            'X-API-Key' => 'test-key',
+            'X-API-Secret' => 'test-secret',
+        ])->postJson('/api/v1/sms/send', [
+            'message_text' => 'Test message',
+            'sender' => 'Test',
+            'recipient_phone_number' => '+35699999999',
+            'allow_multi_part' => false,
+        ]);
+        
+        $response->assertStatus(201)
+            ->assertJson([
+                'success' => true,
+                'status_code' => 201,
+            ]);
+    }
+    
+    public function test_validates_message_length()
+    {
+        $response = $this->withHeaders([
+            'X-API-Key' => 'test-key',
+            'X-API-Secret' => 'test-secret',
+        ])->postJson('/api/v1/sms/send', [
+            'message_text' => str_repeat('A', 161),
+            'sender' => 'Test',
+            'recipient_phone_number' => '+35699999999',
+            'allow_multi_part' => false,
+        ]);
+        
+        $response->assertStatus(400)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Message requires multiple parts to be sent and it is not allowed to',
+            ]);
+    }
+}
+```
+
+</details>
+
+### Manual Testing
+
+PowerShell test script:
+```powershell
+# test-hermes.ps1
+$headers = @{
+    "X-API-Key" = "your-api-key"
+    "X-API-Secret" = "your-api-secret"
+    "Content-Type" = "application/json"
+}
+
+$body = @{
+    message_text = "Test message $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+    sender = "Test"
+    recipient_phone_number = "+35699999999"
+    allow_multi_part = $false
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/sms/send" `
+    -Method Post -Headers $headers -Body $body
+```
+
+## Troubleshooting
+
+### Common Issues
+
+> [!NOTE]
+> **"The HTTP status code '0' is not valid"**
+> 
+> CM Telecom returns status code 0 for success. This is automatically normalized to 201 in the CMProvider class.
+
+> [!WARNING]
+> **"Base table or view not found: 1146 Table 'apex.hermes_api_keys' doesn't exist"**
+> 
+> The system is using the wrong database connection. Ensure all database queries use:
+> ```php
+> DB::connection('hermes')->table('hermes_api_keys')
+> ```
+
+> [!TIP]
+> **"Class 'Apex\Hermes\HermesServiceProvider' not found"**
+> 
+> Run `composer dump-autoload -o` to regenerate the autoloader.
+
+> [!CAUTION]
+> **"Cannot use object of type stdClass as array"**
+> 
+> The TextClientResultHelper handles both array and object responses. Ensure you're using the latest version.
+
+### Debug Mode
+
+Enable comprehensive debugging:
+
+```dotenv
+# .env
+APP_DEBUG=true
+HERMES_LOGGING_ENABLED=true
+HERMES_LOG_MESSAGE_CONTENT=true
+LOG_LEVEL=debug
+```
+
+Check logs:
+```bash
+# Hermes specific logs
+tail -f storage/logs/hermes/hermes-$(date +%Y-%m-%d).log
+
+# Laravel logs
+tail -f storage/logs/laravel.log
+
+# PHP errors
+tail -f /var/log/php/error.log
+```
+
+### Performance Optimization
+
+1. **Database Indexing** - Ensure indexes are properly created
+2. **Connection Pooling** - Use persistent database connections
+3. **Queue Workers** - Process bulk messages asynchronously
+4. **Caching** - Cache provider configurations
+5. **Rate Limiting** - Implement proper rate limiting
+
+## Extending Hermes
+
+### Adding a New Provider
+
+1. **Create Provider Class**
+```php
+namespace Apex\Hermes\Providers\Twilio;
+
+use Apex\Hermes\Providers\Contracts\MessageProvider;
+use CMText\TextClientResult;
+
+class TwilioProvider implements MessageProvider
+{
+    public function sendMessage(
+        string $messageText, 
+        string $sender, 
+        array $recipients, 
+        ?string $reference = null
+    ): TextClientResult {
+        // Implementation
+    }
+    
+    public function sendRichMessage(
+        string $messageText,
+        string $sender,
+        array $recipients,
+        ?string $reference,
+        string $channel,
+        ?string $hybridAppKey,
+        ?array $media
+    ): TextClientResult {
+        // Implementation
+    }
+    
+    public function getResult(TextClientResult $result): array
+    {
+        // Implementation
+    }
+    
+    public function getStatusCode(TextClientResult $result): int
+    {
+        // Implementation
+    }
+}
+```
+
+2. **Update Configuration**
+```php
+// config/providers.php
+'twilio' => [
+    'name' => 'Twilio',
+    'endpoint' => 'https://api.twilio.com/2010-04-01/Accounts',
+    'features' => [
+        'sms' => true,
+        'whatsapp' => true,
+        // ...
+    ],
+    // ...
+],
+```
+
+3. **Update MessageRouter**
+```php
+// In MessageRouter::loadProviders()
+if ($key === 'twilio' && $config['features']['sms'] === true) {
+    $this->providers['twilio'] = new TwilioProvider();
+}
+```
+
+### Creating Custom Middleware
+
+```php
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+
+class HermesCustomAuth
+{
+    public function handle(Request $request, Closure $next)
+    {
+        // Custom authentication logic
+        if (!$this->isAuthorized($request)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Custom authentication failed'
+            ], 401);
+        }
+        
+        return $next($request);
+    }
+}
+```
+
+## License
+
+This software is proprietary and confidential.
+
+---
+
+**Copyright © 2025 EXOR Group Ltd. All rights reserved.**
+
+This software and associated documentation files (the "Software") are the property of EXOR Group Ltd. The Software is provided under license and may only be used or copied in accordance with the terms of the license agreement. No part of this Software may be reproduced, distributed, or transmitted in any form or by any means without the prior written permission of EXOR Group Ltd.
+
+For licensing information, please contact: duncan.dimech@exorgroup.com
