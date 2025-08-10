@@ -16,7 +16,7 @@ interface Props {
     feedback?: boolean;
     invalidMessage?: string;
     helpText?: string;
-}
+} 
 
 const props = withDefaults(defineProps<Props>(), {
     label: '',

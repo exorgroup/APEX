@@ -6,7 +6,7 @@ declare global {
     interface Window {
         [key: string]: any;
     }
-}
+} 
 
 interface ButtonConfig {
     label: string;

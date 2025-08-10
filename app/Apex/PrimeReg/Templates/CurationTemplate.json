@@ -1,0 +1,141 @@
+{
+    "_metadata": {
+        "component": "{{COMPONENT_NAME}}",
+        "scanned_at": "{{SCAN_TIMESTAMP}}",
+        "instructions": [
+            "Assign each property/event to an edition: core, pro, or enterprise",
+            "Add descriptions where missing",
+            "Remove properties not needed in Apex",
+            "Mark deprecated properties with 'deprecated': true",
+            "Set 'exclude': true for properties that should not be in the final registry"
+        ]
+    },
+    "_editions": {
+        "core": "Basic functionality - free tier. Essential features needed for basic usage.",
+        "pro": "Enhanced features - paid tier. Improved UX, accessibility, and styling options.",
+        "enterprise": "Advanced features - enterprise tier. Complex validation, customization, and enterprise-specific needs."
+    },
+    "_guidelines": {
+        "core_features": [
+            "Essential props for basic functionality (modelValue, placeholder, disabled, etc.)",
+            "Basic validation (required, basic error messages)",
+            "Standard sizes and basic states",
+            "Core events (input, focus, blur, click)",
+            "Two-way binding support"
+        ],
+        "pro_features": [
+            "Enhanced UX (helpText, floatLabel, visual variants)",
+            "Accessibility features (accesskey, tabindex, ARIA attributes)",
+            "Multi-language support",
+            "Advanced styling options",
+            "Enhanced interactions (keyboard navigation, tooltips)"
+        ],
+        "enterprise_features": [
+            "Advanced validation (real-time, custom rules, progressive feedback)",
+            "Multi-cultural adaptations (RTL, cultural positioning)",
+            "PassThrough API for deep customization",
+            "Pre/post text for complex layouts",
+            "Advanced error handling and reporting"
+        ]
+    },
+    "_common_patterns": {
+        "universal_props": {
+            "class": {
+                "edition": "core",
+                "description": "CSS class names for styling"
+            },
+            "style": {
+                "edition": "core", 
+                "description": "Inline styles object"
+            },
+            "id": {
+                "edition": "core",
+                "description": "Unique identifier for the element"
+            }
+        },
+        "accessibility_props": {
+            "accesskey": {
+                "edition": "pro",
+                "description": "Keyboard shortcut key for quick access"
+            },
+            "tabindex": {
+                "edition": "pro",
+                "description": "Tab order index for keyboard navigation"
+            },
+            "ariaLabel": {
+                "edition": "pro",
+                "description": "ARIA label for screen readers"
+            },
+            "ariaLabelledby": {
+                "edition": "pro",
+                "description": "References element that labels this component"
+            },
+            "ariaDescribedby": {
+                "edition": "pro",
+                "description": "References element that describes this component"
+            }
+        },
+        "primevue_advanced": {
+            "pt": {
+                "edition": "enterprise",
+                "description": "PrimeVue PassThrough API for deep customization"
+            },
+            "ptOptions": {
+                "edition": "enterprise",
+                "description": "Options for PassThrough API configuration"
+            },
+            "unstyled": {
+                "edition": "enterprise",
+                "description": "Remove default PrimeVue styling for complete customization"
+            }
+        }
+    },
+    "props": {
+        "{{PROP_NAME}}": {
+            "type": "{{PROP_TYPE}}",
+            "description": "TODO: Add description for {{PROP_NAME}}",
+            "required": false,
+            "edition": "unassigned",
+            "deprecated": false,
+            "exclude": false,
+            "notes": "",
+            "source": "{{SOURCE}}"
+        }
+    },
+    "events": {
+        "{{EVENT_NAME}}": {
+            "type": "function",
+            "description": "TODO: Add description for {{EVENT_NAME}}",
+            "required": false,
+            "edition": "unassigned",
+            "deprecated": false,
+            "exclude": false,
+            "notes": "",
+            "source": "{{SOURCE}}"
+        }
+    },
+    "methods": {
+        "{{METHOD_NAME}}": {
+            "type": "function",
+            "description": "TODO: Add description for {{METHOD_NAME}}",
+            "required": false,
+            "edition": "unassigned",
+            "deprecated": false,
+            "exclude": false,
+            "notes": "",
+            "source": "{{SOURCE}}"
+        }
+    },
+    "slots": {
+        "{{SLOT_NAME}}": {
+            "type": "slot",
+            "description": "TODO: Add description for {{SLOT_NAME}}",
+            "required": false,
+            "edition": "unassigned",
+            "deprecated": false,
+            "exclude": false,
+            "notes": "",
+            "source": "{{SOURCE}}"
+        }
+    }
+}
