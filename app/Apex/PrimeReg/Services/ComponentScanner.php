@@ -4,7 +4,7 @@
  * Copyright EXOR Group ltd 2025
  * Version 1.0.0.0
  * APEX Laravel PrimeVue Components
- * Description: Fixed scanner for PrimeVue 4.x component structure
+ * Description: Enhanced scanner for PrimeVue 4.x component structure with HTML & Vue attributes
  * File location: app/Apex/PrimeReg/Services/ComponentScanner.php
  */
 
@@ -152,6 +152,15 @@ class ComponentScanner
             // Method 4: Add common PrimeVue patterns
             $rawData = $this->addCommonPatterns($rawData, $componentName);
 
+            // NEW: Method 5: Add HTML input attributes
+            $rawData = $this->addHtmlInputAttributes($rawData, $componentName);
+
+            // NEW: Method 6: Add Vue-specific events
+            $rawData = $this->addVueSpecificEvents($rawData, $componentName);
+
+            // NEW: Method 7: Add Vue directives
+            $rawData = $this->addVueDirectives($rawData);
+
             return $rawData;
         } catch (\Exception $e) {
             Log::error('Error scanning component', [
@@ -164,6 +173,313 @@ class ComponentScanner
             ]);
             return [];
         }
+    }
+
+    /**
+     * Add HTML input attributes that work with InputText
+     */
+    private function addHtmlInputAttributes(array $rawData, string $componentName): array
+    {
+        if ($componentName !== 'inputtext') {
+            return $rawData;
+        }
+
+        $htmlAttributes = [
+            // Form attributes
+            'maxlength' => [
+                'type' => 'number',
+                'description' => 'Maximum number of characters allowed',
+                'source' => 'html'
+            ],
+            'minlength' => [
+                'type' => 'number',
+                'description' => 'Minimum number of characters required',
+                'source' => 'html'
+            ],
+            'pattern' => [
+                'type' => 'string',
+                'description' => 'Regular expression pattern for validation',
+                'source' => 'html'
+            ],
+            'required' => [
+                'type' => 'boolean',
+                'description' => 'Specifies that the input field is required',
+                'source' => 'html'
+            ],
+            'spellcheck' => [
+                'type' => 'boolean',
+                'description' => 'Enable/disable spell checking',
+                'source' => 'html'
+            ],
+            'translate' => [
+                'type' => 'string',
+                'description' => 'Translation hint for browsers',
+                'enum' => ['yes', 'no'],
+                'source' => 'html'
+            ],
+            'autocapitalize' => [
+                'type' => 'string',
+                'description' => 'Controls automatic capitalization',
+                'enum' => ['off', 'none', 'on', 'sentences', 'words', 'characters'],
+                'source' => 'html'
+            ],
+            'autocorrect' => [
+                'type' => 'string',
+                'description' => 'Controls automatic text correction',
+                'enum' => ['on', 'off'],
+                'source' => 'html'
+            ],
+            'inputmode' => [
+                'type' => 'string',
+                'description' => 'Virtual keyboard mode hint',
+                'enum' => ['none', 'text', 'decimal', 'numeric', 'tel', 'search', 'email', 'url'],
+                'source' => 'html'
+            ],
+            'enterkeyhint' => [
+                'type' => 'string',
+                'description' => 'Enter key label hint',
+                'enum' => ['enter', 'done', 'go', 'next', 'previous', 'search', 'send'],
+                'source' => 'html'
+            ],
+            'form' => [
+                'type' => 'string',
+                'description' => 'Associates input with a form element',
+                'source' => 'html'
+            ],
+            'list' => [
+                'type' => 'string',
+                'description' => 'References a datalist element',
+                'source' => 'html'
+            ],
+            'multiple' => [
+                'type' => 'boolean',
+                'description' => 'Allow multiple values (for certain input types)',
+                'source' => 'html'
+            ],
+
+            // Global HTML attributes commonly used
+            'id' => [
+                'type' => 'string',
+                'description' => 'Unique identifier for the element',
+                'source' => 'html'
+            ],
+            'title' => [
+                'type' => 'string',
+                'description' => 'Tooltip text',
+                'source' => 'html'
+            ],
+            'data-*' => [
+                'type' => 'string',
+                'description' => 'Custom data attributes',
+                'source' => 'html'
+            ],
+            'dir' => [
+                'type' => 'string',
+                'description' => 'Text direction',
+                'enum' => ['ltr', 'rtl', 'auto'],
+                'source' => 'html'
+            ],
+            'lang' => [
+                'type' => 'string',
+                'description' => 'Language of the element content',
+                'source' => 'html'
+            ],
+            'hidden' => [
+                'type' => 'boolean',
+                'description' => 'Hide the element',
+                'source' => 'html'
+            ],
+            'contenteditable' => [
+                'type' => 'string',
+                'description' => 'Whether content is editable',
+                'enum' => ['true', 'false', 'plaintext-only'],
+                'source' => 'html'
+            ],
+            'draggable' => [
+                'type' => 'boolean',
+                'description' => 'Whether element is draggable',
+                'source' => 'html'
+            ],
+            'dropzone' => [
+                'type' => 'string',
+                'description' => 'Drop behavior',
+                'source' => 'html'
+            ]
+        ];
+
+        // Merge HTML attributes with existing props
+        foreach ($htmlAttributes as $attr => $config) {
+            if (!isset($rawData['props'][$attr])) {
+                $rawData['props'][$attr] = $config;
+            }
+        }
+
+        return $rawData;
+    }
+
+    /**
+     * Add Vue-specific events and handlers
+     */
+    private function addVueSpecificEvents(array $rawData, string $componentName): array
+    {
+        $vueEvents = [
+            // Mouse events
+            'click' => 'Fired when element is clicked',
+            'dblclick' => 'Fired when element is double-clicked',
+            'mousedown' => 'Fired when mouse button is pressed',
+            'mouseup' => 'Fired when mouse button is released',
+            'mouseover' => 'Fired when mouse enters element',
+            'mouseout' => 'Fired when mouse leaves element',
+            'mousemove' => 'Fired when mouse moves over element',
+            'mouseenter' => 'Fired when mouse enters element (no bubbling)',
+            'mouseleave' => 'Fired when mouse leaves element (no bubbling)',
+            'contextmenu' => 'Fired when right-click context menu',
+
+            // Keyboard events (in addition to existing)
+            'keypress' => 'Fired when key is pressed and held',
+
+            // Form events
+            'change' => 'Fired when input value changes and loses focus',
+            'select' => 'Fired when text is selected',
+            'submit' => 'Fired when form is submitted',
+            'reset' => 'Fired when form is reset',
+
+            // Touch events
+            'touchstart' => 'Fired when touch begins',
+            'touchend' => 'Fired when touch ends',
+            'touchmove' => 'Fired when touch moves',
+            'touchcancel' => 'Fired when touch is cancelled',
+
+            // Drag events
+            'drag' => 'Fired during drag operation',
+            'dragstart' => 'Fired when drag starts',
+            'dragend' => 'Fired when drag ends',
+            'dragover' => 'Fired when dragged over element',
+            'dragenter' => 'Fired when drag enters element',
+            'dragleave' => 'Fired when drag leaves element',
+            'drop' => 'Fired when element is dropped',
+
+            // Wheel events
+            'wheel' => 'Fired on mouse wheel scroll',
+
+            // Animation/Transition events
+            'animationstart' => 'Fired when CSS animation starts',
+            'animationend' => 'Fired when CSS animation ends',
+            'animationiteration' => 'Fired when CSS animation iteration ends',
+            'transitionstart' => 'Fired when CSS transition starts',
+            'transitionend' => 'Fired when CSS transition ends',
+
+            // Media events (for applicable components)
+            'loadstart' => 'Fired when loading starts',
+            'load' => 'Fired when resource loads',
+            'loadend' => 'Fired when loading ends',
+            'error' => 'Fired when error occurs',
+            'abort' => 'Fired when operation is aborted',
+            'progress' => 'Fired during loading progress',
+
+            // Clipboard events
+            'copy' => 'Fired when content is copied',
+            'cut' => 'Fired when content is cut',
+            'paste' => 'Fired when content is pasted',
+
+            // Other useful events
+            'resize' => 'Fired when element is resized',
+            'scroll' => 'Fired when element is scrolled'
+        ];
+
+        foreach ($vueEvents as $event => $description) {
+            if (!isset($rawData['events'][$event])) {
+                $rawData['events'][$event] = [
+                    'type' => 'function',
+                    'description' => $description,
+                    'source' => 'vue'
+                ];
+            }
+        }
+
+        return $rawData;
+    }
+
+    /**
+     * Add Vue directives as props
+     */
+    private function addVueDirectives(array $rawData): array
+    {
+        $vueDirectives = [
+            'v-model' => [
+                'type' => 'any',
+                'description' => 'Two-way data binding',
+                'source' => 'vue'
+            ],
+            'v-show' => [
+                'type' => 'boolean',
+                'description' => 'Conditionally show element with CSS',
+                'source' => 'vue'
+            ],
+            'v-if' => [
+                'type' => 'boolean',
+                'description' => 'Conditionally render element',
+                'source' => 'vue'
+            ],
+            'v-else' => [
+                'type' => 'boolean',
+                'description' => 'Else block for v-if',
+                'source' => 'vue'
+            ],
+            'v-else-if' => [
+                'type' => 'boolean',
+                'description' => 'Else if block for v-if',
+                'source' => 'vue'
+            ],
+            'v-for' => [
+                'type' => 'string',
+                'description' => 'Render list of elements',
+                'source' => 'vue'
+            ],
+            'v-on' => [
+                'type' => 'object',
+                'description' => 'Event listeners',
+                'source' => 'vue'
+            ],
+            'v-bind' => [
+                'type' => 'object',
+                'description' => 'Bind attributes dynamically',
+                'source' => 'vue'
+            ],
+            'v-slot' => [
+                'type' => 'string',
+                'description' => 'Named slot content',
+                'source' => 'vue'
+            ],
+            'v-pre' => [
+                'type' => 'boolean',
+                'description' => 'Skip compilation for this element',
+                'source' => 'vue'
+            ],
+            'v-cloak' => [
+                'type' => 'boolean',
+                'description' => 'Hide element until Vue compilation is done',
+                'source' => 'vue'
+            ],
+            'v-once' => [
+                'type' => 'boolean',
+                'description' => 'Render element only once',
+                'source' => 'vue'
+            ],
+            'v-memo' => [
+                'type' => 'array',
+                'description' => 'Memoize template sub-tree',
+                'source' => 'vue'
+            ]
+        ];
+
+        foreach ($vueDirectives as $directive => $config) {
+            if (!isset($rawData['props'][$directive])) {
+                $rawData['props'][$directive] = $config;
+            }
+        }
+
+        return $rawData;
     }
 
     /**

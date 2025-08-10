@@ -492,8 +492,32 @@ class CurationValidator
     private function isValidTimestamp(string $timestamp): bool
     {
         try {
-            $date = \DateTime::createFromFormat(\DateTime::ATOM, $timestamp);
-            return $date !== false && $date->format(\DateTime::ATOM) === $timestamp;
+            // Try multiple ISO 8601 formats
+            $formats = [
+                \DateTime::ATOM,           // 2025-08-10T19:42:09+00:00
+                \DateTime::ISO8601,        // 2025-08-10T19:42:09+0000
+                'Y-m-d\TH:i:s.u\Z',       // 2025-08-10T19:42:09.791184Z (with microseconds)
+                'Y-m-d\TH:i:s\Z',         // 2025-08-10T19:42:09Z
+                'Y-m-d\TH:i:s.uP',        // 2025-08-10T19:42:09.791184+00:00
+                'Y-m-d\TH:i:sP'           // 2025-08-10T19:42:09+00:00
+            ];
+
+            foreach ($formats as $format) {
+                $date = \DateTime::createFromFormat($format, $timestamp);
+                if ($date !== false) {
+                    return true;
+                }
+            }
+
+            // Also try Carbon/Laravel's built-in parsing
+            try {
+                $carbonDate = \Carbon\Carbon::parse($timestamp);
+                return $carbonDate !== null;
+            } catch (\Exception $e) {
+                // Continue to return false
+            }
+
+            return false;
         } catch (\Exception $e) {
             Log::error('Error validating timestamp', [
                 'folder' => 'app/Apex/PrimeReg/Services',

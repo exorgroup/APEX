@@ -259,7 +259,8 @@ class RegistryGenerator
     private function generateRegistryClassContent(string $className, string $namespace, array $data): string
     {
         try {
-            $dataJson = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            // Convert array to PHP array syntax instead of JSON
+            $dataPhp = $this->arrayToPhpCode($data, 8); // 8 spaces indentation
             $timestamp = now()->format('Y-m-d H:i:s');
 
             return "<?php
@@ -282,7 +283,7 @@ class {$className}
     /**
      * Component API definition data
      */
-    private static array \$apiDefinition = {$dataJson};
+    private static array \$apiDefinition = {$dataPhp};
 
     /**
      * Get complete API definition for this component
@@ -569,6 +570,10 @@ class {$className}
     {
         try {
             $cachePath = storage_path("app/apex/cache/components/{$componentName}.cache");
+
+            // Fix path separators for Windows compatibility
+            $cachePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $cachePath);
+
             File::ensureDirectoryExists(dirname($cachePath));
 
             // Generate optimized cache data
@@ -704,6 +709,58 @@ class {$className}
                 'trace' => $e->getTraceAsString()
             ]);
             return [];
+        }
+    }
+
+    /**
+     * Convert array to properly formatted PHP array code
+     *
+     * @param array $array Array to convert
+     * @param int $indent Base indentation level
+     * @return string PHP array code
+     */
+    private function arrayToPhpCode(array $array, int $indent = 0): string
+    {
+        try {
+            $spaces = str_repeat(' ', $indent);
+            $innerSpaces = str_repeat(' ', $indent + 4);
+
+            if (empty($array)) {
+                return '[]';
+            }
+
+            $lines = ["["];
+
+            foreach ($array as $key => $value) {
+                $keyStr = is_string($key) ? "'" . addslashes($key) . "'" : $key;
+
+                if (is_array($value)) {
+                    $valueStr = $this->arrayToPhpCode($value, $indent + 4);
+                } elseif (is_string($value)) {
+                    $valueStr = "'" . addslashes($value) . "'";
+                } elseif (is_bool($value)) {
+                    $valueStr = $value ? 'true' : 'false';
+                } elseif (is_null($value)) {
+                    $valueStr = 'null';
+                } else {
+                    $valueStr = (string) $value;
+                }
+
+                $lines[] = "{$innerSpaces}{$keyStr} => {$valueStr},";
+            }
+
+            $lines[] = "{$spaces}]";
+
+            return implode("\n", $lines);
+        } catch (\Exception $e) {
+            Log::error('Error converting array to PHP code', [
+                'folder' => 'app/Apex/PrimeReg/Services',
+                'file' => 'RegistryGenerator.php',
+                'method' => 'arrayToPhpCode',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return '[]';
         }
     }
 

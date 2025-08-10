@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * Copyright EXOR Group ltd 2025
+ * Version 1.0.0.0
+ * APEX Laravel PrimeVue Components
+ * Description: Interface defining the contract for all APEX widgets
+ * File location: app/Apex/Core/Contracts/WidgetInterface.php
+ */
+
 namespace App\Apex\Core\Contracts;
 
 interface WidgetInterface
