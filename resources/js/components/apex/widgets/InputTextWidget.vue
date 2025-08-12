@@ -59,7 +59,7 @@ const updateValue = (event: Event) => {
     inputValue.value = target.value;
     emit('update:value', target.value);
 };
-</script>
+</script> 
 
 <template>
     <div :id="widgetId" class="apex-inputtext-widget mb-4">

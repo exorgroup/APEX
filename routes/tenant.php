@@ -14,6 +14,9 @@ use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 use Inertia\Inertia;
 use App\Http\Controllers\Api\ProductController;
 
+use App\Http\Controllers\PrimeRegTestController;
+use Illuminate\Support\Facades\Log;
+
 /*
 |--------------------------------------------------------------------------
 | Tenant Routes
@@ -39,6 +42,20 @@ Route::middleware([
     Route::get('/counter-test', [CounterTestController::class, 'index'])->name('counter.test');
     Route::get('/primevue-test', [PrimeVueTestController::class, 'index'])->name('primevue.test');
     Route::get('/primevue-test-new', [PrimeVueTestController_New::class, 'index'])->name('primevue.test.new');
+
+    Route::prefix('primereg-test')->name('primereg-test.')->group(function () {
+        try {
+            // Main test page - displays all widgets from traits
+            Route::get('/', [PrimeRegTestController::class, 'index'])
+                ->name('index');
+        } catch (\Exception $e) {
+            Log::error('Error defining PrimeReg test routes', [
+                'file' => 'routes/web.php',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    });
 
     // PrimeVue Test Route
     /*Route::get('/primevue-test', function () {
