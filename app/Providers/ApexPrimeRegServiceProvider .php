@@ -5,7 +5,7 @@
  * Version 1.0.0.0
  * APEX Laravel PrimeVue Components
  * Description: Service provider for APEX framework registration and configuration
- * File location: app/Providers/ApexServiceProvider.php
+ * File location: app/Providers/ApexPrimeRegServiceProvider.php
  */
 
 namespace App\Providers;
@@ -19,7 +19,7 @@ use App\Apex\Core\Services\LicenseService;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Log;
 
-class ApexServiceProvider extends ServiceProvider
+class ApexPrimeRegServiceProvider  extends ServiceProvider
 {
     /**
      * Register any application services.
@@ -38,9 +38,9 @@ class ApexServiceProvider extends ServiceProvider
             // Register commands
             $this->registerCommands();
         } catch (\Exception $e) {
-            Log::error('Error in ApexServiceProvider register method', [
+            Log::error('Error in ApexPrimeRegServiceProvider register method', [
                 'folder' => 'app/Providers',
-                'file' => 'ApexServiceProvider.php',
+                'file' => 'ApexPrimeRegServiceProvider.php',
                 'method' => 'register',
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -66,9 +66,9 @@ class ApexServiceProvider extends ServiceProvider
             // Load views if needed
             $this->loadViews();
         } catch (\Exception $e) {
-            Log::error('Error in ApexServiceProvider boot method', [
+            Log::error('Error in ApexPrimeRegServiceProvider boot method', [
                 'folder' => 'app/Providers',
-                'file' => 'ApexServiceProvider.php',
+                'file' => 'ApexPrimeRegServiceProvider.php',
                 'method' => 'boot',
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -102,7 +102,7 @@ class ApexServiceProvider extends ServiceProvider
         } catch (\Exception $e) {
             Log::error('Error registering PrimeReg services', [
                 'folder' => 'app/Providers',
-                'file' => 'ApexServiceProvider.php',
+                'file' => 'ApexPrimeRegServiceProvider.php',
                 'method' => 'registerPrimeRegServices',
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -132,7 +132,7 @@ class ApexServiceProvider extends ServiceProvider
         } catch (\Exception $e) {
             Log::error('Error registering Core services', [
                 'folder' => 'app/Providers',
-                'file' => 'ApexServiceProvider.php',
+                'file' => 'ApexPrimeRegServiceProvider.php',
                 'method' => 'registerCoreServices',
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -158,7 +158,7 @@ class ApexServiceProvider extends ServiceProvider
         } catch (\Exception $e) {
             Log::error('Error registering commands', [
                 'folder' => 'app/Providers',
-                'file' => 'ApexServiceProvider.php',
+                'file' => 'ApexPrimeRegServiceProvider.php',
                 'method' => 'registerCommands',
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -195,7 +195,7 @@ class ApexServiceProvider extends ServiceProvider
         } catch (\Exception $e) {
             Log::error('Error publishing configuration', [
                 'folder' => 'app/Providers',
-                'file' => 'ApexServiceProvider.php',
+                'file' => 'ApexPrimeRegServiceProvider.php',
                 'method' => 'publishConfiguration',
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -220,7 +220,7 @@ class ApexServiceProvider extends ServiceProvider
         } catch (\Exception $e) {
             Log::error('Error loading routes', [
                 'folder' => 'app/Providers',
-                'file' => 'ApexServiceProvider.php',
+                'file' => 'ApexPrimeRegServiceProvider.php',
                 'method' => 'loadRoutes',
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -245,7 +245,7 @@ class ApexServiceProvider extends ServiceProvider
         } catch (\Exception $e) {
             Log::error('Error loading views', [
                 'folder' => 'app/Providers',
-                'file' => 'ApexServiceProvider.php',
+                'file' => 'ApexPrimeRegServiceProvider.php',
                 'method' => 'loadViews',
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -273,7 +273,7 @@ class ApexServiceProvider extends ServiceProvider
         } catch (\Exception $e) {
             Log::error('Error getting provided services', [
                 'folder' => 'app/Providers',
-                'file' => 'ApexServiceProvider.php',
+                'file' => 'ApexPrimeRegServiceProvider.php',
                 'method' => 'provides',
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
