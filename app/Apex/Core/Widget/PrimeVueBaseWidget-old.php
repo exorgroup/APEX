@@ -4,7 +4,7 @@
  * Copyright EXOR Group ltd 2025
  * Version 1.0.0.0
  * APEX Laravel PrimeVue Components
- * Description: Base widget class for PrimeVue components with license-based optimization and event name translation
+ * Description: Base widget class for PrimeVue components with license-based optimization
  * File location: app/Apex/Core/Widget/PrimeVueBaseWidget.php
  */
 
@@ -19,30 +19,6 @@ abstract class PrimeVueBaseWidget extends BaseWidget
     protected bool $useOptimizedLoading = false;
     protected array $activeFeatures = [];
     protected array $registeredTraits = [];
-
-    /**
-     * Event name mapping for PrimeVue compatibility
-     * @var array
-     */
-    protected array $eventNameMap = [
-        'click' => 'onclick',
-        'dblclick' => 'ondblclick',
-        'blur' => 'onblur',
-        'focus' => 'onfocus',
-        'input' => 'oninput',
-        'change' => 'onchange',
-        'keydown' => 'onkeydown',
-        'keyup' => 'onkeyup',
-        'keypress' => 'onkeypress',
-        'mouseenter' => 'onmouseenter',
-        'mouseleave' => 'onmouseleave',
-        'mouseover' => 'onmouseover',
-        'mouseout' => 'onmouseout',
-        'submit' => 'onsubmit',
-        'select' => 'onselect',
-        'load' => 'onload',
-        'error' => 'onerror'
-    ];
 
     public function __construct(array $config = [])
     {
@@ -97,9 +73,6 @@ abstract class PrimeVueBaseWidget extends BaseWidget
         try {
             $transformed = parent::transform($config);
 
-            // Apply event name translation
-            $transformed = $this->translateEvents($transformed);
-
             foreach ($this->activeFeatures as $feature) {
                 $transformed = $this->applyFeatureTransform($feature, $config, $transformed);
             }
@@ -114,106 +87,6 @@ abstract class PrimeVueBaseWidget extends BaseWidget
                 'trace' => $e->getTraceAsString()
             ]);
             return parent::transform($config);
-        }
-    }
-
-    /**
-     * Translate event names to PrimeVue compatible format
-     * @param array $config Widget configuration containing events
-     * @return array Configuration with PrimeVue compatible event names
-     */
-    protected function translateEvents(array $config): array
-    {
-        try {
-            // Handle events in root level
-            if (isset($config['events']) && is_array($config['events'])) {
-                $translatedEvents = [];
-
-                foreach ($config['events'] as $eventName => $eventConfig) {
-                    $translatedName = $this->translateEventName($eventName);
-                    $translatedEvents[$translatedName] = $eventConfig;
-                }
-
-                $config['events'] = $translatedEvents;
-            }
-
-            // Handle direct event properties (like dblclick="alert('test')")
-            foreach ($config as $key => $value) {
-                if ($this->isEventProperty($key)) {
-                    $translatedKey = $this->translateEventName($key);
-                    if ($translatedKey !== $key) {
-                        $config[$translatedKey] = $value;
-                        unset($config[$key]);
-                    }
-                }
-            }
-
-            return $config;
-        } catch (\Exception $e) {
-            Log::error('Error translating events', [
-                'folder' => 'app/Apex/Core/Widget',
-                'file' => 'PrimeVueBaseWidget.php',
-                'method' => 'translateEvents',
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return $config;
-        }
-    }
-
-    /**
-     * Translate individual event name to PrimeVue compatible format
-     * @param string $eventName Original event name from configuration
-     * @return string PrimeVue compatible event name with 'on' prefix
-     */
-    protected function translateEventName(string $eventName): string
-    {
-        try {
-            // Return as-is if already has 'on' prefix
-            if (str_starts_with($eventName, 'on')) {
-                return $eventName;
-            }
-
-            // Use mapping if available, otherwise add 'on' prefix
-            return $this->eventNameMap[$eventName] ?? 'on' . $eventName;
-        } catch (\Exception $e) {
-            Log::error('Error translating event name', [
-                'folder' => 'app/Apex/Core/Widget',
-                'file' => 'PrimeVueBaseWidget.php',
-                'method' => 'translateEventName',
-                'eventName' => $eventName,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return 'on' . $eventName;
-        }
-    }
-
-    /**
-     * Check if a property name represents an event
-     * @param string $propertyName Property name to check
-     * @return bool True if the property is an event
-     */
-    protected function isEventProperty(string $propertyName): bool
-    {
-        try {
-            // Check if it's already an event (starts with 'on')
-            if (str_starts_with($propertyName, 'on')) {
-                return true;
-            }
-
-            // Check if it's in our event mapping
-            return array_key_exists($propertyName, $this->eventNameMap);
-        } catch (\Exception $e) {
-            Log::error('Error checking if property is event', [
-                'folder' => 'app/Apex/Core/Widget',
-                'file' => 'PrimeVueBaseWidget.php',
-                'method' => 'isEventProperty',
-                'propertyName' => $propertyName,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return false;
         }
     }
 
@@ -339,6 +212,8 @@ abstract class PrimeVueBaseWidget extends BaseWidget
             return false;
         }
     }
+
+
 
     abstract protected function getEdition(): string;
     abstract protected function getPrimeVueComponent(): string;

@@ -28,7 +28,7 @@ File location: resources/js/components/apex/core/widgets/forms/inputtext/InputTe
             @blur="handleBlur"
             @focus="handleFocus"
             @input="handleInput"
-        />
+        />  
         
         <div v-if="helpText" :class="helpTextClasses">
             {{ helpText }}

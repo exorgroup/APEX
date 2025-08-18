@@ -46,7 +46,7 @@ class ApexServiceProvider extends ServiceProvider
                 //  $registry->register('knob', KnobWidget::class);
                 //  $registry->register('datepicker', DatePickerWidget::class);
                 // $registry->register('inputtext', InputTextWidget::class); // Now using Core version
-                $registry->register('inputtext', \App\Apex\Core\Widgets\Forms\InputText\InputTextWidget::class); // This works
+                $registry->register('inputtext', \App\Apex\Pro\Widgets\Forms\InputText\InputTextWidget::class); // This works
                 //   $registry->register('inputnumber', InputNumberWidget::class);
                 //   $registry->register('textarea', TextareaWidget::class);
                 //   $registry->register('select', SelectWidget::class);

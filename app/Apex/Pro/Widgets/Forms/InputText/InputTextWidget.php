@@ -4,33 +4,36 @@
  * Copyright EXOR Group ltd 2025
  * Version 1.0.0.0
  * APEX Laravel PrimeVue Components
- * Description: PRO InputText widget extending Core InputText with event handling, parameter injection, state management and advanced validation capabilities
+ * Description: PRO InputText widget extending Core InputText with advanced props and license validation
  * File location: app/Apex/Pro/Widgets/Forms/InputText/InputTextWidget.php
  */
 
 namespace App\Apex\Pro\Widgets\Forms\InputText;
 
 use App\Apex\Core\Widgets\Forms\InputText\InputTextWidget as CoreInputTextWidget;
-use App\Apex\Pro\Widget\PrimeVueBaseWidget\PrimeVueBaseWidget;
+use App\Apex\Core\Services\LicenseService;
 use Illuminate\Support\Facades\Log;
 
 class InputTextWidget extends CoreInputTextWidget
 {
-    use PrimeVueBaseWidget;
-
     /**
-     * Constructor with PRO feature initialization
+     * Constructor with PRO license validation
      * @param array $config Widget configuration array
      */
     public function __construct(array $config = [])
     {
         try {
-            // Initialize core widget first
+            // Initialize core widget first - this sets the ID
             parent::__construct($config);
 
-            // Initialize PRO features if licensed
-            if ($this->hasProLicense()) {
-                $this->initializeProFeatures($config);
+            // Check for pro license
+            if (!$this->hasProLicense()) {
+                Log::warning('Pro InputText widget accessed without valid license', [
+                    'folder' => 'app/Apex/Pro/Widgets/Forms/InputText',
+                    'file' => 'InputTextWidget.php',
+                    'method' => '__construct',
+                    'license_edition' => LicenseService::getEdition()
+                ]);
             }
         } catch (\Exception $e) {
             Log::error('Error in PRO InputTextWidget constructor', [
@@ -65,37 +68,103 @@ class InputTextWidget extends CoreInputTextWidget
     }
 
     /**
-     * Get complete widget schema including PRO features
-     * @return array Complete widget schema with PRO extensions
+     * Check if pro license is available
+     * @return bool True if pro license is valid
+     */
+    protected function hasProLicense(): bool
+    {
+        try {
+            $edition = LicenseService::getEdition();
+            return in_array($edition, ['pro', 'enterprise']);
+        } catch (\Exception $e) {
+            Log::error('Error checking pro license', [
+                'folder' => 'app/Apex/Pro/Widgets/Forms/InputText',
+                'file' => 'InputTextWidget.php',
+                'method' => 'hasProLicense',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Get enhanced schema with PRO features
+     * @return array Complete widget schema including PRO features
      */
     public function getSchema(): array
     {
         try {
-            // Get core schema first
-            $coreSchema = parent::getSchema();
+            $baseSchema = parent::getSchema();
 
-            // If PRO license available, add PRO features
-            if ($this->hasProLicense()) {
-                // Add PRO event handling
-                $coreSchema['properties']['events'] = $this->getEventSchema();
-
-                // Add PRO state management
-                $coreSchema['properties']['stateConfig'] = $this->getStateSchema();
-
-                // Add PRO error handling
-                $coreSchema['properties']['errorConfig'] = $this->getErrorSchema();
-
-                // Add PRO parameter injection
-                $coreSchema['properties']['parameterConfig'] = $this->getParameterSchema();
-
-                // Add PRO validation features
-                $coreSchema['properties']['advancedValidation'] = $this->getAdvancedValidationSchema();
-
-                // Add PRO server communication
-                $coreSchema['properties']['serverConfig'] = $this->getServerConfigSchema();
+            // Only add pro features if license is valid
+            if (!$this->hasProLicense()) {
+                return $baseSchema;
             }
 
-            return $coreSchema;
+            // Add PRO-specific properties
+            $baseSchema['properties']['events'] = [
+                'type' => 'object',
+                'description' => 'Event configuration for PRO features',
+                'properties' => [
+                    'onBlur' => ['type' => 'object', 'description' => 'Blur event configuration'],
+                    'onFocus' => ['type' => 'object', 'description' => 'Focus event configuration'],
+                    'onChange' => ['type' => 'object', 'description' => 'Change event configuration'],
+                    'onInput' => ['type' => 'object', 'description' => 'Input event configuration'],
+                    'onKeyDown' => ['type' => 'object', 'description' => 'KeyDown event configuration'],
+                    'onKeyUp' => ['type' => 'object', 'description' => 'KeyUp event configuration'],
+                    'onClick' => ['type' => 'object', 'description' => 'Click event configuration'],
+                    'onDoubleClick' => ['type' => 'object', 'description' => 'Double click event configuration']
+                ]
+            ];
+
+            $baseSchema['properties']['stateConfig'] = [
+                'type' => 'object',
+                'description' => 'State management configuration',
+                'properties' => [
+                    'syncToServer' => ['type' => 'boolean', 'description' => 'Enable server synchronization'],
+                    'localState' => ['type' => 'boolean', 'description' => 'Enable local state management'],
+                    'conflictResolution' => [
+                        'type' => 'string',
+                        'enum' => ['client', 'server', 'merge', 'prompt'],
+                        'description' => 'Conflict resolution strategy'
+                    ]
+                ]
+            ];
+
+            $baseSchema['properties']['parameterConfig'] = [
+                'type' => 'object',
+                'description' => 'Parameter injection configuration',
+                'properties' => [
+                    'contexts' => [
+                        'type' => 'array',
+                        'items' => ['type' => 'string'],
+                        'description' => 'Available parameter contexts'
+                    ],
+                    'templates' => [
+                        'type' => 'object',
+                        'description' => 'Parameter templates for injection'
+                    ]
+                ]
+            ];
+
+            $baseSchema['properties']['advancedValidation'] = [
+                'type' => 'object',
+                'description' => 'Advanced validation configuration',
+                'properties' => [
+                    'realTimeValidation' => ['type' => 'boolean', 'description' => 'Enable real-time validation'],
+                    'customRules' => [
+                        'type' => 'array',
+                        'description' => 'Custom validation rules'
+                    ],
+                    'businessRules' => [
+                        'type' => 'object',
+                        'description' => 'Business logic validation rules'
+                    ]
+                ]
+            ];
+
+            return $baseSchema;
         } catch (\Exception $e) {
             Log::error('Error getting PRO schema', [
                 'folder' => 'app/Apex/Pro/Widgets/Forms/InputText',
@@ -109,24 +178,41 @@ class InputTextWidget extends CoreInputTextWidget
     }
 
     /**
-     * Transform configuration with PRO features
-     * @param array $config Widget configuration array
+     * Transform and validate widget configuration with PRO features
+     * @param array $config Raw widget configuration
      * @return array Transformed configuration with PRO features
      */
     public function transform(array $config): array
     {
         try {
-            // Get core transformation first
-            $transformed = parent::transform($config);
+            // Get base transformation
+            $transformedConfig = parent::transform($config);
 
-            // Add PRO transformations if licensed
-            if ($this->hasProLicense()) {
-                $transformed = $this->transformPro($config);
+            // Only add pro features if license is valid
+            if (!$this->hasProLicense()) {
+                return $transformedConfig;
             }
 
-            return $transformed;
+            // Add PRO-specific transformations
+            if (isset($config['events'])) {
+                $transformedConfig['events'] = $this->transformEvents($config['events']);
+            }
+
+            if (isset($config['stateConfig'])) {
+                $transformedConfig['stateConfig'] = $this->transformStateConfig($config['stateConfig']);
+            }
+
+            if (isset($config['parameterConfig'])) {
+                $transformedConfig['parameterConfig'] = $this->transformParameterConfig($config['parameterConfig']);
+            }
+
+            if (isset($config['advancedValidation'])) {
+                $transformedConfig['advancedValidation'] = $this->transformAdvancedValidation($config['advancedValidation']);
+            }
+
+            return $transformedConfig;
         } catch (\Exception $e) {
-            Log::error('Error transforming PRO configuration', [
+            Log::error('Error transforming PRO config', [
                 'folder' => 'app/Apex/Pro/Widgets/Forms/InputText',
                 'file' => 'InputTextWidget.php',
                 'method' => 'transform',
@@ -138,315 +224,153 @@ class InputTextWidget extends CoreInputTextWidget
     }
 
     /**
-     * Validate email format with business rules (widget-specific validation)
-     * @param string $email Email address to validate
-     * @return array Validation result with status and message
+     * Transform events configuration
+     * @param array $events Events configuration
+     * @return array Transformed events configuration
      */
-    protected function validateEmailFormat(string $email): array
+    protected function transformEvents(array $events): array
     {
         try {
-            // Basic email format validation
-            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                return [
-                    'valid' => false,
-                    'message' => 'Invalid email format',
-                    'field' => 'email',
-                    'code' => 'INVALID_FORMAT'
-                ];
-            }
+            $transformedEvents = [];
 
-            // Business rule: Check for valid domain
-            $domain = substr(strrchr($email, "@"), 1);
-            if (empty($domain)) {
-                return [
-                    'valid' => false,
-                    'message' => 'Email domain is required',
-                    'field' => 'email',
-                    'code' => 'MISSING_DOMAIN'
-                ];
-            }
+            foreach ($events as $eventName => $eventConfig) {
+                // Normalize event name (add 'on' prefix if missing)
+                $normalizedEventName = $this->normalizeEventName($eventName);
 
-            // Business rule: Block disposable email providers (example)
-            $disposableDomains = ['tempmail.com', '10minutemail.com', 'guerrillamail.com'];
-            if (in_array($domain, $disposableDomains)) {
-                return [
-                    'valid' => false,
-                    'message' => 'Disposable email addresses are not allowed',
-                    'field' => 'email',
-                    'code' => 'DISPOSABLE_EMAIL'
-                ];
-            }
-
-            return [
-                'valid' => true,
-                'message' => 'Email format is valid',
-                'field' => 'email',
-                'code' => 'VALID'
-            ];
-        } catch (\Exception $e) {
-            Log::error('Error validating email format', [
-                'folder' => 'app/Apex/Pro/Widgets/Forms/InputText',
-                'file' => 'InputTextWidget.php',
-                'method' => 'validateEmailFormat',
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return [
-                'valid' => false,
-                'message' => 'Validation error occurred',
-                'field' => 'email',
-                'code' => 'VALIDATION_ERROR'
-            ];
-        }
-    }
-
-    /**
-     * Format phone number for display (widget-specific formatting)
-     * @param string $phone Phone number to format
-     * @return string Formatted phone number
-     */
-    protected function formatPhoneNumber(string $phone): string
-    {
-        try {
-            // Remove all non-numeric characters
-            $cleaned = preg_replace('/[^0-9]/', '', $phone);
-
-            // Format based on length
-            switch (strlen($cleaned)) {
-                case 10:
-                    // US format: (123) 456-7890
-                    return preg_replace('/(\d{3})(\d{3})(\d{4})/', '($1) $2-$3', $cleaned);
-                case 11:
-                    // US format with country code: +1 (123) 456-7890
-                    return preg_replace('/(\d{1})(\d{3})(\d{3})(\d{4})/', '+$1 ($2) $3-$4', $cleaned);
-                default:
-                    // Return as-is if format not recognized
-                    return $phone;
-            }
-        } catch (\Exception $e) {
-            Log::error('Error formatting phone number', [
-                'folder' => 'app/Apex/Pro/Widgets/Forms/InputText',
-                'file' => 'InputTextWidget.php',
-                'method' => 'formatPhoneNumber',
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return $phone;
-        }
-    }
-
-    /**
-     * Validate credit card number using Luhn algorithm (widget-specific validation)
-     * @param string $cardNumber Credit card number to validate
-     * @return array Validation result with card type and status
-     */
-    protected function validateCreditCard(string $cardNumber): array
-    {
-        try {
-            // Remove spaces and dashes
-            $cleaned = preg_replace('/[\s\-]/', '', $cardNumber);
-
-            // Check if all digits
-            if (!ctype_digit($cleaned)) {
-                return [
-                    'valid' => false,
-                    'message' => 'Credit card number must contain only digits',
-                    'cardType' => null
-                ];
-            }
-
-            // Luhn algorithm validation
-            $sum = 0;
-            $alternate = false;
-
-            for ($i = strlen($cleaned) - 1; $i >= 0; $i--) {
-                $n = intval($cleaned[$i]);
-
-                if ($alternate) {
-                    $n *= 2;
-                    if ($n > 9) {
-                        $n = ($n % 10) + 1;
-                    }
-                }
-
-                $sum += $n;
-                $alternate = !$alternate;
-            }
-
-            $isValid = ($sum % 10 === 0);
-            $cardType = $this->detectCardType($cleaned);
-
-            return [
-                'valid' => $isValid,
-                'message' => $isValid ? 'Valid credit card number' : 'Invalid credit card number',
-                'cardType' => $cardType,
-                'maskedNumber' => $this->maskCardNumber($cleaned)
-            ];
-        } catch (\Exception $e) {
-            Log::error('Error validating credit card', [
-                'folder' => 'app/Apex/Pro/Widgets/Forms/InputText',
-                'file' => 'InputTextWidget.php',
-                'method' => 'validateCreditCard',
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return [
-                'valid' => false,
-                'message' => 'Validation error occurred',
-                'cardType' => null
-            ];
-        }
-    }
-
-    /**
-     * Detect credit card type from number (helper method)
-     * @param string $cardNumber Clean credit card number
-     * @return string|null Card type or null if unknown
-     */
-    protected function detectCardType(string $cardNumber): ?string
-    {
-        try {
-            $patterns = [
-                'visa' => '/^4[0-9]{12}(?:[0-9]{3})?$/',
-                'mastercard' => '/^5[1-5][0-9]{14}$/',
-                'amex' => '/^3[47][0-9]{13}$/',
-                'discover' => '/^6(?:011|5[0-9]{2})[0-9]{12}$/'
-            ];
-
-            foreach ($patterns as $type => $pattern) {
-                if (preg_match($pattern, $cardNumber)) {
-                    return $type;
+                // Transform event configuration
+                if (is_string($eventConfig)) {
+                    // Simple string handler: "alert('test')"
+                    $transformedEvents[$normalizedEventName] = [
+                        'type' => 'simple',
+                        'handler' => $eventConfig
+                    ];
+                } elseif (is_array($eventConfig)) {
+                    // Complex configuration object
+                    $transformedEvents[$normalizedEventName] = [
+                        'type' => 'complex',
+                        'handler' => $eventConfig['handler'] ?? null,
+                        'params' => $eventConfig['params'] ?? [],
+                        'server' => $eventConfig['server'] ?? null,
+                        'debounce' => $eventConfig['debounce'] ?? 0
+                    ];
+                } else {
+                    // Fallback - pass through as is
+                    $transformedEvents[$normalizedEventName] = $eventConfig;
                 }
             }
 
-            return null;
+            return $transformedEvents;
         } catch (\Exception $e) {
-            Log::error('Error detecting card type', [
+            Log::error('Error transforming events', [
                 'folder' => 'app/Apex/Pro/Widgets/Forms/InputText',
                 'file' => 'InputTextWidget.php',
-                'method' => 'detectCardType',
+                'method' => 'transformEvents',
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            return null;
+            return $events;
         }
     }
 
     /**
-     * Mask credit card number for security (helper method)
-     * @param string $cardNumber Clean credit card number
-     * @return string Masked card number
+     * Transform state configuration
+     * @param array $stateConfig State configuration
+     * @return array Transformed state configuration
      */
-    protected function maskCardNumber(string $cardNumber): string
+    protected function transformStateConfig(array $stateConfig): array
     {
         try {
-            $length = strlen($cardNumber);
-            if ($length < 4) {
-                return str_repeat('*', $length);
-            }
-
-            // Show first 4 and last 4 digits
-            $masked = substr($cardNumber, 0, 4) . str_repeat('*', $length - 8) . substr($cardNumber, -4);
-            return $masked;
-        } catch (\Exception $e) {
-            Log::error('Error masking card number', [
-                'folder' => 'app/Apex/Pro/Widgets/Forms/InputText',
-                'file' => 'InputTextWidget.php',
-                'method' => 'maskCardNumber',
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return str_repeat('*', strlen($cardNumber));
-        }
-    }
-
-    /**
-     * Get advanced validation schema for PRO features
-     * @return array Advanced validation schema
-     */
-    protected function getAdvancedValidationSchema(): array
-    {
-        try {
-            return [
-                'type' => 'object',
-                'description' => 'Advanced validation configuration',
-                'properties' => [
-                    'realTimeValidation' => [
-                        'type' => 'boolean',
-                        'description' => 'Enable real-time validation',
-                        'default' => true
-                    ],
-                    'customRules' => [
-                        'type' => 'array',
-                        'description' => 'Custom validation rules',
-                        'items' => [
-                            'type' => 'object',
-                            'properties' => [
-                                'rule' => ['type' => 'string'],
-                                'message' => ['type' => 'string'],
-                                'serverValidation' => ['type' => 'boolean']
-                            ]
-                        ]
-                    ],
-                    'businessRules' => [
-                        'type' => 'object',
-                        'description' => 'Business-specific validation rules'
-                    ]
-                ]
+            $defaults = [
+                'syncToServer' => false,
+                'localState' => true,
+                'conflictResolution' => 'client'
             ];
+
+            return array_merge($defaults, $stateConfig);
         } catch (\Exception $e) {
-            Log::error('Error getting advanced validation schema', [
+            Log::error('Error transforming state config', [
                 'folder' => 'app/Apex/Pro/Widgets/Forms/InputText',
                 'file' => 'InputTextWidget.php',
-                'method' => 'getAdvancedValidationSchema',
+                'method' => 'transformStateConfig',
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            return [];
+            return $stateConfig;
         }
     }
 
     /**
-     * Get server configuration schema
-     * @return array Server configuration schema
+     * Transform parameter configuration
+     * @param array $parameterConfig Parameter configuration
+     * @return array Transformed parameter configuration
      */
-    protected function getServerConfigSchema(): array
+    protected function transformParameterConfig(array $parameterConfig): array
     {
         try {
-            return [
-                'type' => 'object',
-                'description' => 'Server communication configuration',
-                'properties' => [
-                    'endpoints' => [
-                        'type' => 'object',
-                        'description' => 'Server endpoint configurations',
-                        'properties' => [
-                            'validate' => ['type' => 'string'],
-                            'autocomplete' => ['type' => 'string'],
-                            'format' => ['type' => 'string']
-                        ]
-                    ],
-                    'timeout' => [
-                        'type' => 'integer',
-                        'description' => 'Request timeout in milliseconds',
-                        'default' => 5000
-                    ],
-                    'retries' => [
-                        'type' => 'integer',
-                        'description' => 'Number of retry attempts',
-                        'default' => 3
-                    ]
-                ]
+            $defaults = [
+                'contexts' => ['widget', 'form', 'user', 'static'],
+                'templates' => []
             ];
+
+            return array_merge($defaults, $parameterConfig);
         } catch (\Exception $e) {
-            Log::error('Error getting server config schema', [
+            Log::error('Error transforming parameter config', [
                 'folder' => 'app/Apex/Pro/Widgets/Forms/InputText',
                 'file' => 'InputTextWidget.php',
-                'method' => 'getServerConfigSchema',
+                'method' => 'transformParameterConfig',
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            return [];
+            return $parameterConfig;
+        }
+    }
+
+    /**
+     * Transform advanced validation configuration
+     * @param array $advancedValidation Advanced validation configuration
+     * @return array Transformed advanced validation configuration
+     */
+    protected function transformAdvancedValidation(array $advancedValidation): array
+    {
+        try {
+            $defaults = [
+                'realTimeValidation' => false,
+                'customRules' => [],
+                'businessRules' => []
+            ];
+
+            return array_merge($defaults, $advancedValidation);
+        } catch (\Exception $e) {
+            Log::error('Error transforming advanced validation', [
+                'folder' => 'app/Apex/Pro/Widgets/Forms/InputText',
+                'file' => 'InputTextWidget.php',
+                'method' => 'transformAdvancedValidation',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $advancedValidation;
+        }
+    }
+
+    /**
+     * Normalize event name by adding 'on' prefix if missing
+     * @param string $eventName Original event name
+     * @return string Normalized event name with 'on' prefix
+     */
+    protected function normalizeEventName(string $eventName): string
+    {
+        try {
+            return str_starts_with($eventName, 'on') ? $eventName : 'on' . ucfirst($eventName);
+        } catch (\Exception $e) {
+            Log::error('Error normalizing event name', [
+                'folder' => 'app/Apex/Pro/Widgets/Forms/InputText',
+                'file' => 'InputTextWidget.php',
+                'method' => 'normalizeEventName',
+                'eventName' => $eventName,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $eventName;
         }
     }
 }

@@ -7,6 +7,7 @@ use App\Http\Controllers\ApexTestController2;
 use App\Http\Controllers\CounterTestController;
 use App\Http\Controllers\PrimeVueTestController;
 use App\Http\Controllers\PrimeVueTestController_New;
+use App\Http\Controllers\PrimeRegProTestController;
 
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
@@ -51,6 +52,28 @@ Route::middleware([
         } catch (\Exception $e) {
             Log::error('Error defining PrimeReg test routes', [
                 'file' => 'routes/web.php',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    });
+
+
+
+    // NEW: Pro edition testing routes
+    Route::prefix('primereg-pro-test')->name('primereg-pro-test.')->group(function () {
+        try {
+            // Main pro test page - displays all pro widgets with core inheritance
+            Route::get('/', [PrimeRegProTestController::class, 'index'])
+                ->name('index');
+
+            // Pro widget statistics endpoint for debugging
+            Route::get('/stats', [PrimeRegProTestController::class, 'getWidgetStats'])
+                ->name('stats');
+        } catch (\Exception $e) {
+            Log::error('Error defining PrimeReg pro test routes', [
+                'file' => 'routes/tenant.php',
+                'method' => 'primereg-pro-test routes',
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

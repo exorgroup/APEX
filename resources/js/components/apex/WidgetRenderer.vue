@@ -5,7 +5,7 @@ import TextareaWidget from './widgets/TextareaWidget.vue';
 import KnobWidget from './widgets/KnobWidget.vue';
 import DatePickerWidget from './widgets/DatePickerWidget.vue';
 //import InputTextWidget from './widgets/InputTextWidget.vue';
-import InputTextWidget from './core/widgets/Forms/InputText/InputTextWidget.vue';
+import InputTextWidget from './pro/widgets/Forms/InputText/InputTextWidget.vue';  
 import InputNumberWidget from './widgets/InputNumberWidget.vue';
 import SelectWidget from './widgets/SelectWidget.vue';
 import CheckboxWidget from './widgets/CheckboxWidget.vue';
