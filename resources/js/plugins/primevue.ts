@@ -9,6 +9,11 @@ import Breadcrumb from 'primevue/breadcrumb';
 import DatePicker from 'primevue/datepicker';
 import Select from 'primevue/select';
 import Checkbox from 'primevue/checkbox';
+import Image from 'primevue/image';
+
+import Toast from 'primevue/toast';
+import ToastService from 'primevue/toastservice';
+import Dialog from 'primevue/dialog';
 
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
@@ -36,6 +41,10 @@ export default {
             }
         });
 
+        app.use(ToastService);
+        app.component('PToast', Toast);
+        app.component('PDialog', Dialog);
+
         // Register PrimeVue components globally
         app.component('PButton', Button);
         app.component('PInputText', InputText);
@@ -46,7 +55,7 @@ export default {
         app.component('PDatePicker', DatePicker);
         app.component('PSelect', Select);
         app.component('PCheckbox', Checkbox);
-
+        app.component('PImage', Image);
         
         app.component('PDataTable', DataTable);
         app.component('PColumn', Column);

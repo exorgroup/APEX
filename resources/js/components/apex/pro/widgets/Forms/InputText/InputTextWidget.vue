@@ -2,7 +2,7 @@
 Copyright EXOR Group ltd 2025
 Version 1.0.0.0
 APEX Laravel PrimeVue Components
-Description: PRO InputText Vue component extending Core InputText with advanced props and license validation
+Description: PRO InputText Vue component extending Core InputText with advanced props and event handling
 File location: resources/js/components/apex/pro/widgets/Forms/InputText/InputTextWidget.vue
 -->
 
@@ -53,16 +53,53 @@ File location: resources/js/components/apex/pro/widgets/Forms/InputText/InputTex
 
         <!-- PRO Features Status (for development/testing) -->
         <div v-if="showProStatus && isProLicensed" class="mt-2 text-xs text-green-600">
-            PRO Features Active dd
+            PRO Features Active
         </div>
         <div v-else-if="showProStatus" class="mt-2 text-xs text-gray-500">
-            Core Features Only dd
+            Core Features Only
         </div>
+
+        <!-- Global Toast (only render once per page) -->
+        <PToast v-if="shouldRenderToast" group="apex-widget-toast" />
+
+        <!-- Response Modal -->
+        <PDialog 
+            v-model:visible="responseHandler.modalVisible.value"
+            :modal="true"
+            :closable="responseHandler.modalConfig.value?.closable ?? true"
+            :style="{ width: responseHandler.modalConfig.value?.width ?? '400px' }"
+            :header="responseHandler.modalConfig.value?.title ?? 'Message'"
+        >
+            <div class="flex items-start gap-4">
+                <PImage 
+                    v-if="responseHandler.modalConfig.value?.image"
+                    :src="responseHandler.modalConfig.value.image"
+                    alt="Modal Image"
+                    class="w-16 h-16 object-cover rounded"
+                />
+                <div class="flex-1">
+                    <p class="text-gray-700">{{ responseHandler.modalMessage.value }}</p>
+                </div>
+            </div>
+            
+            <template #footer>
+                <PButton 
+                    :label="responseHandler.modalConfig.value?.buttonText ?? 'OK'"
+                    :severity="responseHandler.modalConfig.value?.buttonSeverity ?? 'info'"
+                    @click="responseHandler.closeModal"
+                />
+            </template>
+        </PDialog>
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, nextTick } from 'vue';
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
+import { useResponseHandling } from '../../../Widget/PrimeVueBaseWidget/composables/useResponseHandling';
+import PDialog from 'primevue/dialog';
+import PButton from 'primevue/button';
+import PImage from 'primevue/image';
+import PToast from 'primevue/toast';
 
 // Props interface extending core props with PRO features
 interface Props {
@@ -87,15 +124,7 @@ interface Props {
 
     // PRO-specific props
     events?: {
-        onBlur?: object;
-        onFocus?: object;
-        onChange?: object;
-        onInput?: object;
-        onKeyDown?: object;
-        onKeyUp?: object;
-        onClick?: object;
-        onDoubleClick?: object;
-        [key: string]: any;
+        [eventName: string]: any;
     };
     stateConfig?: {
         syncToServer?: boolean;
@@ -163,13 +192,42 @@ const emit = defineEmits<{
     invalid: [error: any];
     stateChange: [state: any];
     validationChange: [isValid: boolean];
+    'vue-event': [eventData: any];
 }>();
+
+// Toast intelligence - only render once per page
+const shouldRenderToast = computed(() => {
+    try {
+        // Check if another widget already rendered the toast
+        if (typeof window !== 'undefined') {
+            if (!window.apexToastRendered) {
+                window.apexToastRendered = props.id;
+                return true;
+            }
+            return window.apexToastRendered === props.id;
+        }
+        return false;
+    } catch (error) {
+        console.error('Error checking toast render status:', error);
+        return false;
+    }
+});
+
+// Use response handling composable
+const responseHandler = useResponseHandling();
 
 // Internal reactive state
 const internalValue = ref(props.modelValue);
 const isProLicensed = ref(false);
 const hasValidationError = ref(false);
 const validationMessage = ref('');
+
+// Common events that we'll listen for
+const commonEvents = [
+    'blur', 'focus', 'click', 'dblclick', 'mouseover', 'mouseout',
+    'mousedown', 'mouseup', 'keydown', 'keyup', 'keypress',
+    'change', 'input'
+];
 
 // Watch for modelValue changes
 watch(() => props.modelValue, (newValue) => {
@@ -291,7 +349,7 @@ const validationClasses = computed(() => {
     }
 });
 
-// Event handlers (simplified - PrimeVue handles HTML events directly)
+// Event handlers (simplified)
 const handleBlur = (event: Event) => {
     try {
         emit('blur', event);
@@ -348,16 +406,209 @@ const handleDoubleClick = (event: Event) => {
     }
 };
 
+// Generic event processor
+const handleGenericEvent = (event: Event) => {
+    try {
+        const target = event.target as HTMLElement;
+        
+        // Only process events for THIS widget's input element
+        if (!target.id.startsWith(props.id + '-')) {
+            return; // Not our widget, ignore
+        }
+        
+        const attrName = `on${event.type}`;
+        const attrValue = target.getAttribute(attrName);
+        
+        if (attrValue?.includes(':')) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const [type, rest] = attrValue.split(':', 2);
+            
+            switch(type) {
+                case 'js':
+                    handleJSEvent(rest, event);
+                    break;
+                case 'server':
+                    handleServerEvent(rest, event);
+                    break;
+                case 'vue':
+                    handleVueEvent(rest, event);
+                    break;
+                default:
+                    console.log('Unknown event type:', type);
+            }
+        }
+    } catch (error) {
+        console.error('Error in generic event handler:', error);
+    }
+};
+
+// JavaScript event handler
+const handleJSEvent = (jsCode: string, event: Event) => {
+    try {
+        console.log('Executing JS event:', jsCode);
+        eval(jsCode);
+    } catch (error) {
+        console.error('Error executing JS event:', error);
+    }
+};
+
+// Server event handler
+const handleServerEvent = async (serverCommand: string, event: Event) => {
+    try {
+        console.log('Executing Server event:', serverCommand);
+        
+        // Parse server command with optional response config
+        const [commandPart, responsePart] = serverCommand.split('|');
+        
+        // Parse the main command
+        const match = commandPart.match(/^(.+?)\/(\w+)\((.+)\)$/);
+        if (!match) {
+            console.error('Invalid server command format:', serverCommand);
+            return;
+        }
+        
+        const [, endpoint, handler, fullParamsStr] = match;
+        
+        // Decode response configuration if present
+        let responseConfig = null;
+        if (responsePart) {
+            responseConfig = responseHandler.decodeResponseConfig(responsePart);
+        }
+        
+        // Use regex to find function calls and quoted strings
+        const paramRegex = /(?:document\.getElementById\('[^']+'\)\.value|'[^']*'|\w+)/g;
+        const paramsList = fullParamsStr.match(paramRegex) || [];
+        
+        console.log('Parsed parameters:', paramsList);
+        console.log('Response config:', responseConfig);
+        
+        let evaluatedParams: any[] = [];
+        for (const param of paramsList) {
+            try {
+                const trimmedParam = param.trim();
+                console.log(`Processing parameter: "${trimmedParam}"`);
+                
+                if (trimmedParam.includes('document.getElementById')) {
+                    const evaluatedValue = eval(trimmedParam);
+                    evaluatedParams.push(evaluatedValue);
+                    console.log(`✓ Evaluated "${trimmedParam}" = "${evaluatedValue}"`);
+                } else if (trimmedParam.startsWith("'") && trimmedParam.endsWith("'")) {
+                    const stringValue = trimmedParam.slice(1, -1);
+                    evaluatedParams.push(stringValue);
+                    console.log(`✓ String literal "${trimmedParam}" = "${stringValue}"`);
+                } else {
+                    evaluatedParams.push(trimmedParam);
+                    console.log(`✓ Literal value "${trimmedParam}"`);
+                }
+            } catch (evalError) {
+                console.error(`✗ Could not evaluate parameter "${param}":`, evalError);
+                evaluatedParams.push(null);
+            }
+        }
+        
+        const url = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+        
+        console.log('Final evaluated parameters:', evaluatedParams);
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            },
+            body: JSON.stringify({
+                handler: handler,
+                params: evaluatedParams,
+                event: event.type,
+                value: (event.target as HTMLInputElement)?.value || '',
+                widgetId: props.id
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            console.log('Server response:', result);
+            
+            // Process response with response handling
+            if (responseConfig) {
+                await responseHandler.processServerResponse(result, responseConfig, event);
+            }
+            
+            // Call handler function if it exists globally
+            if (handler && window[handler as keyof Window]) {
+                (window[handler as keyof Window] as Function)(result, event);
+            }
+        } else {
+            console.error('Server request failed:', response.status);
+            
+            // Show error if response config exists
+            if (responseConfig && responseConfig.error) {
+                await responseHandler.processServerResponse(
+                    { success: false, state: 'error', message: 'Server request failed' },
+                    responseConfig,
+                    event
+                );
+            }
+        }
+    } catch (error) {
+        console.error('Error executing server event:', error);
+    }
+};
+
+// Vue event handler
+const handleVueEvent = (vueCommand: string, event: Event) => {
+    try {
+        console.log('Executing Vue event:', vueCommand);
+        
+        // Parse: "methodName(param1, param2)"
+        const [method, paramsStr] = vueCommand.split('(');
+        const params = paramsStr ? paramsStr.replace(')', '').split(',').map(p => p.trim()) : [];
+        
+        // Emit to parent component
+        emit('vue-event', {
+            method: method,
+            params: params,
+            event: event,
+            value: (event.target as HTMLInputElement)?.value || '',
+            widgetId: props.id
+        });
+    } catch (error) {
+        console.error('Error executing Vue event:', error);
+    }
+};
+
+// Setup generic event handler
+const setupGenericEventHandler = () => {
+    try {
+        if (!isProLicensed.value) return;
+
+        commonEvents.forEach(eventType => {
+            document.addEventListener(eventType, handleGenericEvent, true);
+        });
+    } catch (error) {
+        console.error('Error setting up generic event handler:', error);
+    }
+};
+
+// Cleanup event handlers
+const cleanupEventHandlers = () => {
+    try {
+        commonEvents.forEach(eventType => {
+            document.removeEventListener(eventType, handleGenericEvent, true);
+        });
+    } catch (error) {
+        console.error('Error cleaning up event handlers:', error);
+    }
+};
+
+// PRO Methods
 const performRealTimeValidation = (value: string) => {
     try {
-        // Placeholder for PRO real-time validation
         console.log('PRO Real-time validation triggered:', value);
-        
-        // This will be implemented in later phases with actual validation logic
-        // For now, just reset validation state
         hasValidationError.value = false;
         validationMessage.value = '';
-        
         emit('validationChange', true);
     } catch (error) {
         console.error('Error performing real-time validation:', error);
@@ -366,11 +617,7 @@ const performRealTimeValidation = (value: string) => {
 
 const checkProLicense = () => {
     try {
-        // Placeholder for PRO license check
-        // In a real implementation, this would check the license status
-        // For testing purposes, we'll assume PRO is available if events are configured
         isProLicensed.value = !!(props.events || props.stateConfig || props.parameterConfig || props.advancedValidation);
-        
         console.log('PRO License Status:', isProLicensed.value);
     } catch (error) {
         console.error('Error checking PRO license:', error);
@@ -383,7 +630,6 @@ onMounted(() => {
     try {
         checkProLicense();
         
-        // Initialize PRO features if licensed
         if (isProLicensed.value) {
             console.log('PRO InputText Widget initialized with features:', {
                 events: !!props.events,
@@ -391,9 +637,19 @@ onMounted(() => {
                 parameterConfig: !!props.parameterConfig,
                 advancedValidation: !!props.advancedValidation
             });
+            
+            setupGenericEventHandler();
         }
     } catch (error) {
         console.error('Error during component mounting:', error);
+    }
+});
+
+onUnmounted(() => {
+    try {
+        cleanupEventHandlers();
+    } catch (error) {
+        console.error('Error during component unmounting:', error);
     }
 });
 </script>

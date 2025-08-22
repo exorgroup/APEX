@@ -147,12 +147,42 @@ trait InputTextProTestTrait
                     'label' => 'Event Test Input (Pro Edition)',
                     'placeholder' => 'Focus and blur to test events',
                     'value' => '',
+
                     'events' => [
                         'blur' => "edfdf",
-                        'focus' => "dfdf",
-                        'mouseover' => "alert('mouse over event triggered!')",
+                        'focus' => "tyut",
+                        'dblclick' => [
+                            'type' => 'server',
+                            'server' => '/check-values',
+                            'handler' => 'validateValues',
+                            'params' => [
+                                '{{widget:this.value}}',           // Current widget value
+                                '{{widget:feedback-input-pro.value}}', // Other widget value
+                                '{{widget:help-input-pro.value}}', // Other widget value
+                                '{{static:maxLength}}',            // Static value
+                            ],
+                            'response' => [
+                                'success' => [
+                                    'type' => 'modal',
+                                    'title' => 'Validation Success',
+                                    'buttonText' => 'Continue',
+                                    'buttonSeverity' => 'success'
+                                ],
+
+                                'error' => [
+                                    'type' => 'modal',
+                                    'title' => 'Validation Error',
+                                    'buttonText' => 'Try Again',
+                                    'buttonSeverity' => 'error',
+                                    'image' => 'https://static.vecteezy.com/system/resources/thumbnails/028/149/207/small/3d-warning-or-danger-risk-message-alert-problem-icon-png.png'
+                                ]
+
+                            ]
+                        ],
                     ]
                 ],
+
+
 
                 // Pro Advanced Validation
                 [
@@ -162,6 +192,26 @@ trait InputTextProTestTrait
                     'label' => 'Advanced Validation (Pro)',
                     'placeholder' => 'Enter email for real-time validation',
                     'value' => '',
+
+                    'events' => [
+                        'blur' => "edfdf",
+                        'focus' => "tyut",
+                        'dblclick' => [
+                            'type' => 'server',
+                            'server' => '/check-values',
+                            'handler' => 'validateValues',
+                            'params' => [
+                                '{{widget:this.value}}',           // Current widget value
+                                '{{widget:feedback-input-pro.value}}', // Other widget value
+                                '{{widget:help-input-pro.value}}', // Other widget value
+                                '{{static:maxLength}}',            // Static value
+                            ],
+                            'response' => [
+                                'success' => ['type' => 'toast', 'severity' => 'warn'],
+                                'error' => ['type' => 'toast', 'severity' => 'error']
+                            ]
+                        ],
+                    ],
                     'advancedValidation' => [
                         'realTimeValidation' => true,
                         'customRules' => ['email', 'unique'],

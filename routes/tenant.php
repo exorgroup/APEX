@@ -80,6 +80,42 @@ Route::middleware([
         }
     });
 
+    // Test route for parameter injection
+    Route::post('/check-values', function (Illuminate\Http\Request $request) {
+        try {
+            $params = $request->input('params', []);
+            $widgetId = $request->input('widgetId', 'unknown field');
+
+            // Simple validation test
+            if (empty($params[0]) || strlen($params[0]) < 3) {
+                return response()->json([
+                    'success' => false,
+                    'state' => 'error',
+                    'message' => "Field '{$widgetId}' must be at least 3 characters long",
+                    'data' => ['params_received' => $params]
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'state' => 'success',
+                'message' => "Field '{$widgetId}' validated successfully!",
+                'data' => [
+                    'params_received' => $params,
+                    'validation_passed' => true
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'state' => 'error',
+                'message' => 'Server error: ' . $e->getMessage()
+            ], 500);
+        }
+    });
+
+
+
     // PrimeVue Test Route
     /*Route::get('/primevue-test', function () {
         return Inertia::render('PrimeVueTest');
