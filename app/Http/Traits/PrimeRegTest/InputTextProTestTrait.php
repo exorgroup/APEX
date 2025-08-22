@@ -130,11 +130,19 @@ trait InputTextProTestTrait
                     'type' => 'inputtext',
                     'edition' => 'pro',
                     'id' => 'feedback-input-pro',
-                    'label' => 'Username (Pro Edition - HERE DD)',
+                    'label' => 'Username (Pro Edition - HERE vue event test)',
                     'placeholder' => 'Enter username',
                     'value' => 'invalid@user',
                     'feedback' => true,
-                    'invalidMessage' => 'Username contains invalid characters'
+                    'invalidMessage' => 'Username contains invalid characters',
+                    'events' => [
+                        'blur' => "edfdf",
+                        'dblclick' => [
+                            'type' => 'vue',
+                            'handler' => 'highlightField',
+                            'params' => ['{{widget:this.value}}', '{{static:fieldType}}']
+                        ]
+                    ]
                 ],
 
                 // PRO-SPECIFIC FEATURES - Additional widgets testing pro capabilities
@@ -147,6 +155,7 @@ trait InputTextProTestTrait
                     'label' => 'Event Test Input (Pro Edition)',
                     'placeholder' => 'Focus and blur to test events',
                     'value' => '',
+                    'debounce' => 500, // 500ms debounce
 
                     'events' => [
                         'blur' => "edfdf",

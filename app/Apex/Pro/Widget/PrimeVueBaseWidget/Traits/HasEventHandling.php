@@ -41,6 +41,7 @@ trait HasEventHandling
                             $server = $eventConfig['server'] ?? '';
                             $handler = $eventConfig['handler'] ?? '';
                             $params = $eventConfig['params'] ?? [];
+                            $debounce = $eventConfig['debounce'] ?? 0;
                             $paramsStr = $this->resolveParameterTemplates($params);
 
                             // Handle response configuration
@@ -50,7 +51,10 @@ trait HasEventHandling
                                 $responseConfig = '|' . base64_encode(json_encode($transformedResponse));
                             }
 
-                            $transformedEvents[$normalizedEventName] = "server:{$server}/{$handler}({$paramsStr}){$responseConfig}";
+                            // Add debounce info
+                            $debounceConfig = $debounce > 0 ? '|' . $debounce : '';
+
+                            $transformedEvents[$normalizedEventName] = "server:{$server}/{$handler}({$paramsStr}){$responseConfig}{$debounceConfig}";
                             break;
 
                         case 'vue':
