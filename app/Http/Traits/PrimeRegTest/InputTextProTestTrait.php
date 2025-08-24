@@ -136,7 +136,6 @@ trait InputTextProTestTrait
                     'feedback' => true,
                     'invalidMessage' => 'Username contains invalid characters',
                     'events' => [
-                        'blur' => "edfdf",
                         'dblclick' => [
                             'type' => 'vue',
                             'handler' => 'highlightField',

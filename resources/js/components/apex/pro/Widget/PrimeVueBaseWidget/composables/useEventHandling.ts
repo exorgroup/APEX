@@ -6,7 +6,7 @@
  * File location: resources/js/components/apex/pro/Widget/PrimeVueBaseWidget/composables/useEventHandling.ts
  */
 
-import { onMounted, onUnmounted } from 'vue';
+import { onMounted, onUnmounted, getCurrentInstance } from 'vue';
 
 export interface EventConfig {
     [eventName: string]: any;
@@ -27,6 +27,9 @@ export function useEventHandling(options: UseEventHandlingOptions) {
         'mousedown', 'mouseup', 'keydown', 'keyup', 'keypress',
         'change', 'input'
     ];
+
+    // Debouncing state
+    const debounceTimers = new Map<string, number>();
 
     /**
      * Generic event processor
@@ -81,18 +84,61 @@ export function useEventHandling(options: UseEventHandlingOptions) {
     };
 
     /**
-     * Server event handler
+     * Server event handler with debouncing
      */
     const handleServerEvent = async (serverCommand: string, event: Event) => {
         try {
             console.log('Executing Server event:', serverCommand);
             
-            // Simple regex parsing
-            const match = serverCommand.match(/^(.+?)\/(\w+)\((.+)\)$/);
+            // Parse server command with optional response config and debounce
+            const parts = serverCommand.split('|');
+            const commandPart = parts[0];
+            const responsePart = parts[1];
+            const debouncePart = parts[2];
+            
+            // Parse the main command
+            const match = commandPart.match(/^(.+?)\/(\w+)\((.+)\)$/);
             if (!match) {
                 console.error('Invalid server command format:', serverCommand);
                 return;
             }
+            
+            const [, endpoint, handler, fullParamsStr] = match;
+            
+            // Handle debouncing
+            if (debouncePart && parseInt(debouncePart) > 0) {
+                const debounceMs = parseInt(debouncePart);
+                const eventKey = `${widgetId}-${event.type}`;
+                
+                // Clear existing timer
+                if (debounceTimers.has(eventKey)) {
+                    clearTimeout(debounceTimers.get(eventKey));
+                }
+                
+                // Set new timer
+                const timerId = window.setTimeout(() => {
+                    executeServerCall(commandPart, responsePart, event);
+                    debounceTimers.delete(eventKey);
+                }, debounceMs);
+                
+                debounceTimers.set(eventKey, timerId);
+                return;
+            }
+            
+            // Execute immediately if no debounce
+            await executeServerCall(commandPart, responsePart, event);
+        } catch (error) {
+            console.error('Error executing server event:', error);
+        }
+    };
+
+    /**
+     * Extract server call execution
+     */
+    const executeServerCall = async (commandPart: string, responsePart: string, event: Event) => {
+        try {
+            const match = commandPart.match(/^(.+?)\/(\w+)\((.+)\)$/);
+            if (!match) return;
             
             const [, endpoint, handler, fullParamsStr] = match;
             
@@ -149,6 +195,14 @@ export function useEventHandling(options: UseEventHandlingOptions) {
                 const result = await response.json();
                 console.log('Server response:', result);
                 
+                // Process response if responseHandler is available
+                if (responsePart && window.responseHandler?.processServerResponse) {
+                    const responseConfig = window.responseHandler.decodeResponseConfig(responsePart);
+                    if (responseConfig) {
+                        await window.responseHandler.processServerResponse(result, responseConfig, event);
+                    }
+                }
+                
                 // Call handler function if it exists globally
                 if (handler && window[handler as keyof Window]) {
                     (window[handler as keyof Window] as Function)(result, event);
@@ -157,33 +211,105 @@ export function useEventHandling(options: UseEventHandlingOptions) {
                 console.error('Server request failed:', response.status);
             }
         } catch (error) {
-            console.error('Error executing server event:', error);
+            console.error('Error in server call execution:', error);
         }
     };
 
     /**
-     * Vue event handler
+     * Vue event handler - executes Vue methods directly like handleJSEvent
      */
     const handleVueEvent = (vueCommand: string, event: Event) => {
-        try {
-            console.log('Executing Vue event:', vueCommand);
-            
-            // Parse: "methodName(param1, param2)"
-            const [method, paramsStr] = vueCommand.split('(');
-            const params = paramsStr ? paramsStr.replace(')', '').split(',').map(p => p.trim()) : [];
-            
-            // For now, just log - this would need to be customized per widget
-            console.log('Vue event would emit:', {
-                method: method,
-                params: params,
-                event: event,
-                value: (event.target as HTMLInputElement)?.value || '',
-                widgetId: widgetId
-            });
-        } catch (error) {
-            console.error('Error executing Vue event:', error);
+    try {
+        console.log('Executing Vue event:', vueCommand);
+        
+        // Parse method name and parameters string
+        const parenIndex = vueCommand.indexOf('(');
+        if (parenIndex === -1) {
+            console.error('No parameters found in Vue command');
+            return;
         }
-    };
+        
+        const method = vueCommand.substring(0, parenIndex);
+        const fullParamsStr = vueCommand.substring(parenIndex + 1, vueCommand.lastIndexOf(')'));
+        
+        console.log('Method:', method);
+        console.log('Parameters string:', fullParamsStr);
+        
+        // Split parameters by comma, but handle function calls properly
+        const params: string[] = [];
+        let currentParam = '';
+        let parenCount = 0;
+        let inQuotes = false;
+        let quoteChar = '';
+        
+        for (let i = 0; i < fullParamsStr.length; i++) {
+            const char = fullParamsStr[i];
+            
+            if (!inQuotes && (char === '"' || char === "'")) {
+                inQuotes = true;
+                quoteChar = char;
+                currentParam += char;
+            } else if (inQuotes && char === quoteChar) {
+                inQuotes = false;
+                quoteChar = '';
+                currentParam += char;
+            } else if (!inQuotes && char === '(') {
+                parenCount++;
+                currentParam += char;
+            } else if (!inQuotes && char === ')') {
+                parenCount--;
+                currentParam += char;
+            } else if (!inQuotes && char === ',' && parenCount === 0) {
+                params.push(currentParam.trim());
+                currentParam = '';
+            } else {
+                currentParam += char;
+            }
+        }
+        
+        if (currentParam.trim()) {
+            params.push(currentParam.trim());
+        }
+        
+        console.log('Split parameters:', params);
+        
+        // Evaluate each parameter
+        const evaluatedParams: any[] = [];
+        for (const param of params) {
+            try {
+                if (param.includes('document.getElementById')) {
+                    const value = eval(param);
+                    evaluatedParams.push(value);
+                    console.log(`Evaluated ${param} = ${value}`);
+                } else if ((param.startsWith("'") && param.endsWith("'")) || 
+                          (param.startsWith('"') && param.endsWith('"'))) {
+                    const stringValue = param.slice(1, -1);
+                    evaluatedParams.push(stringValue);
+                    console.log(`String literal ${param} = ${stringValue}`);
+                } else {
+                    evaluatedParams.push(param);
+                    console.log(`Literal ${param}`);
+                }
+            } catch (evalError) {
+                console.error(`Failed to evaluate parameter ${param}:`, evalError);
+                evaluatedParams.push(param);
+            }
+        }
+        
+        console.log('Final evaluated parameters:', evaluatedParams);
+        
+        // Execute the method
+        if (window[method as keyof Window] && typeof window[method as keyof Window] === 'function') {
+            console.log(`Executing ${method} with:`, evaluatedParams);
+            (window[method as keyof Window] as Function)(...evaluatedParams);
+        } else {
+            console.warn(`Method ${method} not found on window`);
+        }
+        
+    } catch (error) {
+        console.error('Error in Vue event handler:', error);
+    }
+};
 
     /**
      * Setup generic event handler
@@ -220,6 +346,12 @@ export function useEventHandling(options: UseEventHandlingOptions) {
 
     onUnmounted(() => {
         cleanupEventHandlers();
+        
+        // Clear any pending debounce timers
+        debounceTimers.forEach(timerId => {
+            clearTimeout(timerId);
+        });
+        debounceTimers.clear();
     });
 
     return {

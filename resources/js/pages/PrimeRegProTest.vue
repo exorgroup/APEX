@@ -45,6 +45,71 @@ const isDevelopment = computed(() => {
     }
 });
 
+/**
+ * Vue Event Test Method: highlightField
+ * Changes background color based on widget value
+ * @param value - The widget value (expecting '3' or '5')
+ * @param fieldType - The field type (static parameter)
+ */
+const highlightField = (value: string, fieldType: string) => {
+    try {
+        console.log('highlightField called with:', { value, fieldType });
+        
+        let backgroundColor = '';
+        let logColor = '';
+        
+        if (value === '3') {
+            backgroundColor = 'blue';
+            logColor = 'blue';
+            console.log('%c Background set to BLUE', 'color: blue; font-weight: bold;');
+            alert('Field background changed to BLUE!');
+        } else if (value === '5') {
+            backgroundColor = 'red';
+            logColor = 'red';
+            console.log('%c Background set to RED', 'color: red; font-weight: bold;');
+            alert('Field background changed to RED!');
+        } else {
+            backgroundColor = '';
+            logColor = 'gray';
+            console.log('%c No color change (value not 3 or 5)', 'color: gray; font-weight: bold;');
+            alert(`No color change for value: ${value}`);
+        }
+        
+        // Find the active/focused element (the one that triggered the event)
+        const activeElement = document.activeElement as HTMLInputElement;
+        if (activeElement && activeElement.type === 'text') {
+            if (backgroundColor) {
+                activeElement.style.backgroundColor = backgroundColor;
+                activeElement.style.color = 'white';
+            } else {
+                activeElement.style.backgroundColor = '';
+                activeElement.style.color = '';
+            }
+        } else {
+            // Fallback: find the element that matches the widget ID pattern
+            const triggerElement = document.querySelector('input[type="text"]:focus') as HTMLInputElement;
+            if (triggerElement) {
+                if (backgroundColor) {
+                    triggerElement.style.backgroundColor = backgroundColor;
+                    triggerElement.style.color = 'white';
+                } else {
+                    triggerElement.style.backgroundColor = '';
+                    triggerElement.style.color = '';
+                }
+            }
+        }
+        
+        console.log(`Field highlight complete - Color: ${logColor}, Value: ${value}, Type: ${fieldType}`);
+        
+    } catch (error) {
+        console.error('Error in highlightField:', error);
+        alert('Error in highlightField method!');
+    }
+};
+
+// Make highlightField available globally for the Vue event handler
+(window as any).highlightField = highlightField;
+
 // Development mode logging
 onMounted(() => {
     try {
@@ -54,6 +119,7 @@ onMounted(() => {
         console.log('InputText Pro widgets:', inputTextProWidgets.value);
         console.log('InputText Pro widgets length:', inputTextProWidgets.value.length);
         console.log('Widget stats:', widgetStats.value);
+        console.log('🎯 highlightField method registered globally');
         console.log('========================');
         
         if (isDevelopment.value) {
@@ -81,6 +147,19 @@ onMounted(() => {
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
                 </svg>
                 Pro Edition Testing v1
+            </div>
+            
+            <!-- Vue Event Test Instructions -->
+            <div class="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900 rounded-lg border border-yellow-200">
+                <h3 class="text-sm font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+                    🎯 Vue Event Test: highlightField Method
+                </h3>
+                <div class="text-xs text-yellow-700 dark:text-yellow-300 space-y-1">
+                    <div>• Enter <strong>"3"</strong> in any field and trigger focus event → Background turns <span style="color: blue; font-weight: bold;">BLUE</span></div>
+                    <div>• Enter <strong>"5"</strong> in any field and trigger focus event → Background turns <span style="color: red; font-weight: bold;">RED</span></div>
+                    <div>• Other values → No color change</div>
+                    <div>• Check console logs and alert messages for feedback</div>
+                </div>
             </div>
         </div>
 
@@ -137,6 +216,10 @@ onMounted(() => {
                 <div>
                     <span class="font-medium text-orange-600">Error Handling:</span> 
                     Pro widgets should show enhanced error displays and recovery options.
+                </div>
+                <div>
+                    <span class="font-medium text-red-600">Vue Event Test:</span> 
+                    Test the highlightField method with values "3" (blue) and "5" (red).
                 </div>
             </div>
         </div>

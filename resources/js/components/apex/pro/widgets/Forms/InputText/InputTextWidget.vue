@@ -16,7 +16,7 @@ File location: resources/js/components/apex/pro/widgets/Forms/InputText/InputTex
             {{ label }}
             <span v-if="required" class="text-red-500">*</span>
         </label>
-        
+        ref
         <PInputText
             :id="`${props.id}-input`"
             v-model="internalValue"
@@ -95,6 +95,7 @@ File location: resources/js/components/apex/pro/widgets/Forms/InputText/InputTex
 
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
+import { useEventHandling } from '../../../Widget/PrimeVueBaseWidget/composables/useEventHandling';
 import { useResponseHandling } from '../../../Widget/PrimeVueBaseWidget/composables/useResponseHandling';
 import PDialog from 'primevue/dialog';
 import PButton from 'primevue/button';
@@ -195,6 +196,22 @@ const emit = defineEmits<{
     'vue-event': [eventData: any];
 }>();
 
+// Check Pro license status
+const isProLicensed = computed(() => {
+    return !!(props.events || props.stateConfig || props.parameterConfig || props.advancedValidation);
+});
+
+// Initialize composables
+const responseHandler = useResponseHandling();
+const eventHandler = useEventHandling({
+    widgetId: props.id,
+    events: props.events,
+    isProLicensed: isProLicensed.value
+});
+
+// Make response handler available globally for the composable
+(window as any).responseHandler = responseHandler;
+
 // Toast intelligence - only render once per page
 const shouldRenderToast = computed(() => {
     try {
@@ -213,21 +230,10 @@ const shouldRenderToast = computed(() => {
     }
 });
 
-// Use response handling composable
-const responseHandler = useResponseHandling();
-
 // Internal reactive state
 const internalValue = ref(props.modelValue);
-const isProLicensed = ref(false);
 const hasValidationError = ref(false);
 const validationMessage = ref('');
-
-// Common events that we'll listen for
-const commonEvents = [
-    'blur', 'focus', 'click', 'dblclick', 'mouseover', 'mouseout',
-    'mousedown', 'mouseup', 'keydown', 'keyup', 'keypress',
-    'change', 'input'
-];
 
 // Watch for modelValue changes
 watch(() => props.modelValue, (newValue) => {
@@ -349,7 +355,7 @@ const validationClasses = computed(() => {
     }
 });
 
-// Event handlers (simplified)
+// Event handlers - now simplified since composable handles the complex logic
 const handleBlur = (event: Event) => {
     try {
         emit('blur', event);
@@ -406,243 +412,6 @@ const handleDoubleClick = (event: Event) => {
     }
 };
 
-// Generic event processor
-const handleGenericEvent = (event: Event) => {
-    try {
-        const target = event.target as HTMLElement;
-        
-        // Only process events for THIS widget's input element
-        if (!target.id.startsWith(props.id + '-')) {
-            return; // Not our widget, ignore
-        }
-        
-        const attrName = `on${event.type}`;
-        const attrValue = target.getAttribute(attrName);
-        
-        if (attrValue?.includes(':')) {
-            event.preventDefault();
-            event.stopPropagation();
-            
-            const [type, rest] = attrValue.split(':', 2);
-            
-            switch(type) {
-                case 'js':
-                    handleJSEvent(rest, event);
-                    break;
-                case 'server':
-                    handleServerEvent(rest, event);
-                    break;
-                case 'vue':
-                    handleVueEvent(rest, event);
-                    break;
-                default:
-                    console.log('Unknown event type:', type);
-            }
-        }
-    } catch (error) {
-        console.error('Error in generic event handler:', error);
-    }
-};
-
-// JavaScript event handler
-const handleJSEvent = (jsCode: string, event: Event) => {
-    try {
-        console.log('Executing JS event:', jsCode);
-        eval(jsCode);
-    } catch (error) {
-        console.error('Error executing JS event:', error);
-    }
-};
-
-// Debouncing state
-const debounceTimers = ref<Map<string, number>>(new Map());
-
-// Server event handler with debouncing
-const handleServerEvent = async (serverCommand: string, event: Event) => {
-    try {
-        console.log('Executing Server event:', serverCommand);
-        
-        // Parse server command with optional response config and debounce
-        const parts = serverCommand.split('|');
-        const commandPart = parts[0];
-        const responsePart = parts[1];
-        const debouncePart = parts[2];
-        
-        // Parse the main command
-        const match = commandPart.match(/^(.+?)\/(\w+)\((.+)\)$/);
-        if (!match) {
-            console.error('Invalid server command format:', serverCommand);
-            return;
-        }
-        
-        const [, endpoint, handler, fullParamsStr] = match;
-        
-        // Handle debouncing
-        if (debouncePart && parseInt(debouncePart) > 0) {
-            const debounceMs = parseInt(debouncePart);
-            const eventKey = `${props.id}-${event.type}`;
-            
-            // Clear existing timer
-            if (debounceTimers.value.has(eventKey)) {
-                clearTimeout(debounceTimers.value.get(eventKey));
-            }
-            
-            // Set new timer
-            const timerId = window.setTimeout(() => {
-                executeServerCall(commandPart, responsePart, event);
-                debounceTimers.value.delete(eventKey);
-            }, debounceMs);
-            
-            debounceTimers.value.set(eventKey, timerId);
-            return;
-        }
-        
-        // Execute immediately if no debounce
-        await executeServerCall(commandPart, responsePart, event);
-    } catch (error) {
-        console.error('Error executing server event:', error);
-    }
-};
-
-// Extract server call execution
-const executeServerCall = async (commandPart: string, responsePart: string, event: Event) => {
-    try {
-        const match = commandPart.match(/^(.+?)\/(\w+)\((.+)\)$/);
-        if (!match) return;
-        
-        const [, endpoint, handler, fullParamsStr] = match;
-        
-        // Decode response configuration if present
-        let responseConfig = null;
-        if (responsePart) {
-            responseConfig = responseHandler.decodeResponseConfig(responsePart);
-        }
-        
-        // Evaluate parameters
-        const paramRegex = /(?:document\.getElementById\('[^']+'\)\.value|'[^']*'|\w+)/g;
-        const paramsList = fullParamsStr.match(paramRegex) || [];
-        
-        let evaluatedParams: any[] = [];
-        for (const param of paramsList) {
-            const trimmedParam = param.trim();
-            if (trimmedParam.includes('document.getElementById')) {
-                evaluatedParams.push(eval(trimmedParam));
-            } else if (trimmedParam.startsWith("'") && trimmedParam.endsWith("'")) {
-                evaluatedParams.push(trimmedParam.slice(1, -1));
-            } else {
-                evaluatedParams.push(trimmedParam);
-            }
-        }
-        
-        const url = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
-        
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-            },
-            body: JSON.stringify({
-                handler: handler,
-                params: evaluatedParams,
-                event: event.type,
-                value: (event.target as HTMLInputElement)?.value || '',
-                widgetId: props.id
-            })
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            console.log('Server response:', result);
-            
-            if (responseConfig) {
-                await responseHandler.processServerResponse(result, responseConfig, event);
-            }
-            
-            if (handler && window[handler as keyof Window]) {
-                (window[handler as keyof Window] as Function)(result, event);
-            }
-        }
-    } catch (error) {
-        console.error('Error in server call execution:', error);
-    }
-};
-
-// Vue event handler with enhanced parent communication
-const handleVueEvent = (vueCommand: string, event: Event) => {
-    try {
-        console.log('Executing Vue event:', vueCommand);
-        
-        // Parse: "methodName(param1, param2)"
-        const [method, paramsStr] = vueCommand.split('(');
-        const params = paramsStr ? paramsStr.replace(')', '').split(',').map(p => p.trim()) : [];
-        
-        // Evaluate parameters similar to other event types
-        const evaluatedParams: any[] = [];
-        for (const param of params) {
-            try {
-                if (param.includes('document.getElementById')) {
-                    evaluatedParams.push(eval(param));
-                } else if (param.startsWith("'") && param.endsWith("'")) {
-                    evaluatedParams.push(param.slice(1, -1));
-                } else {
-                    evaluatedParams.push(param);
-                }
-            } catch (evalError) {
-                console.warn(`Could not evaluate Vue parameter "${param}":`, evalError);
-                evaluatedParams.push(param);
-            }
-        }
-        
-        // Enhanced emission with more context
-        emit('vue-event', {
-            method: method,
-            params: evaluatedParams,
-            originalParams: params,
-            event: {
-                type: event.type,
-                target: event.target,
-                timestamp: Date.now()
-            },
-            widget: {
-                id: props.id,
-                value: (event.target as HTMLInputElement)?.value || '',
-                type: 'inputtext'
-            },
-            context: {
-                isProLicensed: isProLicensed.value,
-                hasValidationError: hasValidationError.value
-            }
-        });
-    } catch (error) {
-        console.error('Error executing Vue event:', error);
-    }
-};
-
-// Setup generic event handler
-const setupGenericEventHandler = () => {
-    try {
-        if (!isProLicensed.value) return;
-
-        commonEvents.forEach(eventType => {
-            document.addEventListener(eventType, handleGenericEvent, true);
-        });
-    } catch (error) {
-        console.error('Error setting up generic event handler:', error);
-    }
-};
-
-// Cleanup event handlers
-const cleanupEventHandlers = () => {
-    try {
-        commonEvents.forEach(eventType => {
-            document.removeEventListener(eventType, handleGenericEvent, true);
-        });
-    } catch (error) {
-        console.error('Error cleaning up event handlers:', error);
-    }
-};
-
 // PRO Methods
 const performRealTimeValidation = (value: string) => {
     try {
@@ -655,21 +424,9 @@ const performRealTimeValidation = (value: string) => {
     }
 };
 
-const checkProLicense = () => {
-    try {
-        isProLicensed.value = !!(props.events || props.stateConfig || props.parameterConfig || props.advancedValidation);
-        console.log('PRO License Status:', isProLicensed.value);
-    } catch (error) {
-        console.error('Error checking PRO license:', error);
-        isProLicensed.value = false;
-    }
-};
-
 // Lifecycle hooks
 onMounted(() => {
     try {
-        checkProLicense();
-        
         if (isProLicensed.value) {
             console.log('PRO InputText Widget initialized with features:', {
                 events: !!props.events,
@@ -677,8 +434,6 @@ onMounted(() => {
                 parameterConfig: !!props.parameterConfig,
                 advancedValidation: !!props.advancedValidation
             });
-            
-            setupGenericEventHandler();
         }
     } catch (error) {
         console.error('Error during component mounting:', error);
@@ -687,13 +442,8 @@ onMounted(() => {
 
 onUnmounted(() => {
     try {
-        cleanupEventHandlers();
-        
-        // Clear any pending debounce timers
-        debounceTimers.value.forEach(timerId => {
-            clearTimeout(timerId);
-        });
-        debounceTimers.value.clear();
+        // Composable handles its own cleanup
+        console.log('PRO InputText Widget unmounted');
     } catch (error) {
         console.error('Error during component unmounting:', error);
     }
